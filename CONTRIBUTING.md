@@ -1,0 +1,105 @@
+# Contributing to JellyUX Homepage
+
+Thank you for your interest in contributing. This document covers the development setup, conventions, and workflow.
+
+---
+
+## Development Prerequisites
+
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) (x64)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Git
+
+---
+
+## Environment Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Samuellct/JellyUX-Homepage.git
+   cd JellyUX-Homepage
+   ```
+
+2. Start the test Jellyfin server:
+   ```bash
+   docker compose -f docker/docker-compose.yml up -d
+   ```
+   Copy `docker/.env.example` to `docker/.env` and adjust the media paths before the first run.
+
+3. Build and deploy the plugin to the test container (PowerShell):
+   ```powershell
+   .\docker\scripts\deploy-plugin.ps1
+   ```
+   This builds the plugin, copies the DLL to the container's plugin directory, and restarts Jellyfin.
+
+4. Open `http://localhost:8096` to verify the plugin is loaded.
+
+---
+
+## Code Conventions
+
+- **Language**: All code, variable names, comments, commit messages, and documentation must be written in **English**.
+- **Commits**: Follow [Conventional Commits](https://www.conventionalcommits.org/):
+  - Types: `feat`, `fix`, `refactor`, `style`, `docs`, `chore`, `test`
+  - One atomic commit per logical change
+  - Example: `feat: add ContinueWatching widget`
+- **No commented-out code**: Dead code must be deleted, not commented.
+- **CSS prefix**: All plugin CSS classes must use the `jux-` prefix.
+- **CSS variables**: Reuse native Jellyfin CSS variables (`var(--primaryTextColor)`, `var(--accent)`, etc.) instead of hardcoding colors.
+
+---
+
+## Design Rules - No AI Slope
+
+The following design elements are **strictly forbidden** in any contributed code, markup, or assets:
+
+### Banned fonts
+
+Inter, Poppins, Manrope, Outfit, Plus Jakarta Sans, Space Grotesk
+
+### Banned colors and patterns
+
+- Blue-violet or violet-cyan gradients
+- Tailwind Blue `#3B82F6`
+- Background Gray-50 `#F9FAFB`
+- Black + neon violet combination
+- Turquoise accent on dark background
+
+### Typography
+
+- No em dashes (the long dash character). Use regular hyphens or restructure the sentence.
+
+---
+
+## Adding a Widget
+
+1. Create a class implementing `IWidget` in `src/Jellyfin.Plugin.JuxHomepage/Widgets/`.
+2. Register it in `PluginServiceRegistrator.RegisterServices()`.
+3. Add localization keys for both `fr.json` and `en.json` under `src/.../Localization/`.
+4. Document the widget in the README widget table.
+
+---
+
+## Testing
+
+**Automated tests** (once available):
+```bash
+dotnet test
+```
+
+**Manual test procedure**:
+1. Run `.\docker\scripts\deploy-plugin.ps1` to deploy the latest build.
+2. Open `http://localhost:8096` and verify the home screen loads correctly.
+3. Check the browser console for errors.
+4. Test widget configuration from the admin panel.
+
+---
+
+## Submitting a Contribution
+
+1. Fork the repository and create a branch from `main`.
+2. Make your changes following the conventions above.
+3. Open a pull request against `main` with a clear description of what changed and why.
+4. Ensure the CI build passes before requesting review.
+
+Note: this repository uses `main` as the only permanent branch. Feature branches exist only in forks.
