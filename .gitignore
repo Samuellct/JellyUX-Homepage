@@ -5,6 +5,18 @@
 
 !.gitignore
 
+# Project files
+!.github/
+!.github/workflows/
+!.github/workflows/build.yml
+!.github/workflows/release.yml
+!README.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+!LICENSE
+!build.yaml
+!manifest.json
+
 # Docker dev environment
 !docker/
 docker/*
