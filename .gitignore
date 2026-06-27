@@ -1,0 +1,6 @@
+# Deny everything by default.
+# Add explicit exceptions as the project grows (source files, assets, config).
+# Never add exceptions for: Sources/, ANALYSE_SOURCES.md, CLAUDE.md, .claude/
+*
+
+!.gitignore
