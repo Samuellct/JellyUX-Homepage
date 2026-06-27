@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for solution
+        id: check
+        run: |
+          if ls *.sln >/dev/null 2>&1; then
+            echo "has_sln=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_sln=false" >> "$GITHUB_OUTPUT"
+            echo "No .sln found yet (Phase 0). Skipping build."
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.check.outputs.has_sln == 'true'
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        if: steps.check.outputs.has_sln == 'true'
+        run: dotnet restore
+
+      - name: Build
+        if: steps.check.outputs.has_sln == 'true'
+        run: dotnet build --configuration Release --no-restore
