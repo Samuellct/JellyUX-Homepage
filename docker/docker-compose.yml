@@ -1,0 +1,15 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.11.10
+    container_name: jellyux-test
+    environment:
+      - JELLYFIN_PublishedServerUrl=http://localhost:${JELLYFIN_PORT:-8096}
+    volumes:
+      - ./config:/config
+      - ./cache:/cache
+      - ./plugins:/config/plugins
+      - ${FILMS_PATH}:/media/films:ro
+      - ${SHOWS_PATH}:/media/shows:ro
+    ports:
+      - "${JELLYFIN_PORT:-8096}:8096"
+    restart: unless-stopped
