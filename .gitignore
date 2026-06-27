@@ -4,3 +4,21 @@
 *
 
 !.gitignore
+
+# Docker dev environment
+!docker/
+docker/*
+!docker/docker-compose.yml
+!docker/.env.example
+!docker/scripts/
+docker/scripts/*
+!docker/scripts/deploy-plugin.ps1
+!docker/plugins/
+docker/plugins/*
+!docker/plugins/.gitkeep
+!docker/config/
+docker/config/*
+!docker/config/.gitkeep
+!docker/cache/
+docker/cache/*
+!docker/cache/.gitkeep
