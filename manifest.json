@@ -1,0 +1,12 @@
+[
+    {
+        "guid": "3adf1f1f-1541-4e47-b9e3-34d2d2968af6",
+        "name": "JellyUX Homepage",
+        "overview": "Replaces and enhances the Jellyfin home screen with configurable widgets.",
+        "description": "A modular home screen engine for Jellyfin. Configure widgets for native content, personalized recommendations, and external sources (TMDb).",
+        "owner": "Samuellct",
+        "category": "General",
+        "imageUrl": "",
+        "versions": []
+    }
+]

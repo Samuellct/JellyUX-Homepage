@@ -1,0 +1,13 @@
+---
+name: "JellyUX Homepage"
+guid: "3adf1f1f-1541-4e47-b9e3-34d2d2968af6"
+version: "0.0.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+owner: "Samuellct"
+overview: "Replaces and enhances the Jellyfin home screen with configurable widgets."
+description: "A modular home screen engine for Jellyfin. Configure widgets for native content, personalized recommendations, and external sources (TMDb)."
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.JuxHomepage.dll"
+changelog: ""
