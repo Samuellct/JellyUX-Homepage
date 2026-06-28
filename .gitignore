@@ -45,6 +45,8 @@ src/**
 !src/**/
 !src/**/*.cs
 !src/**/*.csproj
+!src/**/*.js
+!src/**/*.css
 !src/**/appsettings*.json
 src/**/bin/
 src/**/obj/
