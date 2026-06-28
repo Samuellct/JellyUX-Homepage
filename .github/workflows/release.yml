@@ -53,8 +53,9 @@ jobs:
 
       - name: Update manifest.json
         run: |
+          FILENAME=$(basename "${{ steps.build.outputs.zip }}")
           jprm repo add \
-            --url="https://github.com/Samuellct/JellyUX-Homepage/releases/download/${{ github.ref_name }}" \
+            --plugin-url="https://github.com/Samuellct/JellyUX-Homepage/releases/download/${{ github.ref_name }}/${FILENAME}" \
             ./ "${{ steps.build.outputs.zip }}"
 
       - name: Inject changelog into manifest.json
