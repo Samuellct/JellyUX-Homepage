@@ -1,3 +1,10 @@
+## [0.1.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.1.0...v0.1.1) (2026-06-28)
+
+### Bug Fixes
+
+* correct sourceUrl in manifest and plugin-url in release workflow ([9a3769a](https://github.com/Samuellct/JellyUX-Homepage/commit/9a3769af4d9969023e254ac67a892c752d65c5ad))
+* remove stale task reference comment from PluginServiceRegistrator ([0442ed2](https://github.com/Samuellct/JellyUX-Homepage/commit/0442ed24f1fc02bba2945f3e091026830ffa4936))
+
 # Changelog
 
 <!-- Entries above this line are generated automatically by semantic-release. -->

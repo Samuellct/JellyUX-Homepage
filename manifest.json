@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.1.1.0",
+                "changelog": "### Bug Fixes\n\n* correct sourceUrl in manifest and plugin-url in release workflow ([9a3769a](https://github.com/Samuellct/JellyUX-Homepage/commit/9a3769af4d9969023e254ac67a892c752d65c5ad))\n* remove stale task reference comment from PluginServiceRegistrator ([0442ed2](https://github.com/Samuellct/JellyUX-Homepage/commit/0442ed24f1fc02bba2945f3e091026830ffa4936))\n\n# Changelog\n\n<!-- Entries above this line are generated automatically by semantic-release. -->",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.1.1/jellyux-homepage_0.1.1.0.zip",
+                "checksum": "2ae72ad8ff1c3f1f6650555f42f789e0",
+                "timestamp": "2026-06-28T11:12:51Z"
+            },
+            {
                 "version": "0.1.0.0",
                 "changelog": "",
                 "targetAbi": "10.11.0.0",
