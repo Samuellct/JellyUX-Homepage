@@ -8,14 +8,17 @@
 # Project files
 !.github/
 !.github/workflows/
-!.github/workflows/build.yml
-!.github/workflows/release.yml
+!.github/workflows/ci.yml
+!.github/scripts/
+!.github/scripts/update-manifest.py
 !README.md
 !CONTRIBUTING.md
 !CHANGELOG.md
 !LICENSE.md
 !build.yaml
 !manifest.json
+!.releaserc.json
+!package.json
 
 # Docker dev environment
 !docker/
