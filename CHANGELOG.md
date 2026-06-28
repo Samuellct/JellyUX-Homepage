@@ -1,3 +1,12 @@
+## [0.2.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.1.1...v0.2.0) (2026-06-28)
+
+### Features
+
+* add controller endpoints for web resources and meta ([47df8a9](https://github.com/Samuellct/JellyUX-Homepage/commit/47df8a910bf7feac8e5679c8570f4f643f63fb94))
+* add embedded web resource placeholders ([8721595](https://github.com/Samuellct/JellyUX-Homepage/commit/8721595000deb0aba5f20bc9e245010bdeec0bd4))
+* add FileTransformation detector with explicit error on missing dependency ([55afd38](https://github.com/Samuellct/JellyUX-Homepage/commit/55afd3876d45d250edc3f38e0a2e63e52f76e361))
+* inject CSS and JS into index.html via FileTransformation ([6ca0f74](https://github.com/Samuellct/JellyUX-Homepage/commit/6ca0f7406af0829d4e95ac5689678710b73d7dd5))
+
 ## [0.1.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.1.0...v0.1.1) (2026-06-28)
 
 ### Bug Fixes
