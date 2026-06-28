@@ -34,3 +34,14 @@ docker/config/*
 !docker/cache/
 docker/cache/*
 !docker/cache/.gitkeep
+
+# .NET solution and plugin source
+!JellyUX-Homepage.sln
+!src/
+src/**
+!src/**/
+!src/**/*.cs
+!src/**/*.csproj
+!src/**/appsettings*.json
+src/**/bin/
+src/**/obj/
