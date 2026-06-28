@@ -57,6 +57,45 @@ jobs:
             --url="https://github.com/Samuellct/JellyUX-Homepage/releases/download/${{ github.ref_name }}" \
             ./ "${{ steps.build.outputs.zip }}"
 
+      - name: Inject changelog into manifest.json
+        run: |
+          python3 - <<'PYEOF'
+          import json, re, sys
+
+          version = "${{ steps.v.outputs.semver }}"
+
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          pattern = r'## \[' + re.escape(version) + r'\][^\n]*\n(.*?)(?=\n## \[|\Z)'
+          match = re.search(pattern, content, re.DOTALL)
+          changelog = match.group(1).strip() if match else ''
+
+          if not changelog:
+              print(f'WARNING: no changelog section found for v{version}')
+
+          with open('manifest.json', 'r', encoding='utf-8') as f:
+              manifest = json.load(f)
+
+          patched = False
+          for plugin in manifest:
+              for v in plugin.get('versions', []):
+                  if v['version'].startswith(version):
+                      v['changelog'] = changelog
+                      patched = True
+                      break
+
+          if not patched:
+              print(f'WARNING: version {version} not found in manifest.json')
+              sys.exit(1)
+
+          with open('manifest.json', 'w', encoding='utf-8') as f:
+              json.dump(manifest, f, indent=4, ensure_ascii=False)
+              f.write('\n')
+
+          print(f'Changelog injected for v{version}')
+          PYEOF
+
       - name: Commit manifest.json
         run: |
           git config user.name "github-actions[bot]"
