@@ -2,6 +2,7 @@ using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
@@ -34,6 +35,13 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             var logger = serviceProvider
                 .GetRequiredService<ILoggerFactory>()
                 .CreateLogger<WidgetRegistry>();
+
+            // Register native widgets in display order before loading external DLL widgets.
+            RegisterNativeWidget<ContinueWatchingWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<NextUpWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<RecentlyAddedMoviesWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<RecentlyAddedShowsWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<MyMediaWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
             var pluginDir = Path.Combine(
@@ -80,5 +88,23 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
 
             return registry;
         });
+    }
+
+    private static void RegisterNativeWidget<TWidget>(
+        WidgetRegistry registry,
+        IServiceProvider serviceProvider,
+        ILogger logger)
+        where TWidget : IWidget
+    {
+        try
+        {
+            var widget = (IWidget)ActivatorUtilities.CreateInstance(serviceProvider, typeof(TWidget));
+            registry.Register(widget);
+            logger.LogInformation("Registered native widget '{WidgetType}'.", widget.WidgetType);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to register native widget {Type}.", typeof(TWidget).Name);
+        }
     }
 }

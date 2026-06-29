@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
@@ -48,6 +49,7 @@ public class StartupService : IScheduledTask
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         progress.Report(0);
+        SeedDefaultWidgetConfiguration();
 
         if (!_detector.IsAvailable())
         {
@@ -92,6 +94,25 @@ public class StartupService : IScheduledTask
         {
             Type = TaskTriggerInfoType.StartupTrigger
         };
+    }
+
+    private void SeedDefaultWidgetConfiguration()
+    {
+        if (Plugin.Instance is null)
+        {
+            return;
+        }
+
+        if (Plugin.Instance.Configuration.Widgets.Length > 0)
+        {
+            return;
+        }
+
+        Plugin.Instance.Configuration.Widgets = NativeWidgetDefaults.Build();
+        Plugin.Instance.SaveConfiguration();
+        _logger.LogInformation(
+            "Seeded default configuration with {Count} native widgets.",
+            Plugin.Instance.Configuration.Widgets.Length);
     }
 
     private void RegisterIndexHtmlTransformation()
