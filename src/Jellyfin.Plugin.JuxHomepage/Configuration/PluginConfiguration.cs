@@ -1,15 +1,15 @@
+using Jellyfin.Plugin.JuxHomepage.Widgets;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.JuxHomepage.Configuration;
 
 /// <summary>
-/// Plugin configuration. Extended fully in Phase 3.
+/// Global plugin configuration serialized to XML by Jellyfin.
 /// </summary>
 public class PluginConfiguration : BasePluginConfiguration
 {
     /// <summary>
     /// Gets or sets a value indicating whether the JellyUX Homepage plugin is active.
-    /// Full configuration is built in Phase 3.
     /// </summary>
     public bool Enabled { get; set; } = true;
 
@@ -18,4 +18,18 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Null when all dependencies are present. Surfaced via /JuxHomepage/meta.
     /// </summary>
     public string? StartupWarning { get; set; }
+
+    /// <summary>
+    /// Gets or sets the global widget configuration list.
+    /// Defines which widgets are enabled, their order, and their display settings.
+    /// Users may override individual entries via <see cref="UserConfiguration.WidgetOverrides"/>
+    /// when <see cref="WidgetConfig.AllowUserOverride"/> is true.
+    /// </summary>
+    public WidgetConfig[] Widgets { get; set; } = [];
+
+    /// <summary>Gets or sets the API keys for external data sources.</summary>
+    public ApiKeysConfig ApiKeys { get; set; } = new();
+
+    /// <summary>Gets or sets the cache tuning parameters for the widget engine.</summary>
+    public CacheConfig Cache { get; set; } = new();
 }
