@@ -1,3 +1,9 @@
+## [0.3.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.3.0...v0.3.1) (2026-06-29)
+
+### Bug Fixes
+
+* replace Dictionary ExtraParams with WidgetExtraParam array for XmlSerializer compatibility ([ed67721](https://github.com/Samuellct/JellyUX-Homepage/commit/ed677215aa319d8b0f37624b5914ea9b44c63eb1))
+
 ## [0.3.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.2.0...v0.3.0) (2026-06-29)
 
 ### Features
