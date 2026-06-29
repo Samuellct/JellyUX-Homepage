@@ -1,3 +1,13 @@
+## [0.3.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.2.0...v0.3.0) (2026-06-29)
+
+### Features
+
+* add API endpoints for sections, items and configuration ([8222a75](https://github.com/Samuellct/JellyUX-Homepage/commit/8222a75443d19c2ef380ca0895b8deee772f6f41))
+* add complete plugin and user configuration models ([891de7c](https://github.com/Samuellct/JellyUX-Homepage/commit/891de7c7c73d4de6724939ac253464656a893e25))
+* add widget engine core interfaces and models ([f42bece](https://github.com/Samuellct/JellyUX-Homepage/commit/f42bece0dba534cfdde3ca932ef610d49345b9c7))
+* add widget registry with external DLL discovery ([4703498](https://github.com/Samuellct/JellyUX-Homepage/commit/47034986986fcdf06ac9952bd6714c52049c25b8))
+* add widget service with session cache and MinItems filtering ([27d226a](https://github.com/Samuellct/JellyUX-Homepage/commit/27d226a85648d85d3cfe5478d0107fdaa8ab74d1))
+
 ## [0.2.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.1.1...v0.2.0) (2026-06-28)
 
 ### Features

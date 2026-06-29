@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.3.0.0",
+                "changelog": "### Features\n\n* add API endpoints for sections, items and configuration ([8222a75](https://github.com/Samuellct/JellyUX-Homepage/commit/8222a75443d19c2ef380ca0895b8deee772f6f41))\n* add complete plugin and user configuration models ([891de7c](https://github.com/Samuellct/JellyUX-Homepage/commit/891de7c7c73d4de6724939ac253464656a893e25))\n* add widget engine core interfaces and models ([f42bece](https://github.com/Samuellct/JellyUX-Homepage/commit/f42bece0dba534cfdde3ca932ef610d49345b9c7))\n* add widget registry with external DLL discovery ([4703498](https://github.com/Samuellct/JellyUX-Homepage/commit/47034986986fcdf06ac9952bd6714c52049c25b8))\n* add widget service with session cache and MinItems filtering ([27d226a](https://github.com/Samuellct/JellyUX-Homepage/commit/27d226a85648d85d3cfe5478d0107fdaa8ab74d1))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.3.0/jellyux-homepage_0.3.0.0.zip",
+                "checksum": "a737aec8e96bcab8d3aa901f12d701ba",
+                "timestamp": "2026-06-29T15:20:09Z"
+            },
+            {
                 "version": "0.2.0.0",
                 "changelog": "### Features\n\n* add controller endpoints for web resources and meta ([47df8a9](https://github.com/Samuellct/JellyUX-Homepage/commit/47df8a910bf7feac8e5679c8570f4f643f63fb94))\n* add embedded web resource placeholders ([8721595](https://github.com/Samuellct/JellyUX-Homepage/commit/8721595000deb0aba5f20bc9e245010bdeec0bd4))\n* add FileTransformation detector with explicit error on missing dependency ([55afd38](https://github.com/Samuellct/JellyUX-Homepage/commit/55afd3876d45d250edc3f38e0a2e63e52f76e361))\n* inject CSS and JS into index.html via FileTransformation ([6ca0f74](https://github.com/Samuellct/JellyUX-Homepage/commit/6ca0f7406af0829d4e95ac5689678710b73d7dd5))",
                 "targetAbi": "10.11.0.0",
