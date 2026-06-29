@@ -1,4 +1,5 @@
 using System.Reflection;
+using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using MediaBrowser.Common.Configuration;
@@ -18,6 +19,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
         serviceCollection.AddSingleton<FileTransformationDetector>();
+        serviceCollection.AddSingleton<SessionCache>();
+        serviceCollection.AddSingleton<UserConfigurationStore>();
+        serviceCollection.AddSingleton<WidgetService>();
 
         serviceCollection.AddSingleton<IWidgetRegistry>(serviceProvider =>
         {
