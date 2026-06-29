@@ -230,7 +230,9 @@ public sealed class WidgetService
             MaxItems = config.MaxItems,
             ViewMode = config.ViewMode,
             Order = config.Order,
-            ExtraParams = config.ExtraParams
+            ExtraParams = config.ExtraParams.Length > 0
+                ? config.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
+                : null
         };
 
     private static IReadOnlyList<WidgetDescriptor> Paginate(IReadOnlyList<WidgetDescriptor> all, int page)

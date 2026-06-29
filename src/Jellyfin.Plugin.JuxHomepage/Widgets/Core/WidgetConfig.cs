@@ -42,5 +42,5 @@ public sealed class WidgetConfig
     public int MaxInstances { get; set; } = 1;
 
     /// <summary>Gets or sets optional extra parameters for widget-specific configuration.</summary>
-    public Dictionary<string, string>? ExtraParams { get; set; }
+    public WidgetExtraParam[] ExtraParams { get; set; } = [];
 }
