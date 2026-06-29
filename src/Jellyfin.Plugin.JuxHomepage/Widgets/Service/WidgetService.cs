@@ -219,7 +219,18 @@ public sealed class WidgetService
             return null;
         }
 
-        return widget.GetDescriptor();
+        var baseDescriptor = widget.GetDescriptor();
+        return new WidgetDescriptor
+        {
+            WidgetType = baseDescriptor.WidgetType,
+            DisplayName = instanceConfig.DisplayName,
+            Category = baseDescriptor.Category,
+            ViewMode = config.ViewMode,
+            Route = baseDescriptor.Route,
+            AdditionalData = baseDescriptor.AdditionalData,
+            Order = config.Order,
+            MinItems = config.MinItems
+        };
     }
 
     private static WidgetInstanceConfig BuildInstanceConfig(WidgetConfig config, IWidget widget) =>
