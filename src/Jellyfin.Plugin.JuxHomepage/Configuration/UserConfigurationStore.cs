@@ -10,7 +10,7 @@ namespace Jellyfin.Plugin.JuxHomepage.Configuration;
 /// All file access is protected by a <see cref="ReaderWriterLockSlim"/> to allow concurrent reads
 /// while serializing writes.
 /// </summary>
-public sealed class UserConfigurationStore : IDisposable
+public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposable
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {

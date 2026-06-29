@@ -21,7 +21,8 @@ public sealed class WidgetService
 
     private readonly IWidgetRegistry _registry;
     private readonly SessionCache _sessionCache;
-    private readonly UserConfigurationStore _userConfigStore;
+    private readonly IUserConfigurationStore _userConfigStore;
+    private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<WidgetService> _logger;
 
     /// <summary>
@@ -30,16 +31,22 @@ public sealed class WidgetService
     /// <param name="registry">The widget registry.</param>
     /// <param name="sessionCache">The session layout cache.</param>
     /// <param name="userConfigStore">The per-user configuration store.</param>
+    /// <param name="getConfiguration">
+    /// Factory that returns the current plugin configuration.
+    /// Defaults to <c>Plugin.Instance?.Configuration</c> in production.
+    /// </param>
     /// <param name="logger">Logger.</param>
     public WidgetService(
         IWidgetRegistry registry,
         SessionCache sessionCache,
-        UserConfigurationStore userConfigStore,
+        IUserConfigurationStore userConfigStore,
+        Func<PluginConfiguration?> getConfiguration,
         ILogger<WidgetService> logger)
     {
         _registry = registry;
         _sessionCache = sessionCache;
         _userConfigStore = userConfigStore;
+        _getConfiguration = getConfiguration;
         _logger = logger;
     }
 
@@ -57,7 +64,7 @@ public sealed class WidgetService
         int page,
         CancellationToken cancellationToken)
     {
-        var ttlMinutes = Plugin.Instance?.Configuration?.Cache?.SessionTtlMinutes ?? 15;
+        var ttlMinutes = _getConfiguration()?.Cache?.SessionTtlMinutes ?? 15;
         var ttl = TimeSpan.FromMinutes(ttlMinutes);
 
         if (_sessionCache.TryGet(userId, ttl, out var cached) && cached is not null)
@@ -119,7 +126,7 @@ public sealed class WidgetService
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var globalConfig = Plugin.Instance?.Configuration?.Widgets ?? [];
+        var globalConfig = _getConfiguration()?.Widgets ?? [];
         var userConfig = _userConfigStore.GetUserConfiguration(userId);
         var overrides = userConfig?.WidgetOverrides ?? [];
 

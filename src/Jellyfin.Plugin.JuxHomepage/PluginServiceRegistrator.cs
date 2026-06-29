@@ -20,8 +20,13 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         serviceCollection.AddSingleton<FileTransformationDetector>();
         serviceCollection.AddSingleton<SessionCache>();
-        serviceCollection.AddSingleton<UserConfigurationStore>();
-        serviceCollection.AddSingleton<WidgetService>();
+        serviceCollection.AddSingleton<IUserConfigurationStore, UserConfigurationStore>();
+        serviceCollection.AddSingleton<WidgetService>(serviceProvider => new WidgetService(
+            serviceProvider.GetRequiredService<IWidgetRegistry>(),
+            serviceProvider.GetRequiredService<SessionCache>(),
+            serviceProvider.GetRequiredService<IUserConfigurationStore>(),
+            () => Plugin.Instance?.Configuration,
+            serviceProvider.GetRequiredService<ILogger<WidgetService>>()));
 
         serviceCollection.AddSingleton<IWidgetRegistry>(serviceProvider =>
         {
