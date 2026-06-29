@@ -1,0 +1,46 @@
+namespace Jellyfin.Plugin.JuxHomepage.Widgets;
+
+/// <summary>
+/// Per-widget configuration stored in the plugin configuration (global) or user overrides.
+/// </summary>
+public sealed class WidgetConfig
+{
+    /// <summary>Gets or sets the widget type identifier this configuration applies to.</summary>
+    public string WidgetType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a custom display name.
+    /// When null, the widget's <see cref="IWidget.DefaultDisplayName"/> is used.
+    /// </summary>
+    public string? CustomDisplayName { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether this widget is visible on the home screen.</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether users may override this widget's settings.</summary>
+    public bool AllowUserOverride { get; set; } = true;
+
+    /// <summary>Gets or sets the display order on the home screen (lower values appear first).</summary>
+    public int Order { get; set; }
+
+    /// <summary>Gets or sets the minimum number of items required to display the widget.</summary>
+    public int MinItems { get; set; } = 4;
+
+    /// <summary>Gets or sets the maximum number of items to return per request.</summary>
+    public int MaxItems { get; set; } = 20;
+
+    /// <summary>
+    /// Gets or sets the view mode identifier.
+    /// Use <see cref="WidgetViewMode"/> constants (Portrait, Landscape, Square).
+    /// </summary>
+    public string ViewMode { get; set; } = WidgetViewMode.Landscape;
+
+    /// <summary>Gets or sets the minimum number of instances to create for this widget type.</summary>
+    public int MinInstances { get; set; } = 1;
+
+    /// <summary>Gets or sets the maximum number of instances to create for this widget type.</summary>
+    public int MaxInstances { get; set; } = 1;
+
+    /// <summary>Gets or sets optional extra parameters for widget-specific configuration.</summary>
+    public Dictionary<string, string>? ExtraParams { get; set; }
+}
