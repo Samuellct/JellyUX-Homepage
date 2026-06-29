@@ -1,3 +1,14 @@
+## [0.4.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.3.1...v0.4.0) (2026-06-29)
+
+### Features
+
+* add ContinueWatchingWidget ([fd73acd](https://github.com/Samuellct/JellyUX-Homepage/commit/fd73acd6a8591dce3fb7f6e5c957efbd68833bc5))
+* add MyMediaWidget ([04626ed](https://github.com/Samuellct/JellyUX-Homepage/commit/04626ed3e80580057a0107c5a58b7d7ffa170a0b))
+* add NativeWidgetBase shared base class for native widgets ([68a41e4](https://github.com/Samuellct/JellyUX-Homepage/commit/68a41e4a4c8d45a19bd5db3c10f4944ebe9b51b4))
+* add NextUpWidget ([3db6221](https://github.com/Samuellct/JellyUX-Homepage/commit/3db6221af8dc2fdab4a81ba4c84da364adb19576))
+* add RecentlyAddedMoviesWidget and RecentlyAddedShowsWidget ([2f3bd63](https://github.com/Samuellct/JellyUX-Homepage/commit/2f3bd63833a2f9cf854cb158dfdcc12c105e3140))
+* register native widgets with default configuration ([594df9f](https://github.com/Samuellct/JellyUX-Homepage/commit/594df9fecb6a81bb7a8ce53cf13490569b561996))
+
 ## [0.3.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.3.0...v0.3.1) (2026-06-29)
 
 ### Bug Fixes
