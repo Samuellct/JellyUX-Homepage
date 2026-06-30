@@ -142,14 +142,20 @@
         titleContainer.className = 'sectionTitleContainer sectionTitleContainer-cards padded-left';
 
         if (descriptor.Route && api && !api.layoutManager.tv) {
-            var route = api.appRouter.getRouteUrl(descriptor.Route, { serverId: apiClient.serverId() });
-            titleContainer.innerHTML =
-                '<a is="emby-linkbutton" href="' + _escHtml(route) + '" ' +
-                'class="button-flat button-flat-mini sectionTitleTextButton">' +
-                '<h2 class="sectionTitle sectionTitle-cards jux-section-title">' +
-                _escHtml(descriptor.DisplayName) + '</h2>' +
-                '<span class="material-icons chevron_right" aria-hidden="true"></span>' +
-                '</a>';
+            var href = _buildSeeAllHref(descriptor.Route);
+            if (href) {
+                titleContainer.innerHTML =
+                    '<a is="emby-linkbutton" href="' + _escHtml(href) + '" ' +
+                    'class="button-flat button-flat-mini sectionTitleTextButton">' +
+                    '<h2 class="sectionTitle sectionTitle-cards jux-section-title">' +
+                    _escHtml(descriptor.DisplayName) + '</h2>' +
+                    '<span class="material-icons chevron_right" aria-hidden="true"></span>' +
+                    '</a>';
+            } else {
+                titleContainer.innerHTML =
+                    '<h2 class="sectionTitle sectionTitle-cards jux-section-title">' +
+                    _escHtml(descriptor.DisplayName) + '</h2>';
+            }
         } else {
             titleContainer.innerHTML =
                 '<h2 class="sectionTitle sectionTitle-cards jux-section-title">' +
@@ -281,6 +287,28 @@
         }, { rootMargin: '200px' });
 
         observer.observe(sentinel);
+    }
+
+    // -------------------------------------------------------------------------
+    // Routing helpers
+    // -------------------------------------------------------------------------
+
+    // Maps JUX route keys to Jellyfin hash-based page URLs.
+    // appRouter.getRouteUrl cannot be used for library pages (movies, tvshows, music…)
+    // because those strings are not registered named routes — the router tries to resolve
+    // them as item references, producing /Items/undefined errors.
+    var _ROUTE_HREF_MAP = {
+        'movies':  '#/movies.html',
+        'tvshows': '#/tv.html',
+        'nextup':  '#/nextup.html',
+        'music':   '#/music.html',
+        'livetv':  '#/livetv.html',
+        'books':   '#/books.html',
+        'photos':  '#/photos.html'
+    };
+
+    function _buildSeeAllHref(route) {
+        return _ROUTE_HREF_MAP[route] || null;
     }
 
     // -------------------------------------------------------------------------
