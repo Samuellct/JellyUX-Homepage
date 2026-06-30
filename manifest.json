@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.5.1.0",
+                "changelog": "### Bug Fixes\n\n* resolve broken see-all links for recently-added sections ([5e6ec17](https://github.com/Samuellct/JellyUX-Homepage/commit/5e6ec173d26edc4ea3c60dad92f33b1b21da7a11))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.5.1/jellyux-homepage_0.5.1.0.zip",
+                "checksum": "2dc844b8fa5acc77afb51f7fbe5fbe1e",
+                "timestamp": "2026-06-30T17:06:14Z"
+            },
+            {
                 "version": "0.5.0.0",
                 "changelog": "### Features\n\n* add client detection and JellyfinAPI global attachment ([cad02fc](https://github.com/Samuellct/JellyUX-Homepage/commit/cad02fcf622af8f27582f0d9db194093c7a37894))\n* implement loadSections override with API-driven widget rendering ([961fda5](https://github.com/Samuellct/JellyUX-Homepage/commit/961fda53431e5d3e2bfcce416b5c5c0e87e2bbb4))",
                 "targetAbi": "10.11.0.0",

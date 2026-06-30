@@ -1,3 +1,9 @@
+## [0.5.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.5.0...v0.5.1) (2026-06-30)
+
+### Bug Fixes
+
+* resolve broken see-all links for recently-added sections ([5e6ec17](https://github.com/Samuellct/JellyUX-Homepage/commit/5e6ec173d26edc4ea3c60dad92f33b1b21da7a11))
+
 ## [0.5.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.4.0...v0.5.0) (2026-06-30)
 
 ### Features
