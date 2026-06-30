@@ -23,7 +23,7 @@
                 <h3 class="sectionTitle">General</h3>
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
-                        <input type="checkbox" id="chkEnabled" is="emby-checkbox" class="emby-checkbox" />
+                        <input type="checkbox" id="chkEnabled" class="emby-checkbox" />
                         <span class="checkboxLabel">Enable JellyUX Homepage</span>
                         <span class="checkboxOutline">
                             <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
@@ -182,7 +182,7 @@
 
                     html += '<div class="jux-admin-widget-header">';
                     html += '<label class="emby-checkbox-label jux-admin-enabled-label">';
-                    html += '<input type="checkbox" is="emby-checkbox" class="emby-checkbox jux-admin-enabled"';
+                    html += '<input type="checkbox" id="widgetEnabled_' + i + '" class="emby-checkbox jux-admin-enabled"';
                     html += (w.Enabled ? ' checked' : '') + ' />';
                     html += '<span class="checkboxLabel">' + self.escHtml(defaultName) + '</span>';
                     html += '<span class="checkboxOutline">';
