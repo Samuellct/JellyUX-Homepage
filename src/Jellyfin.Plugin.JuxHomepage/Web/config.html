@@ -38,7 +38,7 @@
                 <h3 class="sectionTitle">API Keys</h3>
                 <div class="inputContainer">
                     <label class="inputLabel inputLabelUnfocused" for="txtTMDb">TMDb API Key</label>
-                    <input id="txtTMDb" type="text" is="emby-input" class="emby-input" autocomplete="off" />
+                    <input id="txtTMDb" type="text" class="emby-input" autocomplete="off" />
                     <div class="fieldDescription">Required for Connected widgets that use The Movie Database. Leave empty if not needed. Accepted formats: 32-character hexadecimal key (v3), or v4 bearer token starting with "ey".</div>
                     <div id="juxTmdbError" class="fieldDescription jux-admin-field-error" style="display: none;">Invalid TMDb key format. Expected: 32 hexadecimal characters, a v4 bearer token, or leave empty.</div>
                 </div>
@@ -48,12 +48,12 @@
                 <h3 class="sectionTitle">Cache</h3>
                 <div class="inputContainer">
                     <label class="inputLabel inputLabelUnfocused" for="numSessionTtl">Session cache TTL (minutes)</label>
-                    <input id="numSessionTtl" type="number" min="1" is="emby-input" class="emby-input" />
+                    <input id="numSessionTtl" type="number" min="1" class="emby-input" />
                     <div class="fieldDescription">How long the home screen widget layout is cached per user. Reduce to see configuration changes more quickly; increase to lower server load.</div>
                 </div>
                 <div class="inputContainer">
                     <label class="inputLabel inputLabelUnfocused" for="numTMDbRefresh">TMDb refresh interval (hours)</label>
-                    <input id="numTMDbRefresh" type="number" min="1" is="emby-input" class="emby-input" />
+                    <input id="numTMDbRefresh" type="number" min="1" class="emby-input" />
                     <div class="fieldDescription">How often TMDb data is refreshed. Increase to reduce external API calls; decrease for fresher content.</div>
                 </div>
             </div>
@@ -65,7 +65,7 @@
             </div>
 
             <div class="verticalSection">
-                <button is="emby-button" type="submit" class="emby-button raised button-submit block">
+                <button type="submit" class="emby-button raised button-submit block">
                     <span>Save</span>
                 </button>
             </div>
@@ -208,7 +208,7 @@
 
                     html += '<div class="inputContainer">';
                     html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">Display name</label>';
-                    html += '<input id="widgetName_' + i + '" type="text" is="emby-input" class="emby-input jux-admin-widget-name"';
+                    html += '<input id="widgetName_' + i + '" type="text" class="emby-input jux-admin-widget-name"';
                     html += ' placeholder="' + self.escHtml(defaultName) + '"';
                     html += ' value="' + self.escHtml(customName) + '" />';
                     html += '<div class="fieldDescription">Leave empty to use the default name.</div>';
@@ -218,13 +218,13 @@
 
                     html += '<div class="inputContainer jux-admin-half">';
                     html += '<label class="inputLabel inputLabelUnfocused" for="widgetMin_' + i + '">Min items</label>';
-                    html += '<input id="widgetMin_' + i + '" type="number" min="0" is="emby-input" class="emby-input jux-admin-min-items" value="' + w.MinItems + '" />';
+                    html += '<input id="widgetMin_' + i + '" type="number" min="0" class="emby-input jux-admin-min-items" value="' + w.MinItems + '" />';
                     html += '<div class="fieldDescription">Section hidden if below this count.</div>';
                     html += '</div>';
 
                     html += '<div class="inputContainer jux-admin-half">';
                     html += '<label class="inputLabel inputLabelUnfocused" for="widgetMax_' + i + '">Max items</label>';
-                    html += '<input id="widgetMax_' + i + '" type="number" min="1" is="emby-input" class="emby-input jux-admin-max-items" value="' + w.MaxItems + '" />';
+                    html += '<input id="widgetMax_' + i + '" type="number" min="1" class="emby-input jux-admin-max-items" value="' + w.MaxItems + '" />';
                     html += '<div class="fieldDescription">Maximum items fetched per section.</div>';
                     html += '</div>';
 
@@ -232,7 +232,7 @@
 
                     html += '<div class="inputContainer">';
                     html += '<label class="inputLabel inputLabelUnfocused" for="widgetView_' + i + '">View mode</label>';
-                    html += '<select id="widgetView_' + i + '" is="emby-select" class="emby-select-withcolor emby-select jux-admin-view-mode">';
+                    html += '<select id="widgetView_' + i + '" class="emby-select-withcolor emby-select jux-admin-view-mode">';
                     ['Landscape', 'Portrait', 'Square'].forEach(function (vm) {
                         html += '<option value="' + vm + '"' + (w.ViewMode === vm ? ' selected' : '') + '>' + vm + '</option>';
                     });
