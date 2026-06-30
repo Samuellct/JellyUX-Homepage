@@ -7,6 +7,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JuxHomepage;
@@ -21,6 +22,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         serviceCollection.AddSingleton<FileTransformationDetector>();
         serviceCollection.AddSingleton<SessionCache>();
+        serviceCollection.AddHostedService<ConfigurationChangeListener>();
         serviceCollection.AddSingleton<IUserConfigurationStore, UserConfigurationStore>();
         serviceCollection.AddSingleton<WidgetService>(serviceProvider => new WidgetService(
             serviceProvider.GetRequiredService<IWidgetRegistry>(),

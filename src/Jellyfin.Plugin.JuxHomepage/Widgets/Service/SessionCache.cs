@@ -73,6 +73,13 @@ public sealed class SessionCache : IDisposable
     /// <param name="userId">The user whose cache entry to remove.</param>
     public void Invalidate(Guid userId) => _cache.TryRemove(userId, out _);
 
+    /// <summary>
+    /// Removes all cached layouts, forcing a fresh rebuild for every user on their next request.
+    /// Called when the plugin configuration changes so that the new widget settings take effect
+    /// immediately rather than waiting for the per-user TTL to expire.
+    /// </summary>
+    public void Clear() => _cache.Clear();
+
     /// <inheritdoc/>
     public void Dispose()
     {
