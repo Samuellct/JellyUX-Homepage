@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>JellyUX Homepage</title>
+</head>
+<body>
+<div data-role="page" id="juxHomepageConfigPage" class="page type-interior pluginConfigurationPage fullWidthContent">
+    <div class="content-primary">
+
+        <div class="verticalSection">
+            <div class="sectionTitleContainer">
+                <h2 class="sectionTitle">JellyUX Homepage</h2>
+            </div>
+        </div>
+
+        <div id="juxWarningBanner" class="verticalSection" style="display: none;">
+            <p id="juxWarningText" class="fieldDescription jux-admin-warning"></p>
+        </div>
+
+        <form class="juxConfigForm">
+
+            <div class="verticalSection">
+                <h3 class="sectionTitle">General</h3>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input type="checkbox" id="chkEnabled" is="emby-checkbox" class="emby-checkbox" />
+                        <span class="checkboxLabel">Enable JellyUX Homepage</span>
+                        <span class="checkboxOutline">
+                            <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                            <span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>
+                        </span>
+                    </label>
+                    <div class="fieldDescription">Show JellyUX widgets on the home screen. Disable to revert to the native Jellyfin home screen.</div>
+                </div>
+            </div>
+
+            <div class="verticalSection">
+                <h3 class="sectionTitle">API Keys</h3>
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="txtTMDb">TMDb API Key</label>
+                    <input id="txtTMDb" type="text" is="emby-input" class="emby-input" autocomplete="off" />
+                    <div class="fieldDescription">Required for Connected widgets that use The Movie Database. Leave empty if not needed. Accepted formats: 32-character hexadecimal key (v3), or v4 bearer token starting with "ey".</div>
+                    <div id="juxTmdbError" class="fieldDescription jux-admin-field-error" style="display: none;">Invalid TMDb key format. Expected: 32 hexadecimal characters, a v4 bearer token, or leave empty.</div>
+                </div>
+            </div>
+
+            <div class="verticalSection">
+                <h3 class="sectionTitle">Cache</h3>
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="numSessionTtl">Session cache TTL (minutes)</label>
+                    <input id="numSessionTtl" type="number" min="1" is="emby-input" class="emby-input" />
+                    <div class="fieldDescription">How long the home screen widget layout is cached per user. Reduce to see configuration changes more quickly; increase to lower server load.</div>
+                </div>
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="numTMDbRefresh">TMDb refresh interval (hours)</label>
+                    <input id="numTMDbRefresh" type="number" min="1" is="emby-input" class="emby-input" />
+                    <div class="fieldDescription">How often TMDb data is refreshed. Increase to reduce external API calls; decrease for fresher content.</div>
+                </div>
+            </div>
+
+            <div class="verticalSection">
+                <h3 class="sectionTitle">Widgets</h3>
+                <p class="fieldDescription">Use the arrows to change the display order. Changes take effect after saving.</p>
+                <div id="juxWidgetList"></div>
+            </div>
+
+            <div class="verticalSection">
+                <button is="emby-button" type="submit" class="emby-button raised button-submit block">
+                    <span>Save</span>
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+    <style>
+        .jux-admin-warning {
+            color: var(--error-color, #e5350b);
+            padding: 0.75em;
+            border: 1px solid var(--error-color, #e5350b);
+            border-radius: 4px;
+        }
+        .jux-admin-field-error {
+            color: var(--error-color, #e5350b);
+        }
+        .jux-admin-widget-card {
+            border: 1px solid var(--borderColor, rgba(255, 255, 255, 0.1));
+            border-radius: 4px;
+            padding: 1em;
+            margin-bottom: 1em;
+        }
+        .jux-admin-widget-header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5em;
+            margin-bottom: 0.75em;
+        }
+        .jux-admin-enabled-label {
+            flex: 1 1 auto;
+        }
+        .jux-admin-category-badge {
+            font-size: 0.75em;
+            padding: 0.2em 0.6em;
+            border-radius: 3px;
+            background-color: var(--hoverBackgroundColor, rgba(255, 255, 255, 0.1));
+            color: var(--secondaryTextColor);
+        }
+        .jux-admin-order-buttons {
+            display: flex;
+            gap: 0.25em;
+        }
+        .jux-admin-row {
+            display: flex;
+            gap: 1em;
+            flex-wrap: wrap;
+        }
+        .jux-admin-half {
+            flex: 1 1 8em;
+        }
+    </style>
+
+    <script type="text/javascript">
+    if (typeof JuxHomepageConfig === 'undefined') {
+
+        var JuxHomepageConfig = {
+            PLUGIN_ID: '3adf1f1f-1541-4e47-b9e3-34d2d2968af6',
+            _submitBound: false,
+            state: {
+                config: null,
+                descriptors: [],
+                sortedWidgets: []
+            },
+
+            validateTmdb: function (value) {
+                if (!value || value.trim() === '') { return true; }
+                var v = value.trim();
+                if (/^[a-f0-9]{32}$/i.test(v)) { return true; }
+                if (/^ey[\w-]+\.[\w-]+\.[\w-]+$/.test(v)) { return true; }
+                return false;
+            },
+
+            getDescriptor: function (widgetType) {
+                for (var i = 0; i < this.state.descriptors.length; i++) {
+                    if (this.state.descriptors[i].WidgetType === widgetType) {
+                        return this.state.descriptors[i];
+                    }
+                }
+                return null;
+            },
+
+            escHtml: function (str) {
+                if (!str) { return ''; }
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            },
+
+            renderWidgets: function () {
+                var self = this;
+                var list = document.getElementById('juxWidgetList');
+                var widgets = this.state.sortedWidgets;
+                var html = '';
+
+                if (widgets.length === 0) {
+                    list.innerHTML = '<p class="fieldDescription">No widgets configured.</p>';
+                    return;
+                }
+
+                widgets.forEach(function (w, i) {
+                    var desc = self.getDescriptor(w.WidgetType);
+                    var defaultName = desc ? desc.DisplayName : w.WidgetType;
+                    var category = desc ? desc.Category : '';
+                    var isFirst = i === 0;
+                    var isLast = i === widgets.length - 1;
+                    var customName = w.CustomDisplayName || '';
+
+                    html += '<div class="jux-admin-widget-card" data-index="' + i + '">';
+
+                    html += '<div class="jux-admin-widget-header">';
+                    html += '<label class="emby-checkbox-label jux-admin-enabled-label">';
+                    html += '<input type="checkbox" is="emby-checkbox" class="emby-checkbox jux-admin-enabled"';
+                    html += (w.Enabled ? ' checked' : '') + ' />';
+                    html += '<span class="checkboxLabel">' + self.escHtml(defaultName) + '</span>';
+                    html += '<span class="checkboxOutline">';
+                    html += '<span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>';
+                    html += '<span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>';
+                    html += '</span>';
+                    html += '</label>';
+
+                    if (category) {
+                        html += '<span class="jux-admin-category-badge">' + self.escHtml(category) + '</span>';
+                    }
+
+                    html += '<div class="jux-admin-order-buttons">';
+                    html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-up"';
+                    html += ' data-index="' + i + '"' + (isFirst ? ' disabled' : '') + ' title="Move up">';
+                    html += '<span class="material-icons">arrow_upward</span></button>';
+                    html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-down"';
+                    html += ' data-index="' + i + '"' + (isLast ? ' disabled' : '') + ' title="Move down">';
+                    html += '<span class="material-icons">arrow_downward</span></button>';
+                    html += '</div>';
+
+                    html += '</div>';
+
+                    html += '<div class="inputContainer">';
+                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">Display name</label>';
+                    html += '<input id="widgetName_' + i + '" type="text" is="emby-input" class="emby-input jux-admin-widget-name"';
+                    html += ' placeholder="' + self.escHtml(defaultName) + '"';
+                    html += ' value="' + self.escHtml(customName) + '" />';
+                    html += '<div class="fieldDescription">Leave empty to use the default name.</div>';
+                    html += '</div>';
+
+                    html += '<div class="jux-admin-row">';
+
+                    html += '<div class="inputContainer jux-admin-half">';
+                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetMin_' + i + '">Min items</label>';
+                    html += '<input id="widgetMin_' + i + '" type="number" min="0" is="emby-input" class="emby-input jux-admin-min-items" value="' + w.MinItems + '" />';
+                    html += '<div class="fieldDescription">Section hidden if below this count.</div>';
+                    html += '</div>';
+
+                    html += '<div class="inputContainer jux-admin-half">';
+                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetMax_' + i + '">Max items</label>';
+                    html += '<input id="widgetMax_' + i + '" type="number" min="1" is="emby-input" class="emby-input jux-admin-max-items" value="' + w.MaxItems + '" />';
+                    html += '<div class="fieldDescription">Maximum items fetched per section.</div>';
+                    html += '</div>';
+
+                    html += '</div>';
+
+                    html += '<div class="inputContainer">';
+                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetView_' + i + '">View mode</label>';
+                    html += '<select id="widgetView_' + i + '" is="emby-select" class="emby-select-withcolor emby-select jux-admin-view-mode">';
+                    ['Landscape', 'Portrait', 'Square'].forEach(function (vm) {
+                        html += '<option value="' + vm + '"' + (w.ViewMode === vm ? ' selected' : '') + '>' + vm + '</option>';
+                    });
+                    html += '</select>';
+                    html += '</div>';
+
+                    html += '</div>';
+                });
+
+                list.innerHTML = html;
+
+                var self2 = this;
+
+                list.querySelectorAll('.jux-admin-btn-up').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var idx = parseInt(btn.getAttribute('data-index'), 10);
+                        self2.readDomIntoState();
+                        var tmp = self2.state.sortedWidgets[idx - 1];
+                        self2.state.sortedWidgets[idx - 1] = self2.state.sortedWidgets[idx];
+                        self2.state.sortedWidgets[idx] = tmp;
+                        self2.renderWidgets();
+                    });
+                });
+
+                list.querySelectorAll('.jux-admin-btn-down').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var idx = parseInt(btn.getAttribute('data-index'), 10);
+                        self2.readDomIntoState();
+                        var tmp = self2.state.sortedWidgets[idx + 1];
+                        self2.state.sortedWidgets[idx + 1] = self2.state.sortedWidgets[idx];
+                        self2.state.sortedWidgets[idx] = tmp;
+                        self2.renderWidgets();
+                    });
+                });
+            },
+
+            readDomIntoState: function () {
+                var list = document.getElementById('juxWidgetList');
+                if (!list) { return; }
+                this.state.sortedWidgets.forEach(function (w, i) {
+                    var card = list.querySelector('.jux-admin-widget-card[data-index="' + i + '"]');
+                    if (!card) { return; }
+                    var enabledEl = card.querySelector('.jux-admin-enabled');
+                    var nameEl = card.querySelector('.jux-admin-widget-name');
+                    var minEl = card.querySelector('.jux-admin-min-items');
+                    var maxEl = card.querySelector('.jux-admin-max-items');
+                    var viewEl = card.querySelector('.jux-admin-view-mode');
+                    if (enabledEl) { w.Enabled = enabledEl.checked; }
+                    if (nameEl) { w.CustomDisplayName = nameEl.value.trim() || null; }
+                    if (minEl) { w.MinItems = Math.max(0, parseInt(minEl.value, 10) || 0); }
+                    if (maxEl) { w.MaxItems = Math.max(1, parseInt(maxEl.value, 10) || 1); }
+                    if (viewEl) { w.ViewMode = viewEl.value; }
+                });
+            },
+
+            loadConfig: function () {
+                var self = this;
+                Dashboard.showLoadingMsg();
+                Promise.all([
+                    ApiClient.getPluginConfiguration(self.PLUGIN_ID),
+                    ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Widgets'))
+                ]).then(function (results) {
+                    self.state.config = results[0];
+                    self.state.descriptors = results[1] || [];
+
+                    var warning = self.state.config.StartupWarning;
+                    var banner = document.getElementById('juxWarningBanner');
+                    var warningText = document.getElementById('juxWarningText');
+                    if (warning) {
+                        warningText.textContent = warning;
+                        banner.style.display = '';
+                    } else {
+                        banner.style.display = 'none';
+                    }
+
+                    document.getElementById('chkEnabled').checked = !!self.state.config.Enabled;
+                    document.getElementById('txtTMDb').value = (self.state.config.ApiKeys && self.state.config.ApiKeys.TMDb) || '';
+                    document.getElementById('numSessionTtl').value = (self.state.config.Cache && self.state.config.Cache.SessionTtlMinutes) || 15;
+                    document.getElementById('numTMDbRefresh').value = (self.state.config.Cache && self.state.config.Cache.TMDbRefreshIntervalHours) || 24;
+
+                    self.state.sortedWidgets = (self.state.config.Widgets || []).slice().sort(function (a, b) {
+                        return a.Order - b.Order;
+                    });
+                    self.renderWidgets();
+                    Dashboard.hideLoadingMsg();
+                }).catch(function (err) {
+                    console.error('[JUX Config] Load failed:', err);
+                    Dashboard.hideLoadingMsg();
+                });
+            },
+
+            saveConfig: function (e) {
+                e.preventDefault();
+                var self = JuxHomepageConfig;
+
+                var tmdbVal = document.getElementById('txtTMDb').value.trim();
+                var tmdbError = document.getElementById('juxTmdbError');
+                if (!self.validateTmdb(tmdbVal)) {
+                    tmdbError.style.display = '';
+                    document.getElementById('txtTMDb').focus();
+                    return;
+                }
+                tmdbError.style.display = 'none';
+
+                self.readDomIntoState();
+                Dashboard.showLoadingMsg();
+
+                ApiClient.getPluginConfiguration(self.PLUGIN_ID).then(function (config) {
+                    config.Enabled = document.getElementById('chkEnabled').checked;
+                    if (!config.ApiKeys) { config.ApiKeys = {}; }
+                    config.ApiKeys.TMDb = tmdbVal || null;
+                    if (!config.Cache) { config.Cache = {}; }
+                    config.Cache.SessionTtlMinutes = Math.max(1, parseInt(document.getElementById('numSessionTtl').value, 10) || 15);
+                    config.Cache.TMDbRefreshIntervalHours = Math.max(1, parseInt(document.getElementById('numTMDbRefresh').value, 10) || 24);
+
+                    config.Widgets = self.state.sortedWidgets.map(function (w, i) {
+                        return {
+                            WidgetType: w.WidgetType,
+                            Enabled: w.Enabled,
+                            CustomDisplayName: w.CustomDisplayName || null,
+                            Order: i * 10,
+                            MinItems: Math.max(0, w.MinItems),
+                            MaxItems: Math.max(1, w.MaxItems),
+                            ViewMode: w.ViewMode,
+                            AllowUserOverride: typeof w.AllowUserOverride === 'boolean' ? w.AllowUserOverride : true,
+                            MinInstances: w.MinInstances || 1,
+                            MaxInstances: w.MaxInstances || 1,
+                            ExtraParams: w.ExtraParams || []
+                        };
+                    });
+
+                    return ApiClient.updatePluginConfiguration(self.PLUGIN_ID, config);
+                }).then(function (result) {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.processPluginConfigurationUpdateResult(result);
+                }).catch(function (err) {
+                    console.error('[JUX Config] Save failed:', err);
+                    Dashboard.hideLoadingMsg();
+                });
+            },
+
+            init: function () {
+                var self = this;
+                if (!this._submitBound) {
+                    document.querySelector('.juxConfigForm').addEventListener('submit', function (e) {
+                        self.saveConfig(e);
+                    });
+                    this._submitBound = true;
+                }
+                this.loadConfig();
+            }
+        };
+
+        document.getElementById('juxHomepageConfigPage').addEventListener('pageshow', function () {
+            JuxHomepageConfig.init();
+        });
+    }
+    </script>
+</div>
+</body>
+</html>

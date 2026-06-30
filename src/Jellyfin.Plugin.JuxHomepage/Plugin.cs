@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
+using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 
 namespace Jellyfin.Plugin.JuxHomepage;
@@ -8,7 +9,7 @@ namespace Jellyfin.Plugin.JuxHomepage;
 /// <summary>
 /// JellyUX Homepage plugin entry point.
 /// </summary>
-public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration
+public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, IHasWebPages
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -35,4 +36,50 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration
     /// <inheritdoc/>
     public override string Description =>
         "Replaces and enhances the Jellyfin home screen with configurable widgets.";
+
+    /// <inheritdoc/>
+    public IEnumerable<PluginPageInfo> GetPages()
+    {
+        yield return new PluginPageInfo
+        {
+            Name = Name,
+            EmbeddedResourcePath = $"{GetType().Namespace}.Web.config.html"
+        };
+    }
+
+    /// <inheritdoc/>
+    public override void UpdateConfiguration(MediaBrowser.Model.Plugins.BasePluginConfiguration configuration)
+    {
+        if (configuration is PluginConfiguration config)
+        {
+            // Clamp cache values to valid ranges.
+            if (config.Cache is not null)
+            {
+                config.Cache.SessionTtlMinutes = Math.Max(1, config.Cache.SessionTtlMinutes);
+                config.Cache.TMDbRefreshIntervalHours = Math.Max(1, config.Cache.TMDbRefreshIntervalHours);
+            }
+
+            // Clamp per-widget values and ensure MinItems does not exceed MaxItems.
+            foreach (var widget in config.Widgets)
+            {
+                widget.MinItems = Math.Max(0, widget.MinItems);
+                widget.MaxItems = Math.Max(1, widget.MaxItems);
+                if (widget.MinItems > widget.MaxItems)
+                {
+                    widget.MinItems = widget.MaxItems;
+                }
+            }
+
+            // Trim API keys; empty string becomes null.
+            if (config.ApiKeys is not null)
+            {
+                config.ApiKeys.TMDb = string.IsNullOrWhiteSpace(config.ApiKeys.TMDb)
+                    ? null
+                    : config.ApiKeys.TMDb.Trim();
+            }
+        }
+
+        // Call base last so ConfigurationChanged fires with the clamped values.
+        base.UpdateConfiguration(configuration);
+    }
 }
