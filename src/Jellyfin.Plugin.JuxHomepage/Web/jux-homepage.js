@@ -1,1 +1,298 @@
-// JellyUX Homepage
+'use strict';
+
+// JellyUX Homepage — home screen override.
+// This script is injected into Jellyfin's index.html by the plugin.
+// window.JellyfinAPI is populated by the loadSections splice fragment (jux-loadsections-inject.js)
+// before control reaches window.JUXHomepage.loadSections.
+
+(function () {
+    if (typeof window.JUXHomepage !== 'undefined') {
+        return;
+    }
+
+    window.JUXHomepage = {
+        originalLoadSections: null,
+
+        // Called by the splice fragment to replace Jellyfin's home rendering.
+        loadSections: function (elem, apiClient, user, userSettings, page) {
+            var self = this;
+
+            // Graceful disable on TV layout and native shell clients.
+            if (window.NativeShell || document.body.classList.contains('layout-tv')) {
+                return _fallback(self, elem, apiClient, user, userSettings);
+            }
+
+            if (!_isHomePage()) {
+                return _fallback(self, elem, apiClient, user, userSettings);
+            }
+
+            return _fetchMeta(apiClient).then(function (meta) {
+                if (!meta || !meta.Enabled) {
+                    return _fallback(self, elem, apiClient, user, userSettings);
+                }
+                return _renderHome(self, elem, apiClient, user, userSettings);
+            }).catch(function (err) {
+                console.error('[JUX] meta fetch failed, falling back:', err);
+                return _fallback(self, elem, apiClient, user, userSettings);
+            });
+        }
+    };
+
+    // -------------------------------------------------------------------------
+    // Fallback
+    // -------------------------------------------------------------------------
+
+    function _fallback(self, elem, apiClient, user, userSettings) {
+        if (typeof window.JUXHomepage.originalLoadSections === 'function') {
+            return window.JUXHomepage.originalLoadSections.call(self, elem, apiClient, user, userSettings);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Home-page detection (ported from HSS reference implementation)
+    // -------------------------------------------------------------------------
+
+    function _isHomePage() {
+        var href = (location.href || '').toLowerCase();
+        var hash = (location.hash || '').toLowerCase();
+
+        var isHomeRoute =
+            /(^#?!?\/?)(home)(\.html)?([/?&]|$)/.test(hash) ||
+            hash.indexOf('home.html') !== -1 ||
+            href.indexOf('/web/index.html#!/home') !== -1;
+
+        var isHomeDom =
+            document.querySelector('.sections') !== null &&
+            (
+                document.querySelector('.homePage') !== null ||
+                document.querySelector('.page.homePage') !== null ||
+                document.getElementById('indexPage') !== null ||
+                document.querySelector('[data-pageid="home"]') !== null ||
+                document.querySelector('[data-route="home"]') !== null
+            );
+
+        return !!(isHomeRoute || isHomeDom);
+    }
+
+    // -------------------------------------------------------------------------
+    // Meta check
+    // -------------------------------------------------------------------------
+
+    function _fetchMeta(apiClient) {
+        return apiClient.getJSON(apiClient.getUrl('JuxHomepage/meta'));
+    }
+
+    // -------------------------------------------------------------------------
+    // Home rendering
+    // -------------------------------------------------------------------------
+
+    function _renderHome(self, elem, apiClient, user, userSettings) {
+        var userId = apiClient.getCurrentUserId();
+
+        if (!elem.classList.contains('jux-homepage-active')) {
+            elem.innerHTML = '';
+            elem.classList.add('homeSectionsContainer', 'jux-homepage-active');
+            _setupLazyLoader(elem, apiClient, userId, userSettings);
+        }
+
+        return _loadPage(elem, apiClient, userId, userSettings, 0);
+    }
+
+    function _loadPage(elem, apiClient, userId, userSettings, page) {
+        return apiClient.getJSON(
+            apiClient.getUrl('JuxHomepage/Sections', { userId: userId, page: page })
+        ).then(function (descriptors) {
+            if (!descriptors || descriptors.length === 0) {
+                return;
+            }
+
+            var tasks = descriptors.map(function (descriptor) {
+                return _buildSection(elem, apiClient, userId, userSettings, descriptor);
+            });
+
+            return Promise.all(tasks).then(function () {
+                // Trigger native lazy fetch on all new itemsContainers
+                var containers = elem.querySelectorAll('.jux-items-container:not([data-jux-loaded])');
+                Array.prototype.forEach.call(containers, function (c) {
+                    c.setAttribute('data-jux-loaded', '1');
+                    if (typeof c.resume === 'function') {
+                        c.resume({ refresh: true });
+                    }
+                });
+            });
+        }).catch(function (err) {
+            console.error('[JUX] Sections fetch failed (page ' + page + '):', err);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Section DOM building
+    // -------------------------------------------------------------------------
+
+    function _buildSection(elem, apiClient, userId, userSettings, descriptor) {
+        var api = window.JellyfinAPI;
+        var sectionEl = document.createElement('div');
+        sectionEl.className =
+            'verticalSection jux-widget-section jux-widget-' +
+            descriptor.WidgetType.replace(/\./g, '-');
+        sectionEl.style.order = String(descriptor.Order);
+
+        // Title block
+        var titleContainer = document.createElement('div');
+        titleContainer.className = 'sectionTitleContainer sectionTitleContainer-cards padded-left';
+
+        if (descriptor.Route && api && !api.layoutManager.tv) {
+            var route = api.appRouter.getRouteUrl(descriptor.Route, { serverId: apiClient.serverId() });
+            titleContainer.innerHTML =
+                '<a is="emby-linkbutton" href="' + _escHtml(route) + '" ' +
+                'class="button-flat button-flat-mini sectionTitleTextButton">' +
+                '<h2 class="sectionTitle sectionTitle-cards jux-section-title">' +
+                _escHtml(descriptor.DisplayName) + '</h2>' +
+                '<span class="material-icons chevron_right" aria-hidden="true"></span>' +
+                '</a>';
+        } else {
+            titleContainer.innerHTML =
+                '<h2 class="sectionTitle sectionTitle-cards jux-section-title">' +
+                _escHtml(descriptor.DisplayName) + '</h2>';
+        }
+
+        sectionEl.appendChild(titleContainer);
+
+        // Scroller + items container
+        var scroller = document.createElement('div');
+        scroller.setAttribute('is', 'emby-scroller');
+        scroller.className = 'padded-top-focusscale padded-bottom-focusscale';
+        scroller.setAttribute('data-centerfocus', 'true');
+
+        var itemsContainer = document.createElement('div');
+        itemsContainer.setAttribute('is', 'emby-itemscontainer');
+        itemsContainer.className =
+            'itemsContainer scrollSlider focuscontainer-x jux-items-container';
+        itemsContainer.setAttribute('data-monitor', 'videoplayback,markplayed');
+
+        // Attach native fetch + render hooks
+        var shapeFn = _getShapeFn(descriptor.ViewMode);
+        var useEpisodeImages = userSettings && typeof userSettings.useEpisodeImagesInNextUpAndResume === 'function'
+            ? userSettings.useEpisodeImagesInNextUpAndResume()
+            : false;
+
+        itemsContainer.fetchData = _makeFetchData(apiClient, userId, descriptor);
+        itemsContainer.getItemsHtml = _makeGetItemsHtml(descriptor, shapeFn, useEpisodeImages);
+        itemsContainer.parentContainer = sectionEl;
+
+        scroller.appendChild(itemsContainer);
+        sectionEl.appendChild(scroller);
+        elem.appendChild(sectionEl);
+
+        return Promise.resolve();
+    }
+
+    function _getShapeFn(viewMode) {
+        var api = window.JellyfinAPI;
+        if (!api) {
+            return function (overflow) {
+                return overflow ? 'overflowBackdropCard' : 'backdropCard';
+            };
+        }
+        if (viewMode === 'Portrait') { return api.getPortraitShape; }
+        if (viewMode === 'Square') { return api.getSquareShape; }
+        return api.getBackdropShape;
+    }
+
+    function _makeFetchData(apiClient, userId, descriptor) {
+        return function () {
+            return apiClient.getJSON(
+                apiClient.getUrl('JuxHomepage/Section/' + descriptor.WidgetType, {
+                    userId: userId,
+                    additionalData: descriptor.AdditionalData || undefined,
+                    startIndex: 0,
+                    limit: 20
+                })
+            );
+        };
+    }
+
+    function _makeGetItemsHtml(descriptor, shapeFn, useEpisodeImages) {
+        return function (items) {
+            var api = window.JellyfinAPI;
+            if (!api || !api.cardBuilder) { return ''; }
+            return api.cardBuilder.getCardsHtml({
+                items: items,
+                shape: shapeFn(true),
+                preferThumb: descriptor.ViewMode === 'Portrait' ? null : 'auto',
+                inheritThumb: !useEpisodeImages,
+                overlayText: false,
+                showTitle: true,
+                showParentTitle: true,
+                lazy: true,
+                overlayPlayButton: true,
+                context: 'home',
+                centerText: true,
+                allowBottomPadding: false,
+                cardLayout: false,
+                showYear: true,
+                lines: 2
+            });
+        };
+    }
+
+    // -------------------------------------------------------------------------
+    // Lazy loading via IntersectionObserver
+    // -------------------------------------------------------------------------
+
+    function _setupLazyLoader(elem, apiClient, userId, userSettings) {
+        if (typeof IntersectionObserver === 'undefined') {
+            return;
+        }
+
+        var currentPage = 0;
+        var loading = false;
+        var finished = false;
+
+        var sentinel = document.createElement('div');
+        sentinel.className = 'jux-lazy-sentinel';
+        sentinel.style.height = '1px';
+        elem.appendChild(sentinel);
+
+        var observer = new IntersectionObserver(function (entries) {
+            if (finished || loading || !entries[0].isIntersecting) { return; }
+            loading = true;
+            currentPage++;
+
+            _loadPage(elem, apiClient, userId, userSettings, currentPage).then(function () {
+                elem.appendChild(sentinel);
+                loading = false;
+
+                // If the page returned no new sections, stop observing
+                var newSections = elem.querySelectorAll(
+                    '.jux-widget-section:not([data-jux-page])'
+                );
+                if (newSections.length === 0) {
+                    finished = true;
+                    observer.disconnect();
+                } else {
+                    Array.prototype.forEach.call(newSections, function (s) {
+                        s.setAttribute('data-jux-page', String(currentPage));
+                    });
+                }
+            }).catch(function () {
+                loading = false;
+            });
+        }, { rootMargin: '200px' });
+
+        observer.observe(sentinel);
+    }
+
+    // -------------------------------------------------------------------------
+    // Utilities
+    // -------------------------------------------------------------------------
+
+    function _escHtml(str) {
+        if (!str) { return ''; }
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+})();
