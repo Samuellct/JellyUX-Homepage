@@ -163,40 +163,6 @@ public class JuxHomepageController : ControllerBase
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Returns the current global plugin configuration.
-    /// </summary>
-    /// <returns>The plugin configuration.</returns>
-    [HttpGet("Configuration")]
-    [Authorize(Roles = "Administrator")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<PluginConfiguration> GetConfiguration()
-    {
-        var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
-        return Ok(config);
-    }
-
-    /// <summary>
-    /// Replaces the global plugin configuration.
-    /// Changes take effect immediately and are persisted to disk.
-    /// </summary>
-    /// <param name="config">The new configuration.</param>
-    /// <returns>No content on success.</returns>
-    [HttpPost("Configuration")]
-    [Authorize(Roles = "Administrator")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult UpdateConfiguration([FromBody] PluginConfiguration config)
-    {
-        if (Plugin.Instance is null)
-        {
-            return BadRequest("Plugin instance is not available.");
-        }
-
-        Plugin.Instance.UpdateConfiguration(config);
-        return NoContent();
-    }
-
-    /// <summary>
     /// Returns descriptors for all registered widget types.
     /// Used by the admin UI to display available widgets and their capabilities.
     /// </summary>
