@@ -6,15 +6,6 @@
  * The following variables are intentionally never redefined: --accent, --dark, --darkest.
  */
 
-/* Section title: matches Jellyfin's native sectionTitle-cards style but allows
-   minor spacing adjustments scoped to JUX sections only. */
-.jux-widget-section .jux-section-title {
-    color: var(--primaryTextColor);
-    font-size: 1em;
-    font-weight: 500;
-    margin: 0;
-}
-
 /* Items container inside a JUX section — no visual override, purely a targeting anchor. */
 .jux-items-container {
     /* Inherits all layout from Jellyfin's native .itemsContainer / .scrollSlider rules. */
