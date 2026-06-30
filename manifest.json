@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.6.1.0",
+                "changelog": "### Bug Fixes\n\n* remove is=emby-checkbox to prevent htmlFor error in webcomponents polyfill ([199844a](https://github.com/Samuellct/JellyUX-Homepage/commit/199844a9bc584d7ecd4624acfa7ca3e2b01a69c0))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.6.1/jellyux-homepage_0.6.1.0.zip",
+                "checksum": "66cb3eb31c513e0e045811a33bab4606",
+                "timestamp": "2026-06-30T21:51:05Z"
+            },
+            {
                 "version": "0.6.0.0",
                 "changelog": "### Features\n\n* add admin configuration page with widget management UI ([754b793](https://github.com/Samuellct/JellyUX-Homepage/commit/754b793708611b236a27a38a578b2ecaecdca9da))\n* invalidate session cache when configuration changes ([46df34e](https://github.com/Samuellct/JellyUX-Homepage/commit/46df34e31dc5dd46468dd287f3b4900278d2d7ba))",
                 "targetAbi": "10.11.0.0",

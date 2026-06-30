@@ -1,3 +1,9 @@
+## [0.6.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.6.0...v0.6.1) (2026-06-30)
+
+### Bug Fixes
+
+* remove is=emby-checkbox to prevent htmlFor error in webcomponents polyfill ([199844a](https://github.com/Samuellct/JellyUX-Homepage/commit/199844a9bc584d7ecd4624acfa7ca3e2b01a69c0))
+
 ## [0.6.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.5.1...v0.6.0) (2026-06-30)
 
 ### Features
