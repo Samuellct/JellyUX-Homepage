@@ -1,3 +1,10 @@
+## [0.6.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.5.1...v0.6.0) (2026-06-30)
+
+### Features
+
+* add admin configuration page with widget management UI ([754b793](https://github.com/Samuellct/JellyUX-Homepage/commit/754b793708611b236a27a38a578b2ecaecdca9da))
+* invalidate session cache when configuration changes ([46df34e](https://github.com/Samuellct/JellyUX-Homepage/commit/46df34e31dc5dd46468dd287f3b4900278d2d7ba))
+
 ## [0.5.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.5.0...v0.5.1) (2026-06-30)
 
 ### Bug Fixes

@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.6.0.0",
+                "changelog": "### Features\n\n* add admin configuration page with widget management UI ([754b793](https://github.com/Samuellct/JellyUX-Homepage/commit/754b793708611b236a27a38a578b2ecaecdca9da))\n* invalidate session cache when configuration changes ([46df34e](https://github.com/Samuellct/JellyUX-Homepage/commit/46df34e31dc5dd46468dd287f3b4900278d2d7ba))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.6.0/jellyux-homepage_0.6.0.0.zip",
+                "checksum": "c628dd341c088f90461ed6d30fe44b5e",
+                "timestamp": "2026-06-30T21:14:34Z"
+            },
+            {
                 "version": "0.5.1.0",
                 "changelog": "### Bug Fixes\n\n* resolve broken see-all links for recently-added sections ([5e6ec17](https://github.com/Samuellct/JellyUX-Homepage/commit/5e6ec173d26edc4ea3c60dad92f33b1b21da7a11))",
                 "targetAbi": "10.11.0.0",
