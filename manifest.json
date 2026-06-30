@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.5.0.0",
+                "changelog": "### Features\n\n* add client detection and JellyfinAPI global attachment ([cad02fc](https://github.com/Samuellct/JellyUX-Homepage/commit/cad02fcf622af8f27582f0d9db194093c7a37894))\n* implement loadSections override with API-driven widget rendering ([961fda5](https://github.com/Samuellct/JellyUX-Homepage/commit/961fda53431e5d3e2bfcce416b5c5c0e87e2bbb4))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.5.0/jellyux-homepage_0.5.0.0.zip",
+                "checksum": "ad5504f5bfe748d99f6afc1e08e9cd0c",
+                "timestamp": "2026-06-30T15:42:47Z"
+            },
+            {
                 "version": "0.4.0.0",
                 "changelog": "### Features\n\n* add ContinueWatchingWidget ([fd73acd](https://github.com/Samuellct/JellyUX-Homepage/commit/fd73acd6a8591dce3fb7f6e5c957efbd68833bc5))\n* add MyMediaWidget ([04626ed](https://github.com/Samuellct/JellyUX-Homepage/commit/04626ed3e80580057a0107c5a58b7d7ffa170a0b))\n* add NativeWidgetBase shared base class for native widgets ([68a41e4](https://github.com/Samuellct/JellyUX-Homepage/commit/68a41e4a4c8d45a19bd5db3c10f4944ebe9b51b4))\n* add NextUpWidget ([3db6221](https://github.com/Samuellct/JellyUX-Homepage/commit/3db6221af8dc2fdab4a81ba4c84da364adb19576))\n* add RecentlyAddedMoviesWidget and RecentlyAddedShowsWidget ([2f3bd63](https://github.com/Samuellct/JellyUX-Homepage/commit/2f3bd63833a2f9cf854cb158dfdcc12c105e3140))\n* register native widgets with default configuration ([594df9f](https://github.com/Samuellct/JellyUX-Homepage/commit/594df9fecb6a81bb7a8ce53cf13490569b561996))",
                 "targetAbi": "10.11.0.0",

@@ -1,3 +1,10 @@
+## [0.5.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.4.0...v0.5.0) (2026-06-30)
+
+### Features
+
+* add client detection and JellyfinAPI global attachment ([cad02fc](https://github.com/Samuellct/JellyUX-Homepage/commit/cad02fcf622af8f27582f0d9db194093c7a37894))
+* implement loadSections override with API-driven widget rendering ([961fda5](https://github.com/Samuellct/JellyUX-Homepage/commit/961fda53431e5d3e2bfcce416b5c5c0e87e2bbb4))
+
 ## [0.4.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.3.1...v0.4.0) (2026-06-29)
 
 ### Features
