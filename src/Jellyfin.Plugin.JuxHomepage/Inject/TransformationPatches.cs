@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.RegularExpressions;
 using Jellyfin.Plugin.JuxHomepage.Models;
 using Microsoft.Extensions.Logging;
 
@@ -9,6 +11,21 @@ namespace Jellyfin.Plugin.JuxHomepage.Inject;
 /// </summary>
 public static class TransformationPatches
 {
+    // Minified variable names in the Jellyfin 10.11.10 home chunk (56213.*.chunk.js).
+    // Verified by extracting the web bundle from jellyfin/jellyfin:10.11.10 and inspecting
+    // the module-level var declarations around ",loadSections:".
+    // Update these constants when targeting a new Jellyfin web release.
+    private const string HookCardBuilder = "u";    // u.default  = cardBuilder
+    private const string HookLayoutManager = "n";  // n.A        = layoutManager
+    private const string HookShapes = "y";         // y.UI / y.xK / y.zP = backdrop / portrait / square
+    private const string HookAppRouter = "p";      // p.appRouter = appRouter
+    private const string HookGlobalize = "s";      // s.Ay       = globalize
+
+    private static readonly Regex LastVarRegex =
+        new Regex(@"var\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=", RegexOptions.Compiled);
+
+    private const string InjectResourceSuffix = "Web.jux-loadsections-inject.js";
+
     /// <summary>
     /// Injects the JellyUX CSS link and JS script tags into Jellyfin's index.html.
     /// Called by FileTransformation via reflection — must remain public and static.
@@ -29,9 +46,62 @@ public static class TransformationPatches
     }
 
     /// <summary>
+    /// Patches the Jellyfin home chunk.js to override loadSections with JUX rendering.
+    /// Splices the embedded inject fragment at the ",loadSections:" site, capturing the
+    /// minified in-scope modules into window.JellyfinAPI and delegating to window.JUXHomepage.
+    /// Called by FileTransformation via reflection — must remain public and static.
+    /// </summary>
+    /// <param name="content">Payload containing the raw chunk.js contents.</param>
+    /// <returns>Transformed JS with loadSections overridden.</returns>
+    public static string PatchLoadSections(PatchRequestPayload content)
+    {
+        var raw = content.Contents ?? string.Empty;
+
+        if (!raw.Contains(",loadSections:", StringComparison.Ordinal))
+        {
+            return raw;
+        }
+
+        var parts = raw.Split(",loadSections:", StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2)
+        {
+            return raw;
+        }
+
+        // The module self-reference (this) resolves to the last var X= before ,loadSections:
+        var matches = LastVarRegex.Matches(parts[0]);
+        if (matches.Count == 0)
+        {
+            return raw;
+        }
+
+        var thisHook = matches[^1].Groups[1].Value.Trim();
+
+        var fragmentStream = Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream(
+                Assembly.GetExecutingAssembly().GetManifestResourceNames()
+                    .FirstOrDefault(n => n.EndsWith(InjectResourceSuffix, StringComparison.OrdinalIgnoreCase))
+                ?? string.Empty);
+
+        if (fragmentStream is null)
+        {
+            return raw;
+        }
+
+        using var reader = new StreamReader(fragmentStream);
+        var fragment = reader.ReadToEnd()
+            .Replace("{{cardbuilder}}", HookCardBuilder, StringComparison.Ordinal)
+            .Replace("{{layoutmanager}}", HookLayoutManager, StringComparison.Ordinal)
+            .Replace("{{shapes}}", HookShapes, StringComparison.Ordinal)
+            .Replace("{{approuter}}", HookAppRouter, StringComparison.Ordinal)
+            .Replace("{{globalize}}", HookGlobalize, StringComparison.Ordinal)
+            .Replace("{{this_hook}}", thisHook, StringComparison.Ordinal);
+
+        return raw.Replace(",loadSections:", $",loadSections:{fragment},originalLoadSections:", StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Scans the web path for the minified chunk.js that defines Jellyfin's loadSections.
-    /// Phase 2: detection and logging only. The actual transformation is registered in Phase 5
-    /// once the JUX render function and window.JellyfinAPI exist.
     /// </summary>
     /// <param name="webPath">Path to the Jellyfin web directory.</param>
     /// <param name="logger">Logger for reporting results.</param>
@@ -72,7 +142,7 @@ public static class TransformationPatches
             foreach (var match in matches)
             {
                 logger.LogInformation(
-                    "Found loadSections chunk: {FileName} (patch will be registered in Phase 5).",
+                    "Found loadSections chunk: {FileName}.",
                     Path.GetFileName(match));
             }
         }

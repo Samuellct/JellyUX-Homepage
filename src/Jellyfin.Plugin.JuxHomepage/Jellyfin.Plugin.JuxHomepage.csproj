@@ -17,6 +17,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Web\jux-homepage.js" />
     <EmbeddedResource Include="Web\jux-homepage.css" />
+    <EmbeddedResource Include="Web\jux-loadsections-inject.js" />
   </ItemGroup>
 
   <ItemGroup>

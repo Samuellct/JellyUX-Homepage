@@ -81,7 +81,7 @@ public class StartupService : IScheduledTask
 
         progress.Report(60);
 
-        TransformationPatches.FindLoadSectionsChunks(_applicationPaths.WebPath, _logger);
+        RegisterLoadSectionsTransformations();
 
         progress.Report(100);
         await Task.CompletedTask.ConfigureAwait(false);
@@ -128,5 +128,43 @@ public class StartupService : IScheduledTask
 
         _detector.RegisterTransformation(payload);
         _logger.LogInformation("Registered index.html transformation for JellyUX Homepage.");
+    }
+
+    private void RegisterLoadSectionsTransformations()
+    {
+        var chunks = TransformationPatches.FindLoadSectionsChunks(_applicationPaths.WebPath, _logger);
+
+        if (chunks.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var chunkPath in chunks)
+        {
+            var fileName = Path.GetFileName(chunkPath);
+
+            // Build a regex pattern that matches the same chunk regardless of content-hash
+            // e.g. "56213.a6cde3c8ba80d7030952.chunk.js" -> "56213\.[^.]+\.chunk\.js"
+            var nameParts = fileName.Split('.');
+            var prefix = nameParts.Length >= 3 ? nameParts[0] : fileName;
+            var fileNamePattern = $"{prefix}\\.[^.]+\\.chunk\\.js";
+
+            var chunkId = Guid.NewGuid();
+            var payload = new JObject
+            {
+                ["id"] = chunkId.ToString(),
+                ["fileNamePattern"] = fileNamePattern,
+                ["callbackAssembly"] = GetType().Assembly.FullName,
+                ["callbackClass"] = typeof(TransformationPatches).FullName,
+                ["callbackMethod"] = nameof(TransformationPatches.PatchLoadSections)
+            };
+
+            _detector.RegisterTransformation(payload);
+            _logger.LogInformation(
+                "Registered loadSections chunk transformation for {FileName} (pattern: {Pattern}, id: {Id}).",
+                fileName,
+                fileNamePattern,
+                chunkId);
+        }
     }
 }
