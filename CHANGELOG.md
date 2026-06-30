@@ -1,3 +1,9 @@
+## [0.6.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.6.1...v0.6.2) (2026-06-30)
+
+### Bug Fixes
+
+* strip remaining is=emby-* attributes to silence webcomponents polyfill errors ([76c18d3](https://github.com/Samuellct/JellyUX-Homepage/commit/76c18d39bf9b7e642a6df4ac5fddfbd38d24291b))
+
 ## [0.6.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.6.0...v0.6.1) (2026-06-30)
 
 ### Bug Fixes
