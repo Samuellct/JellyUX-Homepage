@@ -62,6 +62,24 @@
                 <h3 class="sectionTitle">Widgets</h3>
                 <p class="fieldDescription">Use the arrows to change the display order. Changes take effect after saving.</p>
                 <div id="juxWidgetList"></div>
+
+                <div class="jux-admin-add-section">
+                    <h4 class="sectionTitle" style="margin-top: 1.5em;">Add a section</h4>
+                    <div class="jux-admin-row" style="align-items: flex-end;">
+                        <div class="inputContainer jux-admin-half">
+                            <label class="inputLabel inputLabelUnfocused" for="juxAddWidgetType">Section type</label>
+                            <select id="juxAddWidgetType" class="emby-select-withcolor emby-select">
+                                <option value="">-- choose a type --</option>
+                            </select>
+                        </div>
+                        <div class="jux-admin-half" style="padding-bottom: 0.5em;">
+                            <button type="button" id="juxBtnAddWidget" class="emby-button raised">
+                                <span>Add</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="juxAddWidgetError" class="fieldDescription jux-admin-field-error" style="display: none;">Please choose a section type before adding.</div>
+                </div>
             </div>
 
             <div class="verticalSection">
@@ -119,6 +137,19 @@
         .jux-admin-half {
             flex: 1 1 8em;
         }
+        .jux-admin-btn-remove {
+            color: var(--error-color, #e5350b);
+            margin-left: auto;
+        }
+        .jux-admin-value-error {
+            color: var(--error-color, #e5350b);
+            font-size: 0.85em;
+        }
+        .jux-admin-add-section {
+            margin-top: 0.5em;
+            padding-top: 0.75em;
+            border-top: 1px solid var(--borderColor, rgba(255, 255, 255, 0.1));
+        }
     </style>
 
     <script type="text/javascript">
@@ -127,10 +158,14 @@
         var JuxHomepageConfig = {
             PLUGIN_ID: '3adf1f1f-1541-4e47-b9e3-34d2d2968af6',
             _submitBound: false,
+            // Cache of available values per widgetType, loaded on demand.
+            _valuesCache: {},
             state: {
                 config: null,
                 descriptors: [],
-                sortedWidgets: []
+                sortedWidgets: [],
+                // Map of widgetType -> { Value: label } for collection-type widgets (Value != Label).
+                valueLabelMap: {}
             },
 
             validateTmdb: function (value) {
@@ -139,6 +174,13 @@
                 if (/^[a-f0-9]{32}$/i.test(v)) { return true; }
                 if (/^ey[\w-]+\.[\w-]+\.[\w-]+$/.test(v)) { return true; }
                 return false;
+            },
+
+            isAdmin: function (widgetType) {
+                var desc = this.getDescriptor(widgetType);
+                // Category is serialized as an integer: 0=Native, 1=Admin, 2=Personalized, 3=Connected
+                // Accept both numeric 1 and string "Admin" to be safe.
+                return desc && (desc.Category === 1 || desc.Category === 'Admin');
             },
 
             getDescriptor: function (widgetType) {
@@ -159,112 +201,211 @@
                     .replace(/"/g, '&quot;');
             },
 
+            // Resolve the ExtraParams["value"] entry for a widget config row.
+            getExtraValue: function (w) {
+                if (!w.ExtraParams || !w.ExtraParams.length) { return ''; }
+                for (var j = 0; j < w.ExtraParams.length; j++) {
+                    if (w.ExtraParams[j].Key === 'value') { return w.ExtraParams[j].Value || ''; }
+                }
+                return '';
+            },
+
+            // Look up the Label for a Value from the loaded values cache.
+            getLabelForValue: function (widgetType, value) {
+                var vals = this._valuesCache[widgetType];
+                if (!vals) { return value; }
+                for (var k = 0; k < vals.length; k++) {
+                    if (vals[k].Value === value) { return vals[k].Label; }
+                }
+                return value;
+            },
+
+            // Look up the Value for a Label from the loaded values cache (reverse map, for collections).
+            getValueForLabel: function (widgetType, label) {
+                var vals = this._valuesCache[widgetType];
+                if (!vals) { return label; }
+                for (var k = 0; k < vals.length; k++) {
+                    if (vals[k].Label === label) { return vals[k].Value; }
+                }
+                return label; // fallback: treat label as value (for non-collection types)
+            },
+
+            // Fetch available values for a widget type and cache them.
+            fetchValues: function (widgetType, userId) {
+                var self = this;
+                if (self._valuesCache[widgetType]) {
+                    return Promise.resolve(self._valuesCache[widgetType]);
+                }
+                var url = ApiClient.getUrl('JuxHomepage/Widget/' + encodeURIComponent(widgetType) + '/values', { userId: userId });
+                return ApiClient.getJSON(url).then(function (vals) {
+                    self._valuesCache[widgetType] = vals || [];
+                    return self._valuesCache[widgetType];
+                }).catch(function () {
+                    self._valuesCache[widgetType] = [];
+                    return [];
+                });
+            },
+
+            // Populate all datalists for admin cards from the cache.
+            populateDatalist: function (widgetType, datalistId) {
+                var vals = this._valuesCache[widgetType] || [];
+                var dl = document.getElementById(datalistId);
+                if (!dl) { return; }
+                var html = '';
+                for (var i = 0; i < vals.length; i++) {
+                    html += '<option value="' + this.escHtml(vals[i].Label) + '"></option>';
+                }
+                dl.innerHTML = html;
+            },
+
             renderWidgets: function () {
                 var self = this;
                 var list = document.getElementById('juxWidgetList');
                 var widgets = this.state.sortedWidgets;
                 var html = '';
+                var userId = ApiClient.getCurrentUserId ? ApiClient.getCurrentUserId() : '';
+                var adminTypes = [];
 
                 if (widgets.length === 0) {
                     list.innerHTML = '<p class="fieldDescription">No widgets configured.</p>';
-                    return;
-                }
+                } else {
+                    widgets.forEach(function (w, i) {
+                        var desc = self.getDescriptor(w.WidgetType);
+                        var defaultName = desc ? desc.DisplayName : w.WidgetType;
+                        var category = desc ? desc.Category : '';
+                        var isFirst = i === 0;
+                        var isLast = i === widgets.length - 1;
+                        var customName = w.CustomDisplayName || '';
+                        var isAdm = self.isAdmin(w.WidgetType);
+                        var currentValue = self.getExtraValue(w);
+                        var currentLabel = currentValue ? self.getLabelForValue(w.WidgetType, currentValue) : '';
 
-                widgets.forEach(function (w, i) {
-                    var desc = self.getDescriptor(w.WidgetType);
-                    var defaultName = desc ? desc.DisplayName : w.WidgetType;
-                    var category = desc ? desc.Category : '';
-                    var isFirst = i === 0;
-                    var isLast = i === widgets.length - 1;
-                    var customName = w.CustomDisplayName || '';
+                        html += '<div class="jux-admin-widget-card" data-index="' + i + '" data-is-admin="' + (isAdm ? '1' : '0') + '">';
 
-                    html += '<div class="jux-admin-widget-card" data-index="' + i + '">';
+                        html += '<div class="jux-admin-widget-header">';
+                        html += '<label class="emby-checkbox-label jux-admin-enabled-label">';
+                        html += '<input type="checkbox" id="widgetEnabled_' + i + '" class="emby-checkbox jux-admin-enabled"';
+                        html += (w.Enabled ? ' checked' : '') + ' />';
+                        html += '<span class="checkboxLabel">' + self.escHtml(defaultName) + '</span>';
+                        html += '<span class="checkboxOutline">';
+                        html += '<span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>';
+                        html += '<span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>';
+                        html += '</span>';
+                        html += '</label>';
 
-                    html += '<div class="jux-admin-widget-header">';
-                    html += '<label class="emby-checkbox-label jux-admin-enabled-label">';
-                    html += '<input type="checkbox" id="widgetEnabled_' + i + '" class="emby-checkbox jux-admin-enabled"';
-                    html += (w.Enabled ? ' checked' : '') + ' />';
-                    html += '<span class="checkboxLabel">' + self.escHtml(defaultName) + '</span>';
-                    html += '<span class="checkboxOutline">';
-                    html += '<span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>';
-                    html += '<span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>';
-                    html += '</span>';
-                    html += '</label>';
+                        if (category !== undefined && category !== null && category !== '') {
+                            var catLabel = category === 1 ? 'Admin' : (category === 0 ? 'Native' : String(category));
+                            html += '<span class="jux-admin-category-badge">' + self.escHtml(catLabel) + '</span>';
+                        }
 
-                    if (category) {
-                        html += '<span class="jux-admin-category-badge">' + self.escHtml(category) + '</span>';
-                    }
+                        html += '<div class="jux-admin-order-buttons">';
+                        html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-up"';
+                        html += ' data-index="' + i + '"' + (isFirst ? ' disabled' : '') + ' title="Move up">';
+                        html += '<span class="material-icons">arrow_upward</span></button>';
+                        html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-down"';
+                        html += ' data-index="' + i + '"' + (isLast ? ' disabled' : '') + ' title="Move down">';
+                        html += '<span class="material-icons">arrow_downward</span></button>';
+                        if (isAdm) {
+                            html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-remove"';
+                            html += ' data-index="' + i + '" title="Remove section">';
+                            html += '<span class="material-icons">delete</span></button>';
+                        }
+                        html += '</div>';
 
-                    html += '<div class="jux-admin-order-buttons">';
-                    html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-up"';
-                    html += ' data-index="' + i + '"' + (isFirst ? ' disabled' : '') + ' title="Move up">';
-                    html += '<span class="material-icons">arrow_upward</span></button>';
-                    html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-down"';
-                    html += ' data-index="' + i + '"' + (isLast ? ' disabled' : '') + ' title="Move down">';
-                    html += '<span class="material-icons">arrow_downward</span></button>';
-                    html += '</div>';
+                        html += '</div>';
 
-                    html += '</div>';
+                        // Admin-only: value picker with datalist autocomplete.
+                        if (isAdm) {
+                            var datalistId = 'juxVals_' + i;
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetValue_' + i + '">Value</label>';
+                            html += '<input id="widgetValue_' + i + '" type="text" list="' + datalistId + '"';
+                            html += ' class="emby-input jux-admin-widget-value"';
+                            html += ' placeholder="Start typing to search..."';
+                            html += ' value="' + self.escHtml(currentLabel || currentValue) + '" />';
+                            html += '<datalist id="' + datalistId + '"></datalist>';
+                            html += '<div class="fieldDescription jux-admin-value-error" style="display:none;" id="juxValError_' + i + '">A value is required for this section.</div>';
+                            html += '</div>';
+                        }
 
-                    html += '<div class="inputContainer">';
-                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">Display name</label>';
-                    html += '<input id="widgetName_' + i + '" type="text" class="emby-input jux-admin-widget-name"';
-                    html += ' placeholder="' + self.escHtml(defaultName) + '"';
-                    html += ' value="' + self.escHtml(customName) + '" />';
-                    html += '<div class="fieldDescription">Leave empty to use the default name.</div>';
-                    html += '</div>';
+                        html += '<div class="inputContainer">';
+                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">Display name</label>';
+                        html += '<input id="widgetName_' + i + '" type="text" class="emby-input jux-admin-widget-name"';
+                        html += ' placeholder="' + self.escHtml(defaultName) + '"';
+                        html += ' value="' + self.escHtml(customName) + '" />';
+                        html += '<div class="fieldDescription">Leave empty to use the default name.</div>';
+                        html += '</div>';
 
-                    html += '<div class="jux-admin-row">';
+                        html += '<div class="jux-admin-row">';
 
-                    html += '<div class="inputContainer jux-admin-half">';
-                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetMin_' + i + '">Min items</label>';
-                    html += '<input id="widgetMin_' + i + '" type="number" min="0" class="emby-input jux-admin-min-items" value="' + w.MinItems + '" />';
-                    html += '<div class="fieldDescription">Section hidden if below this count.</div>';
-                    html += '</div>';
+                        html += '<div class="inputContainer jux-admin-half">';
+                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetMin_' + i + '">Min items</label>';
+                        html += '<input id="widgetMin_' + i + '" type="number" min="0" class="emby-input jux-admin-min-items" value="' + w.MinItems + '" />';
+                        html += '<div class="fieldDescription">Section hidden if below this count.</div>';
+                        html += '</div>';
 
-                    html += '<div class="inputContainer jux-admin-half">';
-                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetMax_' + i + '">Max items</label>';
-                    html += '<input id="widgetMax_' + i + '" type="number" min="1" class="emby-input jux-admin-max-items" value="' + w.MaxItems + '" />';
-                    html += '<div class="fieldDescription">Maximum items fetched per section.</div>';
-                    html += '</div>';
+                        html += '<div class="inputContainer jux-admin-half">';
+                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetMax_' + i + '">Max items</label>';
+                        html += '<input id="widgetMax_' + i + '" type="number" min="1" class="emby-input jux-admin-max-items" value="' + w.MaxItems + '" />';
+                        html += '<div class="fieldDescription">Maximum items fetched per section.</div>';
+                        html += '</div>';
 
-                    html += '</div>';
+                        html += '</div>';
 
-                    html += '<div class="inputContainer">';
-                    html += '<label class="inputLabel inputLabelUnfocused" for="widgetView_' + i + '">View mode</label>';
-                    html += '<select id="widgetView_' + i + '" class="emby-select-withcolor emby-select jux-admin-view-mode">';
-                    ['Landscape', 'Portrait', 'Square'].forEach(function (vm) {
-                        html += '<option value="' + vm + '"' + (w.ViewMode === vm ? ' selected' : '') + '>' + vm + '</option>';
+                        html += '<div class="inputContainer">';
+                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetView_' + i + '">View mode</label>';
+                        html += '<select id="widgetView_' + i + '" class="emby-select-withcolor emby-select jux-admin-view-mode">';
+                        ['Landscape', 'Portrait', 'Square'].forEach(function (vm) {
+                            html += '<option value="' + vm + '"' + (w.ViewMode === vm ? ' selected' : '') + '>' + vm + '</option>';
+                        });
+                        html += '</select>';
+                        html += '</div>';
+
+                        html += '</div>';
                     });
-                    html += '</select>';
-                    html += '</div>';
 
-                    html += '</div>';
-                });
+                    list.innerHTML = html;
 
-                list.innerHTML = html;
-
-                var self2 = this;
+                    // Bind up/down/remove buttons and pre-fetch values for admin cards.
+                    widgets.forEach(function (w, i) {
+                        if (self.isAdmin(w.WidgetType)) {
+                            adminTypes.push(w.WidgetType);
+                            var datalistId = 'juxVals_' + i;
+                            self.fetchValues(w.WidgetType, userId).then(function () {
+                                self.populateDatalist(w.WidgetType, datalistId);
+                            });
+                        }
+                    });
+                }
 
                 list.querySelectorAll('.jux-admin-btn-up').forEach(function (btn) {
                     btn.addEventListener('click', function () {
                         var idx = parseInt(btn.getAttribute('data-index'), 10);
-                        self2.readDomIntoState();
-                        var tmp = self2.state.sortedWidgets[idx - 1];
-                        self2.state.sortedWidgets[idx - 1] = self2.state.sortedWidgets[idx];
-                        self2.state.sortedWidgets[idx] = tmp;
-                        self2.renderWidgets();
+                        self.readDomIntoState();
+                        var tmp = self.state.sortedWidgets[idx - 1];
+                        self.state.sortedWidgets[idx - 1] = self.state.sortedWidgets[idx];
+                        self.state.sortedWidgets[idx] = tmp;
+                        self.renderWidgets();
                     });
                 });
 
                 list.querySelectorAll('.jux-admin-btn-down').forEach(function (btn) {
                     btn.addEventListener('click', function () {
                         var idx = parseInt(btn.getAttribute('data-index'), 10);
-                        self2.readDomIntoState();
-                        var tmp = self2.state.sortedWidgets[idx + 1];
-                        self2.state.sortedWidgets[idx + 1] = self2.state.sortedWidgets[idx];
-                        self2.state.sortedWidgets[idx] = tmp;
-                        self2.renderWidgets();
+                        self.readDomIntoState();
+                        var tmp = self.state.sortedWidgets[idx + 1];
+                        self.state.sortedWidgets[idx + 1] = self.state.sortedWidgets[idx];
+                        self.state.sortedWidgets[idx] = tmp;
+                        self.renderWidgets();
+                    });
+                });
+
+                list.querySelectorAll('.jux-admin-btn-remove').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var idx = parseInt(btn.getAttribute('data-index'), 10);
+                        self.readDomIntoState();
+                        self.state.sortedWidgets.splice(idx, 1);
+                        self.renderWidgets();
                     });
                 });
             },
@@ -272,6 +413,7 @@
             readDomIntoState: function () {
                 var list = document.getElementById('juxWidgetList');
                 if (!list) { return; }
+                var self = this;
                 this.state.sortedWidgets.forEach(function (w, i) {
                     var card = list.querySelector('.jux-admin-widget-card[data-index="' + i + '"]');
                     if (!card) { return; }
@@ -280,12 +422,39 @@
                     var minEl = card.querySelector('.jux-admin-min-items');
                     var maxEl = card.querySelector('.jux-admin-max-items');
                     var viewEl = card.querySelector('.jux-admin-view-mode');
+                    var valueEl = card.querySelector('.jux-admin-widget-value');
                     if (enabledEl) { w.Enabled = enabledEl.checked; }
                     if (nameEl) { w.CustomDisplayName = nameEl.value.trim() || null; }
                     if (minEl) { w.MinItems = Math.max(0, parseInt(minEl.value, 10) || 0); }
                     if (maxEl) { w.MaxItems = Math.max(1, parseInt(maxEl.value, 10) || 1); }
                     if (viewEl) { w.ViewMode = viewEl.value; }
+                    if (valueEl) {
+                        // Resolve the label back to a Value (handles collection-type widgets where Value != Label).
+                        var label = valueEl.value.trim();
+                        var resolvedValue = label ? self.getValueForLabel(w.WidgetType, label) : '';
+                        // If the value changed, auto-prefill the display name with the label when empty.
+                        if (resolvedValue && !w.CustomDisplayName) {
+                            w.CustomDisplayName = label;
+                            if (nameEl) { nameEl.value = label; }
+                        }
+                        w.ExtraParams = resolvedValue
+                            ? [{ Key: 'value', Value: resolvedValue }]
+                            : [];
+                    }
                 });
+            },
+
+            populateAddSelect: function () {
+                var self = this;
+                var sel = document.getElementById('juxAddWidgetType');
+                if (!sel) { return; }
+                var html = '<option value="">-- choose a type --</option>';
+                self.state.descriptors.forEach(function (d) {
+                    if (self.isAdmin(d.WidgetType)) {
+                        html += '<option value="' + self.escHtml(d.WidgetType) + '">' + self.escHtml(d.DisplayName) + '</option>';
+                    }
+                });
+                sel.innerHTML = html;
             },
 
             loadConfig: function () {
@@ -316,6 +485,7 @@
                     self.state.sortedWidgets = (self.state.config.Widgets || []).slice().sort(function (a, b) {
                         return a.Order - b.Order;
                     });
+                    self.populateAddSelect();
                     self.renderWidgets();
                     Dashboard.hideLoadingMsg();
                 }).catch(function (err) {
@@ -338,6 +508,24 @@
                 tmdbError.style.display = 'none';
 
                 self.readDomIntoState();
+
+                // Validate: admin sections must have a value.
+                var hasValueError = false;
+                var list = document.getElementById('juxWidgetList');
+                self.state.sortedWidgets.forEach(function (w, i) {
+                    if (!self.isAdmin(w.WidgetType)) { return; }
+                    var extraValue = self.getExtraValue(w);
+                    var errEl = list ? list.querySelector('#juxValError_' + i) : null;
+                    if (!extraValue) {
+                        hasValueError = true;
+                        if (errEl) { errEl.style.display = ''; }
+                    } else {
+                        if (errEl) { errEl.style.display = 'none'; }
+                    }
+                });
+
+                if (hasValueError) { return; }
+
                 Dashboard.showLoadingMsg();
 
                 ApiClient.getPluginConfiguration(self.PLUGIN_ID).then(function (config) {
@@ -349,6 +537,7 @@
                     config.Cache.TMDbRefreshIntervalHours = Math.max(1, parseInt(document.getElementById('numTMDbRefresh').value, 10) || 24);
 
                     config.Widgets = self.state.sortedWidgets.map(function (w, i) {
+                        var isAdm = self.isAdmin(w.WidgetType);
                         return {
                             WidgetType: w.WidgetType,
                             Enabled: w.Enabled,
@@ -357,7 +546,7 @@
                             MinItems: Math.max(0, w.MinItems),
                             MaxItems: Math.max(1, w.MaxItems),
                             ViewMode: w.ViewMode,
-                            AllowUserOverride: typeof w.AllowUserOverride === 'boolean' ? w.AllowUserOverride : true,
+                            AllowUserOverride: isAdm ? false : (typeof w.AllowUserOverride === 'boolean' ? w.AllowUserOverride : true),
                             MinInstances: w.MinInstances || 1,
                             MaxInstances: w.MaxInstances || 1,
                             ExtraParams: w.ExtraParams || []
@@ -380,6 +569,38 @@
                     document.querySelector('.juxConfigForm').addEventListener('submit', function (e) {
                         self.saveConfig(e);
                     });
+
+                    var addBtn = document.getElementById('juxBtnAddWidget');
+                    if (addBtn) {
+                        addBtn.addEventListener('click', function () {
+                            var sel = document.getElementById('juxAddWidgetType');
+                            var errEl = document.getElementById('juxAddWidgetError');
+                            var widgetType = sel ? sel.value : '';
+                            if (!widgetType) {
+                                if (errEl) { errEl.style.display = ''; }
+                                return;
+                            }
+                            if (errEl) { errEl.style.display = 'none'; }
+
+                            var desc = self.getDescriptor(widgetType);
+                            self.readDomIntoState();
+                            self.state.sortedWidgets.push({
+                                WidgetType: widgetType,
+                                Enabled: true,
+                                CustomDisplayName: null,
+                                MinItems: desc ? desc.MinItems : 4,
+                                MaxItems: 20,
+                                ViewMode: desc ? (desc.ViewMode || 'Portrait') : 'Portrait',
+                                AllowUserOverride: false,
+                                MinInstances: 1,
+                                MaxInstances: 5,
+                                ExtraParams: []
+                            });
+                            sel.value = '';
+                            self.renderWidgets();
+                        });
+                    }
+
                     this._submitBound = true;
                 }
                 this.loadConfig();
