@@ -4,8 +4,10 @@ using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,6 +27,10 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<SessionCache>();
         serviceCollection.AddHostedService<ConfigurationChangeListener>();
         serviceCollection.AddSingleton<IUserConfigurationStore, UserConfigurationStore>();
+        serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
+            serviceProvider.GetRequiredService<IUserManager>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            () => Plugin.Instance?.Configuration));
         serviceCollection.AddSingleton<WidgetService>(serviceProvider => new WidgetService(
             serviceProvider.GetRequiredService<IWidgetRegistry>(),
             serviceProvider.GetRequiredService<SessionCache>(),
