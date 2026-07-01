@@ -1,3 +1,15 @@
+## [0.7.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.6.2...v0.7.0) (2026-07-01)
+
+### Features
+
+* add ActorWidget and DirectorWidget ([430fdcf](https://github.com/Samuellct/JellyUX-Homepage/commit/430fdcf32af9e611fd9d66e23b81325bb211dd8d))
+* add admin widget management UI with value autocomplete ([276c952](https://github.com/Samuellct/JellyUX-Homepage/commit/276c952357e6f456abad41fc69a57438edecb098))
+* add AdminWidget base class with library value provider ([b77fa9e](https://github.com/Samuellct/JellyUX-Homepage/commit/b77fa9ea18ee80e80c9a2aa5fc7d6e19311c62d9))
+* add GenreWidget ([8a0b896](https://github.com/Samuellct/JellyUX-Homepage/commit/8a0b896855a4c4ac72b69e842b3d49dbc92d5efc))
+* add StudioWidget, CollectionWidget, TagWidget, YearWidget ([8b9ac85](https://github.com/Samuellct/JellyUX-Homepage/commit/8b9ac85ff3300baa4531494a93cc12f217d3888e))
+* add widget values endpoint for admin autocomplete ([d85b2a2](https://github.com/Samuellct/JellyUX-Homepage/commit/d85b2a2a066e7c97e32b7a35481ab830f292cefe))
+* propagate per-instance AdditionalData through widget layout ([62a76dc](https://github.com/Samuellct/JellyUX-Homepage/commit/62a76dc98dd6eaeb7fcb6af3a4bbb684c96e2a05))
+
 ## [0.6.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.6.1...v0.6.2) (2026-06-30)
 
 ### Bug Fixes

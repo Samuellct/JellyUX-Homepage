@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.7.0.0",
+                "changelog": "### Features\n\n* add ActorWidget and DirectorWidget ([430fdcf](https://github.com/Samuellct/JellyUX-Homepage/commit/430fdcf32af9e611fd9d66e23b81325bb211dd8d))\n* add admin widget management UI with value autocomplete ([276c952](https://github.com/Samuellct/JellyUX-Homepage/commit/276c952357e6f456abad41fc69a57438edecb098))\n* add AdminWidget base class with library value provider ([b77fa9e](https://github.com/Samuellct/JellyUX-Homepage/commit/b77fa9ea18ee80e80c9a2aa5fc7d6e19311c62d9))\n* add GenreWidget ([8a0b896](https://github.com/Samuellct/JellyUX-Homepage/commit/8a0b896855a4c4ac72b69e842b3d49dbc92d5efc))\n* add StudioWidget, CollectionWidget, TagWidget, YearWidget ([8b9ac85](https://github.com/Samuellct/JellyUX-Homepage/commit/8b9ac85ff3300baa4531494a93cc12f217d3888e))\n* add widget values endpoint for admin autocomplete ([d85b2a2](https://github.com/Samuellct/JellyUX-Homepage/commit/d85b2a2a066e7c97e32b7a35481ab830f292cefe))\n* propagate per-instance AdditionalData through widget layout ([62a76dc](https://github.com/Samuellct/JellyUX-Homepage/commit/62a76dc98dd6eaeb7fcb6af3a4bbb684c96e2a05))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.7.0/jellyux-homepage_0.7.0.0.zip",
+                "checksum": "771112374be84339676873240f08489d",
+                "timestamp": "2026-07-01T17:20:12Z"
+            },
+            {
                 "version": "0.6.2.0",
                 "changelog": "### Bug Fixes\n\n* strip remaining is=emby-* attributes to silence webcomponents polyfill errors ([76c18d3](https://github.com/Samuellct/JellyUX-Homepage/commit/76c18d39bf9b7e642a6df4ac5fddfbd38d24291b))",
                 "targetAbi": "10.11.0.0",
