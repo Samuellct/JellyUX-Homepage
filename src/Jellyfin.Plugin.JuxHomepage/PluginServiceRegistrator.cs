@@ -2,6 +2,7 @@ using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
@@ -44,6 +45,16 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterNativeWidget<RecentlyAddedMoviesWidget>(registry, serviceProvider, logger);
             RegisterNativeWidget<RecentlyAddedShowsWidget>(registry, serviceProvider, logger);
             RegisterNativeWidget<MyMediaWidget>(registry, serviceProvider, logger);
+
+            // Register admin widgets. These have no default WidgetConfig rows; the admin
+            // adds instances explicitly via the configuration page.
+            RegisterNativeWidget<GenreWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<ActorWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<DirectorWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<StudioWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<CollectionWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<TagWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<YearWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
             var pluginDir = Path.Combine(
