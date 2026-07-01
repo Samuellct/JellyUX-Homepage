@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
@@ -215,5 +216,120 @@ public sealed class PersonalizedWidgetTests
             CancellationToken.None);
 
         Assert.Equal(0, result.TotalRecordCount);
+    }
+
+    // -------------------------------------------------------------------------
+    // FavoriteActorWidget / FavoriteDirectorWidget
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void FavoriteActor_GetDescriptor_HasExpectedProperties()
+    {
+        var user = new User("test", "Default", "Default");
+        var widget = new FavoriteActorWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object,
+            BuildScoringService(user, []));
+
+        var d = widget.GetDescriptor();
+
+        Assert.Equal("jux.personalized.favorite-actor", d.WidgetType);
+        Assert.Equal(WidgetCategory.Personalized, d.Category);
+        Assert.Equal(WidgetViewMode.Portrait, d.ViewMode);
+    }
+
+    [Fact]
+    public void FavoriteDirector_GetDescriptor_HasExpectedProperties()
+    {
+        var user = new User("test", "Default", "Default");
+        var widget = new FavoriteDirectorWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object,
+            BuildScoringService(user, []));
+
+        var d = widget.GetDescriptor();
+
+        Assert.Equal("jux.personalized.favorite-director", d.WidgetType);
+        Assert.Equal(WidgetCategory.Personalized, d.Category);
+        Assert.Equal(WidgetViewMode.Portrait, d.ViewMode);
+    }
+
+    [Fact]
+    public async Task FavoriteActor_GetItemsAsync_AppliesPersonAndPersonTypeFilter()
+    {
+        var user = new User("test", "Default", "Default");
+        var userManagerMock = new Mock<IUserManager>();
+        userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
+
+        InternalItemsQuery? capturedQuery = null;
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemsResult(It.IsAny<InternalItemsQuery>()))
+            .Callback<InternalItemsQuery>(q => capturedQuery = q)
+            .Returns(new QueryResult<BaseItem>([]));
+
+        var dtoServiceMock = new Mock<IDtoService>();
+        dtoServiceMock
+            .Setup(m => m.GetBaseItemDtos(
+                It.IsAny<IReadOnlyList<BaseItem>>(),
+                It.IsAny<DtoOptions>(),
+                It.IsAny<User>(),
+                It.IsAny<BaseItem>()))
+            .Returns([]);
+
+        var widget = new FavoriteActorWidget(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            dtoServiceMock.Object,
+            BuildScoringService(user, []));
+
+        await widget.GetItemsAsync(
+            new WidgetPayload { UserId = user.Id, AdditionalData = "Brad Pitt" },
+            CancellationToken.None);
+
+        Assert.NotNull(capturedQuery);
+        Assert.Equal("Brad Pitt", capturedQuery!.Person);
+        Assert.Equal(["Actor"], capturedQuery.PersonTypes);
+    }
+
+    [Fact]
+    public void FavoriteDirector_CreateInstances_UsesTopDirectorsNotActors()
+    {
+        var user = new User("test", "Default", "Default");
+        var film1 = new Movie { Id = Guid.NewGuid(), Name = "F1", Genres = [] };
+
+        var userManagerMock = new Mock<IUserManager>();
+        userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(user);
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite != true)))
+            .Returns([film1]);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite == true)))
+            .Returns([]);
+        libraryManagerMock
+            .Setup(m => m.GetPeople(It.IsAny<BaseItem>()))
+            .Returns([new PersonInfo { Name = "Christopher Nolan", Type = PersonKind.Director }]);
+
+        var scoringService = new ScoringService(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            () => new PluginConfiguration());
+
+        var widget = new FavoriteDirectorWidget(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            new Mock<IDtoService>().Object,
+            scoringService);
+
+        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
+
+        var single = Assert.Single(instances);
+        var descriptor = single.GetDescriptor();
+        Assert.Equal("Christopher Nolan", descriptor.AdditionalData);
+        Assert.Equal("Directed by Christopher Nolan", descriptor.DisplayName);
     }
 }
