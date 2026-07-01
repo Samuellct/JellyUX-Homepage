@@ -103,12 +103,20 @@ public sealed class WidgetService
             return null;
         }
 
+        // Forward the configured ExtraParams (e.g. "excludeWatched" for personalized widgets) so
+        // on-demand section fetches honor the same settings as the layout probe.
+        var configRow = _getConfiguration()?.Widgets?.FirstOrDefault(c => c.WidgetType == widgetType);
+        IReadOnlyDictionary<string, string>? extra = configRow is not null && configRow.ExtraParams.Length > 0
+            ? configRow.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
+            : null;
+
         var payload = new WidgetPayload
         {
             UserId = userId,
             AdditionalData = additionalData,
             StartIndex = startIndex,
-            Limit = limit
+            Limit = limit,
+            ExtraParams = extra
         };
 
         try
@@ -153,15 +161,22 @@ public sealed class WidgetService
 
         var results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
-        // Filter out instances that do not meet the MinItems threshold, then collect descriptors
+        // Flatten the per-config descriptor lists (a config row may fan out into several
+        // instances, e.g. personalized widgets), keeping the overall layout order.
         return results
-            .Where(r => r is not null)
-            .Select(r => r!)
+            .SelectMany(r => r)
+            .OrderBy(d => d.Order)
             .ToList()
             .AsReadOnly();
     }
 
-    private async Task<WidgetDescriptor?> ResolveAndFetch(
+    /// <summary>
+    /// Resolves a single <see cref="WidgetConfig"/> row into zero or more descriptors.
+    /// Most widgets are single-instance and produce at most one descriptor. Widgets whose
+    /// <see cref="IWidget.CreateInstances"/> fans out into several instances (e.g. personalized
+    /// widgets producing one section per scored value) produce one descriptor per instance.
+    /// </summary>
+    private async Task<IReadOnlyList<WidgetDescriptor>> ResolveAndFetch(
         Guid userId,
         WidgetConfig config,
         CancellationToken cancellationToken)
@@ -172,17 +187,69 @@ public sealed class WidgetService
             _logger.LogDebug(
                 "Widget type '{WidgetType}' is configured but not registered — skipping.",
                 config.WidgetType);
-            return null;
+            return [];
         }
 
         var instanceConfig = BuildInstanceConfig(config, widget);
+
+        List<IWidget> instances;
+        try
+        {
+            instances = widget.CreateInstances(userId, instanceConfig, config.MaxInstances).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Widget '{WidgetType}' threw an exception during layout build — skipping.",
+                config.WidgetType);
+            return [];
+        }
+
+        var descriptors = new List<WidgetDescriptor>();
+        for (var i = 0; i < instances.Count; i++)
+        {
+            var descriptor = await FetchInstanceDescriptor(
+                userId,
+                config,
+                instanceConfig,
+                instances[i],
+                i,
+                cancellationToken).ConfigureAwait(false);
+
+            if (descriptor is not null)
+            {
+                descriptors.Add(descriptor);
+            }
+        }
+
+        return descriptors;
+    }
+
+    private async Task<WidgetDescriptor?> FetchInstanceDescriptor(
+        Guid userId,
+        WidgetConfig config,
+        WidgetInstanceConfig instanceConfig,
+        IWidget instance,
+        int index,
+        CancellationToken cancellationToken)
+    {
+        var instanceDescriptor = instance.GetDescriptor();
+
+        // Instances produced by a fan-out (e.g. personalized widgets) self-identify via a
+        // non-null AdditionalData on their own descriptor; single-instance widgets fall back
+        // to the config row's resolved AdditionalData (ExtraParams["value"]).
+        var selfIdentifies = instanceDescriptor.AdditionalData is not null;
+        var additionalData = selfIdentifies ? instanceDescriptor.AdditionalData : instanceConfig.AdditionalData;
+        var displayName = selfIdentifies ? instanceDescriptor.DisplayName : instanceConfig.DisplayName;
 
         // Fetch a small probe to determine the total record count for MinItems filtering.
         // Widgets must set TotalRecordCount to the full count regardless of the Limit.
         var payload = new WidgetPayload
         {
             UserId = userId,
-            AdditionalData = instanceConfig.AdditionalData,
+            AdditionalData = additionalData,
+            ExtraParams = instanceConfig.ExtraParams,
             StartIndex = 0,
             Limit = 1
         };
@@ -190,14 +257,6 @@ public sealed class WidgetService
         WidgetResult result;
         try
         {
-            // CreateInstances yields the configured instances; use the first for the probe.
-            var instances = widget.CreateInstances(userId, instanceConfig, config.MaxInstances).ToList();
-            if (instances.Count == 0)
-            {
-                return null;
-            }
-
-            var instance = instances[0];
             result = await instance.GetItemsAsync(payload, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -219,16 +278,15 @@ public sealed class WidgetService
             return null;
         }
 
-        var baseDescriptor = widget.GetDescriptor();
         return new WidgetDescriptor
         {
-            WidgetType = baseDescriptor.WidgetType,
-            DisplayName = instanceConfig.DisplayName,
-            Category = baseDescriptor.Category,
+            WidgetType = instanceDescriptor.WidgetType,
+            DisplayName = displayName,
+            Category = instanceDescriptor.Category,
             ViewMode = config.ViewMode,
-            Route = baseDescriptor.Route,
-            AdditionalData = instanceConfig.AdditionalData,
-            Order = config.Order,
+            Route = instanceDescriptor.Route,
+            AdditionalData = additionalData,
+            Order = config.Order + index,
             MinItems = config.MinItems
         };
     }
