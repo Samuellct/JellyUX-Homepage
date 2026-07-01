@@ -45,7 +45,7 @@ public abstract class PersonWidgetBase : AdminWidgetBase
         var names = LibraryManager.GetPeopleNames(new InternalPeopleQuery([PersonType], [])
         {
             NameContains = string.IsNullOrEmpty(search) ? null : search,
-            Limit = 50,
+            Limit = string.IsNullOrEmpty(search) ? 100 : 50,
             User = user
         });
 

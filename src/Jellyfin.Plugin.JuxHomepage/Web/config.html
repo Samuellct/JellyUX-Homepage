@@ -373,6 +373,16 @@
                             var datalistId = 'juxVals_' + i;
                             self.fetchValues(w.WidgetType, userId).then(function () {
                                 self.populateDatalist(w.WidgetType, datalistId);
+                                // Update the input when the stored Value differs from its Label
+                                // (e.g. a collection GUID should display as the collection name).
+                                var inputEl = document.getElementById('widgetValue_' + i);
+                                if (inputEl) {
+                                    var rawValue = self.getExtraValue(w);
+                                    if (rawValue) {
+                                        var lbl = self.getLabelForValue(w.WidgetType, rawValue);
+                                        if (lbl !== rawValue) { inputEl.value = lbl; }
+                                    }
+                                }
                             });
                         }
                     });
@@ -406,6 +416,45 @@
                         self.readDomIntoState();
                         self.state.sortedWidgets.splice(idx, 1);
                         self.renderWidgets();
+                    });
+                });
+
+                // Search-as-you-type: each keystroke fetches matching values from the server.
+                list.querySelectorAll('[data-is-admin="1"]').forEach(function (card) {
+                    var idx = parseInt(card.getAttribute('data-index'), 10);
+                    var w = self.state.sortedWidgets[idx];
+                    if (!w) { return; }
+                    var widgetType = w.WidgetType;
+                    var datalistId = 'juxVals_' + idx;
+                    var inputEl = card.querySelector('.jux-admin-widget-value');
+                    if (!inputEl) { return; }
+                    var timer = null;
+                    inputEl.addEventListener('input', function () {
+                        clearTimeout(timer);
+                        var search = inputEl.value.trim();
+                        timer = setTimeout(function () {
+                            var url = ApiClient.getUrl(
+                                'JuxHomepage/Widget/' + encodeURIComponent(widgetType) + '/values',
+                                { userId: userId, search: search }
+                            );
+                            ApiClient.getJSON(url).then(function (vals) {
+                                var dl = document.getElementById(datalistId);
+                                if (!dl) { return; }
+                                var dlHtml = '';
+                                (vals || []).forEach(function (v) {
+                                    dlHtml += '<option value="' + self.escHtml(v.Label) + '"></option>';
+                                });
+                                dl.innerHTML = dlHtml;
+                                if (!self._valuesCache[widgetType]) { self._valuesCache[widgetType] = []; }
+                                (vals || []).forEach(function (v) {
+                                    var cache = self._valuesCache[widgetType];
+                                    for (var k = 0; k < cache.length; k++) {
+                                        if (cache[k].Value === v.Value) { return; }
+                                    }
+                                    cache.push(v);
+                                });
+                            }).catch(function () {});
+                        }, 300);
                     });
                 });
             },
