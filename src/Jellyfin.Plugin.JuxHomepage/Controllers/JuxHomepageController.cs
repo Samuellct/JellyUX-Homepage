@@ -1,6 +1,8 @@
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
+using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,16 +21,19 @@ public class JuxHomepageController : ControllerBase
 
     private readonly IWidgetRegistry _registry;
     private readonly WidgetService _widgetService;
+    private readonly IUserManager _userManager;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JuxHomepageController"/> class.
     /// </summary>
     /// <param name="registry">The widget registry.</param>
     /// <param name="widgetService">The widget orchestration service.</param>
-    public JuxHomepageController(IWidgetRegistry registry, WidgetService widgetService)
+    /// <param name="userManager">Jellyfin user manager.</param>
+    public JuxHomepageController(IWidgetRegistry registry, WidgetService widgetService, IUserManager userManager)
     {
         _registry = registry;
         _widgetService = widgetService;
+        _userManager = userManager;
     }
 
     // -------------------------------------------------------------------------
@@ -178,6 +183,44 @@ public class JuxHomepageController : ControllerBase
             .AsReadOnly();
 
         return Ok(descriptors);
+    }
+
+    /// <summary>
+    /// Returns the list of available values for an admin widget type, for use in the autocomplete
+    /// picker when the administrator adds a new section.
+    /// </summary>
+    /// <param name="widgetType">The widget type identifier (e.g. "jux.admin.genre").</param>
+    /// <param name="userId">The requesting user's Jellyfin identifier.</param>
+    /// <param name="search">Optional search string to filter results.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects.</returns>
+    [HttpGet("Widget/{widgetType}/values")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<IReadOnlyList<AdminWidgetValue>> GetWidgetValues(
+        [FromRoute] string widgetType,
+        [FromQuery] Guid userId,
+        [FromQuery] string? search = null)
+    {
+        var widget = _registry.GetByType(widgetType);
+        if (widget is null)
+        {
+            return NotFound();
+        }
+
+        if (widget is not AdminWidgetBase adminWidget)
+        {
+            return BadRequest("The specified widget type does not support configurable values.");
+        }
+
+        var user = _userManager.GetUserById(userId);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(adminWidget.GetAvailableValues(user, search));
     }
 
     // -------------------------------------------------------------------------
