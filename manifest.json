@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.8.0.0",
+                "changelog": "### Features\n\n* add BecauseYouWatchedWidget ([65843dc](https://github.com/Samuellct/JellyUX-Homepage/commit/65843dcb430fec9ec8c1cfa6cef728f70fd34561))\n* add FavoriteActorWidget and FavoriteDirectorWidget ([caa693f](https://github.com/Samuellct/JellyUX-Homepage/commit/caa693fbbeac2b6ab4876ea7a88f0d5176798102))\n* add PersonalizedWidget base class and FavoriteGenreWidget ([2744341](https://github.com/Samuellct/JellyUX-Homepage/commit/27443413cfb9482e06107f0c4cf762968977d821))\n* add ScoringService for user preference analysis ([a5a85f0](https://github.com/Samuellct/JellyUX-Homepage/commit/a5a85f051296bc0152e6cda1b5523ed810a55c43))\n* emit one descriptor per widget instance from CreateInstances fan-out ([4b0bac6](https://github.com/Samuellct/JellyUX-Homepage/commit/4b0bac69cc4d1a6251a2e3287555218eb25a2134))\n* register personalized widgets and add management UI ([a73bdcd](https://github.com/Samuellct/JellyUX-Homepage/commit/a73bdcd2a5f833726ee41cede2ebd96f9e9ff44e))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.8.0/jellyux-homepage_0.8.0.0.zip",
+                "checksum": "fc8e0279474d5566835c7512154f9e09",
+                "timestamp": "2026-07-01T21:14:26Z"
+            },
+            {
                 "version": "0.7.1.0",
                 "changelog": "### Bug Fixes\n\n* add search-as-you-type autocomplete and restore collection label on reload ([57a9a74](https://github.com/Samuellct/JellyUX-Homepage/commit/57a9a740cdd08a8b752587e6c3b7c0791364c96c))\n* resolve collection items via BoxSet linked children instead of AncestorIds ([43a2d28](https://github.com/Samuellct/JellyUX-Homepage/commit/43a2d28142cc9a70ccc08209f7d5488f3af02b7a))",
                 "targetAbi": "10.11.0.0",

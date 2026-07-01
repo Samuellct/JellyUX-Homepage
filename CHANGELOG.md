@@ -1,3 +1,14 @@
+## [0.8.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.7.1...v0.8.0) (2026-07-01)
+
+### Features
+
+* add BecauseYouWatchedWidget ([65843dc](https://github.com/Samuellct/JellyUX-Homepage/commit/65843dcb430fec9ec8c1cfa6cef728f70fd34561))
+* add FavoriteActorWidget and FavoriteDirectorWidget ([caa693f](https://github.com/Samuellct/JellyUX-Homepage/commit/caa693fbbeac2b6ab4876ea7a88f0d5176798102))
+* add PersonalizedWidget base class and FavoriteGenreWidget ([2744341](https://github.com/Samuellct/JellyUX-Homepage/commit/27443413cfb9482e06107f0c4cf762968977d821))
+* add ScoringService for user preference analysis ([a5a85f0](https://github.com/Samuellct/JellyUX-Homepage/commit/a5a85f051296bc0152e6cda1b5523ed810a55c43))
+* emit one descriptor per widget instance from CreateInstances fan-out ([4b0bac6](https://github.com/Samuellct/JellyUX-Homepage/commit/4b0bac69cc4d1a6251a2e3287555218eb25a2134))
+* register personalized widgets and add management UI ([a73bdcd](https://github.com/Samuellct/JellyUX-Homepage/commit/a73bdcd2a5f833726ee41cede2ebd96f9e9ff44e))
+
 ## [0.7.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.7.0...v0.7.1) (2026-07-01)
 
 ### Bug Fixes
