@@ -1,3 +1,10 @@
+## [0.7.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.7.0...v0.7.1) (2026-07-01)
+
+### Bug Fixes
+
+* add search-as-you-type autocomplete and restore collection label on reload ([57a9a74](https://github.com/Samuellct/JellyUX-Homepage/commit/57a9a740cdd08a8b752587e6c3b7c0791364c96c))
+* resolve collection items via BoxSet linked children instead of AncestorIds ([43a2d28](https://github.com/Samuellct/JellyUX-Homepage/commit/43a2d28142cc9a70ccc08209f7d5488f3af02b7a))
+
 ## [0.7.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.6.2...v0.7.0) (2026-07-01)
 
 ### Features
