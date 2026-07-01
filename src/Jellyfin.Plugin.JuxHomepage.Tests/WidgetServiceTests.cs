@@ -115,6 +115,52 @@ public sealed class WidgetServiceTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Multi-instance (admin widgets via ExtraParams["value"])
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetWidgetsForUser_TwoRowsSameType_ProduceTwoDescriptorsWithDistinctAdditionalData()
+    {
+        const string widgetType = "jux.admin.genre";
+
+        // One widget registered; two config rows differing only in ExtraParams["value"].
+        var widget = MakeWidget(widgetType, totalRecordCount: 10);
+        var service = BuildService(
+            registeredWidgets: [widget],
+            globalWidgets:
+            [
+                new WidgetConfig
+                {
+                    WidgetType = widgetType,
+                    CustomDisplayName = "Action",
+                    Enabled = true,
+                    MinItems = 1,
+                    Order = 0,
+                    AllowUserOverride = false,
+                    ExtraParams = [new WidgetExtraParam { Key = "value", Value = "Action" }]
+                },
+                new WidgetConfig
+                {
+                    WidgetType = widgetType,
+                    CustomDisplayName = "Comedy",
+                    Enabled = true,
+                    MinItems = 1,
+                    Order = 10,
+                    AllowUserOverride = false,
+                    ExtraParams = [new WidgetExtraParam { Key = "value", Value = "Comedy" }]
+                }
+            ]);
+
+        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Action", result[0].AdditionalData);
+        Assert.Equal("Comedy", result[1].AdditionalData);
+        Assert.Equal("Action", result[0].DisplayName);
+        Assert.Equal("Comedy", result[1].DisplayName);
+    }
+
+    // -------------------------------------------------------------------------
     // GetWidgetItems
     // -------------------------------------------------------------------------
 

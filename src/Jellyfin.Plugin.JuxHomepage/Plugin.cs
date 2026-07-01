@@ -68,6 +68,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
                 {
                     widget.MinItems = widget.MaxItems;
                 }
+
+                widget.MinInstances = Math.Max(1, widget.MinInstances);
+                widget.MaxInstances = Math.Max(1, widget.MaxInstances);
+                if (widget.MinInstances > widget.MaxInstances)
+                {
+                    widget.MinInstances = widget.MaxInstances;
+                }
             }
 
             // Trim API keys; empty string becomes null.

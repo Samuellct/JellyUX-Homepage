@@ -227,24 +227,29 @@ public sealed class WidgetService
             Category = baseDescriptor.Category,
             ViewMode = config.ViewMode,
             Route = baseDescriptor.Route,
-            AdditionalData = baseDescriptor.AdditionalData,
+            AdditionalData = instanceConfig.AdditionalData,
             Order = config.Order,
             MinItems = config.MinItems
         };
     }
 
-    private static WidgetInstanceConfig BuildInstanceConfig(WidgetConfig config, IWidget widget) =>
-        new()
+    private static WidgetInstanceConfig BuildInstanceConfig(WidgetConfig config, IWidget widget)
+    {
+        IReadOnlyDictionary<string, string>? extra = config.ExtraParams.Length > 0
+            ? config.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
+            : null;
+        string? additionalData = extra is not null && extra.TryGetValue("value", out var v) ? v : null;
+        return new WidgetInstanceConfig
         {
             DisplayName = config.CustomDisplayName ?? widget.DefaultDisplayName,
             MinItems = config.MinItems,
             MaxItems = config.MaxItems,
             ViewMode = config.ViewMode,
             Order = config.Order,
-            ExtraParams = config.ExtraParams.Length > 0
-                ? config.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
-                : null
+            ExtraParams = extra,
+            AdditionalData = additionalData
         };
+    }
 
     private static IReadOnlyList<WidgetDescriptor> Paginate(IReadOnlyList<WidgetDescriptor> all, int page)
     {
