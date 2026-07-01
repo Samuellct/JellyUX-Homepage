@@ -47,10 +47,16 @@ public sealed class CollectionWidget : AdminWidgetBase
     /// <inheritdoc/>
     protected override void ApplyFilter(InternalItemsQuery query, string value)
     {
-        if (Guid.TryParse(value, out var collectionId))
-        {
-            query.AncestorIds = [collectionId];
-        }
+        if (!Guid.TryParse(value, out var collectionId))
+            return;
+
+        var boxSet = LibraryManager.GetItemById(collectionId) as Folder;
+        if (boxSet is null)
+            return;
+
+        var items = boxSet.GetLinkedChildren(query.User);
+        if (items.Count > 0)
+            query.ItemIds = items.Select(i => i.Id).ToArray();
     }
 
     /// <inheritdoc/>
