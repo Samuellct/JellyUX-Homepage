@@ -62,6 +62,15 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterNativeWidget<TagWidget>(registry, serviceProvider, logger);
             RegisterNativeWidget<YearWidget>(registry, serviceProvider, logger);
 
+            // Register personalized widgets. Like admin widgets, these have no default
+            // WidgetConfig rows; the admin adds instances explicitly via the configuration page.
+            // Unlike admin widgets, the section's value is computed per user from ScoringService
+            // rather than chosen by the admin.
+            RegisterNativeWidget<FavoriteGenreWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<FavoriteActorWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<FavoriteDirectorWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<BecauseYouWatchedWidget>(registry, serviceProvider, logger);
+
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
             var pluginDir = Path.Combine(
                 applicationPaths.PluginConfigurationsPath,

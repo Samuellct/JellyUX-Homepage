@@ -183,6 +183,12 @@
                 return desc && (desc.Category === 1 || desc.Category === 'Admin');
             },
 
+            isPersonalized: function (widgetType) {
+                var desc = this.getDescriptor(widgetType);
+                // Accept both numeric 2 and string "Personalized" to be safe.
+                return desc && (desc.Category === 2 || desc.Category === 'Personalized');
+            },
+
             getDescriptor: function (widgetType) {
                 for (var i = 0; i < this.state.descriptors.length; i++) {
                     if (this.state.descriptors[i].WidgetType === widgetType) {
@@ -203,9 +209,15 @@
 
             // Resolve the ExtraParams["value"] entry for a widget config row.
             getExtraValue: function (w) {
+                return this.getExtraParam(w, 'value');
+            },
+
+            // Generic ExtraParams[key] lookup, used for admin "value" and personalized settings
+            // such as "excludeWatched".
+            getExtraParam: function (w, key) {
                 if (!w.ExtraParams || !w.ExtraParams.length) { return ''; }
                 for (var j = 0; j < w.ExtraParams.length; j++) {
-                    if (w.ExtraParams[j].Key === 'value') { return w.ExtraParams[j].Value || ''; }
+                    if (w.ExtraParams[j].Key === key) { return w.ExtraParams[j].Value || ''; }
                 }
                 return '';
             },
@@ -277,10 +289,11 @@
                         var isLast = i === widgets.length - 1;
                         var customName = w.CustomDisplayName || '';
                         var isAdm = self.isAdmin(w.WidgetType);
+                        var isPers = self.isPersonalized(w.WidgetType);
                         var currentValue = self.getExtraValue(w);
                         var currentLabel = currentValue ? self.getLabelForValue(w.WidgetType, currentValue) : '';
 
-                        html += '<div class="jux-admin-widget-card" data-index="' + i + '" data-is-admin="' + (isAdm ? '1' : '0') + '">';
+                        html += '<div class="jux-admin-widget-card" data-index="' + i + '" data-is-admin="' + (isAdm ? '1' : '0') + '" data-is-personalized="' + (isPers ? '1' : '0') + '">';
 
                         html += '<div class="jux-admin-widget-header">';
                         html += '<label class="emby-checkbox-label jux-admin-enabled-label">';
@@ -294,7 +307,8 @@
                         html += '</label>';
 
                         if (category !== undefined && category !== null && category !== '') {
-                            var catLabel = category === 1 ? 'Admin' : (category === 0 ? 'Native' : String(category));
+                            var categoryLabels = { 0: 'Native', 1: 'Admin', 2: 'Personalized', 3: 'Connected' };
+                            var catLabel = categoryLabels[category] || String(category);
                             html += '<span class="jux-admin-category-badge">' + self.escHtml(catLabel) + '</span>';
                         }
 
@@ -305,7 +319,7 @@
                         html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-down"';
                         html += ' data-index="' + i + '"' + (isLast ? ' disabled' : '') + ' title="Move down">';
                         html += '<span class="material-icons">arrow_downward</span></button>';
-                        if (isAdm) {
+                        if (isAdm || isPers) {
                             html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-remove"';
                             html += ' data-index="' + i + '" title="Remove section">';
                             html += '<span class="material-icons">delete</span></button>';
@@ -328,13 +342,17 @@
                             html += '</div>';
                         }
 
-                        html += '<div class="inputContainer">';
-                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">Display name</label>';
-                        html += '<input id="widgetName_' + i + '" type="text" class="emby-input jux-admin-widget-name"';
-                        html += ' placeholder="' + self.escHtml(defaultName) + '"';
-                        html += ' value="' + self.escHtml(customName) + '" />';
-                        html += '<div class="fieldDescription">Leave empty to use the default name.</div>';
-                        html += '</div>';
+                        if (isPers) {
+                            html += '<p class="fieldDescription">Section names are generated per user (e.g. "Because you watched ...").</p>';
+                        } else {
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">Display name</label>';
+                            html += '<input id="widgetName_' + i + '" type="text" class="emby-input jux-admin-widget-name"';
+                            html += ' placeholder="' + self.escHtml(defaultName) + '"';
+                            html += ' value="' + self.escHtml(customName) + '" />';
+                            html += '<div class="fieldDescription">Leave empty to use the default name.</div>';
+                            html += '</div>';
+                        }
 
                         html += '<div class="jux-admin-row">';
 
@@ -360,6 +378,30 @@
                         });
                         html += '</select>';
                         html += '</div>';
+
+                        if (isPers) {
+                            var excludeWatched = self.getExtraParam(w, 'excludeWatched') !== 'false';
+
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetInstances_' + i + '">Number of sections</label>';
+                            html += '<input id="widgetInstances_' + i + '" type="number" min="1" max="10"';
+                            html += ' class="emby-input jux-admin-instances" value="' + (w.MaxInstances || 3) + '" />';
+                            html += '<div class="fieldDescription">Up to this many sections are shown per user, one per top-scored value.</div>';
+                            html += '</div>';
+
+                            html += '<div class="checkboxContainer checkboxContainer-withDescription">';
+                            html += '<label class="emby-checkbox-label">';
+                            html += '<input type="checkbox" id="widgetExcludeWatched_' + i + '" class="emby-checkbox jux-admin-exclude-watched"';
+                            html += (excludeWatched ? ' checked' : '') + ' />';
+                            html += '<span class="checkboxLabel">Exclude already watched</span>';
+                            html += '<span class="checkboxOutline">';
+                            html += '<span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>';
+                            html += '<span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>';
+                            html += '</span>';
+                            html += '</label>';
+                            html += '<div class="fieldDescription">When enabled, titles the user has already watched are not recommended.</div>';
+                            html += '</div>';
+                        }
 
                         html += '</div>';
                     });
@@ -472,6 +514,8 @@
                     var maxEl = card.querySelector('.jux-admin-max-items');
                     var viewEl = card.querySelector('.jux-admin-view-mode');
                     var valueEl = card.querySelector('.jux-admin-widget-value');
+                    var instancesEl = card.querySelector('.jux-admin-instances');
+                    var excludeWatchedEl = card.querySelector('.jux-admin-exclude-watched');
                     if (enabledEl) { w.Enabled = enabledEl.checked; }
                     if (nameEl) { w.CustomDisplayName = nameEl.value.trim() || null; }
                     if (minEl) { w.MinItems = Math.max(0, parseInt(minEl.value, 10) || 0); }
@@ -490,6 +534,13 @@
                             ? [{ Key: 'value', Value: resolvedValue }]
                             : [];
                     }
+                    if (instancesEl) {
+                        w.MaxInstances = Math.max(1, parseInt(instancesEl.value, 10) || 3);
+                        w.MinInstances = 1;
+                    }
+                    if (excludeWatchedEl) {
+                        w.ExtraParams = [{ Key: 'excludeWatched', Value: excludeWatchedEl.checked ? 'true' : 'false' }];
+                    }
                 });
             },
 
@@ -499,7 +550,7 @@
                 if (!sel) { return; }
                 var html = '<option value="">-- choose a type --</option>';
                 self.state.descriptors.forEach(function (d) {
-                    if (self.isAdmin(d.WidgetType)) {
+                    if (self.isAdmin(d.WidgetType) || self.isPersonalized(d.WidgetType)) {
                         html += '<option value="' + self.escHtml(d.WidgetType) + '">' + self.escHtml(d.DisplayName) + '</option>';
                     }
                 });
@@ -632,6 +683,7 @@
                             if (errEl) { errEl.style.display = 'none'; }
 
                             var desc = self.getDescriptor(widgetType);
+                            var isPers = self.isPersonalized(widgetType);
                             self.readDomIntoState();
                             self.state.sortedWidgets.push({
                                 WidgetType: widgetType,
@@ -642,8 +694,8 @@
                                 ViewMode: desc ? (desc.ViewMode || 'Portrait') : 'Portrait',
                                 AllowUserOverride: false,
                                 MinInstances: 1,
-                                MaxInstances: 5,
-                                ExtraParams: []
+                                MaxInstances: isPers ? 3 : 5,
+                                ExtraParams: isPers ? [{ Key: 'excludeWatched', Value: 'true' }] : []
                             });
                             sel.value = '';
                             self.renderWidgets();
