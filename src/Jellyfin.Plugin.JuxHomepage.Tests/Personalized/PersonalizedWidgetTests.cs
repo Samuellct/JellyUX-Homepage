@@ -332,4 +332,116 @@ public sealed class PersonalizedWidgetTests
         Assert.Equal("Christopher Nolan", descriptor.AdditionalData);
         Assert.Equal("Directed by Christopher Nolan", descriptor.DisplayName);
     }
+
+    // -------------------------------------------------------------------------
+    // BecauseYouWatchedWidget
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void BecauseYouWatched_GetDescriptor_HasExpectedProperties()
+    {
+        var user = new User("test", "Default", "Default");
+        var widget = new BecauseYouWatchedWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object,
+            BuildScoringService(user, []));
+
+        var d = widget.GetDescriptor();
+
+        Assert.Equal("jux.personalized.because-you-watched", d.WidgetType);
+        Assert.Equal(WidgetCategory.Personalized, d.Category);
+        Assert.Equal(WidgetViewMode.Portrait, d.ViewMode);
+    }
+
+    [Fact]
+    public void BecauseYouWatched_CreateInstances_NoRecentHistory_ReturnsNoInstances()
+    {
+        var user = new User("test", "Default", "Default");
+        var widget = new BecauseYouWatchedWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object,
+            BuildScoringService(user, []));
+
+        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
+
+        Assert.Empty(instances);
+    }
+
+    [Fact]
+    public async Task BecauseYouWatched_GetItemsAsync_SharesGenresAndExcludesReferenceFilm()
+    {
+        var user = new User("test", "Default", "Default");
+        var reference = new Movie { Id = Guid.NewGuid(), Name = "Inception", Genres = ["Sci-Fi", "Action"] };
+
+        var userManagerMock = new Mock<IUserManager>();
+        userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
+
+        InternalItemsQuery? capturedQuery = null;
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock.Setup(m => m.GetItemById(reference.Id)).Returns(reference);
+        libraryManagerMock
+            .Setup(m => m.GetItemsResult(It.IsAny<InternalItemsQuery>()))
+            .Callback<InternalItemsQuery>(q => capturedQuery = q)
+            .Returns(new QueryResult<BaseItem>([]));
+
+        var dtoServiceMock = new Mock<IDtoService>();
+        dtoServiceMock
+            .Setup(m => m.GetBaseItemDtos(
+                It.IsAny<IReadOnlyList<BaseItem>>(),
+                It.IsAny<DtoOptions>(),
+                It.IsAny<User>(),
+                It.IsAny<BaseItem>()))
+            .Returns([]);
+
+        var widget = new BecauseYouWatchedWidget(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            dtoServiceMock.Object,
+            BuildScoringService(user, []));
+
+        await widget.GetItemsAsync(
+            new WidgetPayload { UserId = user.Id, AdditionalData = reference.Id.ToString() },
+            CancellationToken.None);
+
+        Assert.NotNull(capturedQuery);
+        Assert.Equal(reference.Genres, capturedQuery!.Genres);
+        Assert.Equal([reference.Id], capturedQuery.ExcludeItemIds);
+    }
+
+    [Fact]
+    public async Task BecauseYouWatched_ReferenceFilmNotFound_DoesNotThrow()
+    {
+        var user = new User("test", "Default", "Default");
+        var userManagerMock = new Mock<IUserManager>();
+        userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock.Setup(m => m.GetItemById(It.IsAny<Guid>())).Returns((BaseItem?)null);
+        libraryManagerMock
+            .Setup(m => m.GetItemsResult(It.IsAny<InternalItemsQuery>()))
+            .Returns(new QueryResult<BaseItem>([]));
+
+        var dtoServiceMock = new Mock<IDtoService>();
+        dtoServiceMock
+            .Setup(m => m.GetBaseItemDtos(
+                It.IsAny<IReadOnlyList<BaseItem>>(),
+                It.IsAny<DtoOptions>(),
+                It.IsAny<User>(),
+                It.IsAny<BaseItem>()))
+            .Returns([]);
+
+        var widget = new BecauseYouWatchedWidget(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            dtoServiceMock.Object,
+            BuildScoringService(user, []));
+
+        var result = await widget.GetItemsAsync(
+            new WidgetPayload { UserId = user.Id, AdditionalData = Guid.NewGuid().ToString() },
+            CancellationToken.None);
+
+        Assert.Equal(0, result.TotalRecordCount);
+    }
 }
