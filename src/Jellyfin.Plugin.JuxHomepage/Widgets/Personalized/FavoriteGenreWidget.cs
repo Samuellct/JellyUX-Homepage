@@ -1,0 +1,51 @@
+using Jellyfin.Database.Implementations.Entities;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Library;
+
+namespace Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
+
+/// <summary>
+/// Displays items from the requesting user's favorite genres, derived from their watch history.
+/// Fans out into one section per top-scored genre (see <see cref="ScoringService.GetTopGenres"/>).
+/// </summary>
+public sealed class FavoriteGenreWidget : PersonalizedWidgetBase
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FavoriteGenreWidget"/> class.
+    /// </summary>
+    /// <param name="userManager">Jellyfin user manager.</param>
+    /// <param name="libraryManager">Jellyfin library manager.</param>
+    /// <param name="dtoService">Jellyfin DTO projection service.</param>
+    /// <param name="scoringService">User preference scoring service.</param>
+    public FavoriteGenreWidget(
+        IUserManager userManager,
+        ILibraryManager libraryManager,
+        IDtoService dtoService,
+        ScoringService scoringService)
+        : base(userManager, libraryManager, dtoService, scoringService)
+    {
+    }
+
+    /// <inheritdoc/>
+    public override string WidgetType => "jux.personalized.favorite-genre";
+
+    /// <inheritdoc/>
+    public override string DefaultDisplayName => "Favorite Genre";
+
+    /// <inheritdoc/>
+    public override string DefaultViewMode => WidgetViewMode.Portrait;
+
+    /// <inheritdoc/>
+    protected override IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count) =>
+        ScoringService.GetTopGenres(userId, count);
+
+    /// <inheritdoc/>
+    protected override string FormatDisplayName(string label) => $"More {label}";
+
+    /// <inheritdoc/>
+    protected override void ApplyFilter(InternalItemsQuery query, string value, User user)
+    {
+        query.Genres = [value];
+    }
+}
