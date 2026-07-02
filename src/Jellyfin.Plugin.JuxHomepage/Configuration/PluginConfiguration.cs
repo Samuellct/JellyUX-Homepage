@@ -32,4 +32,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>Gets or sets the cache tuning parameters for the widget engine.</summary>
     public CacheConfig Cache { get; set; } = new();
+
+    /// <summary>Gets or sets the per-list TMDb pagination and region settings.</summary>
+    public TMDbListsConfig TMDbLists { get; set; } = new();
 }

@@ -170,6 +170,15 @@
         .jux-admin-tmdb-status-row:last-child {
             border-bottom: none;
         }
+        .jux-admin-tmdb-pages {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+            flex-shrink: 0;
+        }
+        .jux-admin-tmdb-pages-input {
+            width: 4em;
+        }
     </style>
 
     <script type="text/javascript">
@@ -584,7 +593,17 @@
                 sel.innerHTML = html;
             },
 
-            // Renders the per-type TMDb cache status list (last refresh timestamp + item count).
+            // Maps a TMDbCacheType status entry's "Type" to its TMDbLists page-count property.
+            _tmdbPagesConfigKey: {
+                TrendingMovies: 'TrendingMoviesPages',
+                TrendingShows: 'TrendingShowsPages',
+                AiringToday: 'AiringTodayPages',
+                UpcomingMovies: 'UpcomingMoviesPages'
+            },
+
+            // Renders the per-type TMDb cache status list (last refresh timestamp + item count),
+            // plus a "Pages" input controlling how many TMDb result pages (20 items each) are
+            // fetched and cached for that list.
             renderTmdbStatus: function (statuses) {
                 var self = this;
                 var list = document.getElementById('juxTmdbStatusList');
@@ -595,13 +614,23 @@
                     AiringToday: 'Airing Today',
                     UpcomingMovies: 'Upcoming Movies'
                 };
+                var tmdbLists = (self.state.config && self.state.config.TMDbLists) || {};
                 var html = '';
                 (statuses || []).forEach(function (s) {
                     var label = labels[s.Type] || s.Type;
                     var lastRefreshed = s.LastRefreshedUtc ? new Date(s.LastRefreshedUtc).toLocaleString() : 'Never';
+                    var pagesKey = self._tmdbPagesConfigKey[s.Type];
+                    var pages = pagesKey ? (tmdbLists[pagesKey] || 1) : 1;
                     html += '<div class="jux-admin-tmdb-status-row">';
                     html += '<span>' + self.escHtml(label) + ' (' + s.ItemCount + ' cached)</span>';
                     html += '<span>' + self.escHtml(lastRefreshed) + '</span>';
+                    if (pagesKey) {
+                        html += '<span class="jux-admin-tmdb-pages">';
+                        html += '<label for="numTmdbPages_' + s.Type + '">Pages</label>';
+                        html += '<input type="number" min="1" max="5" id="numTmdbPages_' + s.Type + '"';
+                        html += ' class="emby-input jux-admin-tmdb-pages-input" value="' + pages + '" />';
+                        html += '</span>';
+                    }
                     html += '</div>';
                 });
                 list.innerHTML = html || '<p class="fieldDescription">No status available.</p>';
@@ -697,6 +726,15 @@
                     if (!config.Cache) { config.Cache = {}; }
                     config.Cache.SessionTtlMinutes = Math.max(1, parseInt(document.getElementById('numSessionTtl').value, 10) || 15);
                     config.Cache.TMDbRefreshIntervalHours = Math.max(1, parseInt(document.getElementById('numTMDbRefresh').value, 10) || 24);
+
+                    if (!config.TMDbLists) { config.TMDbLists = {}; }
+                    Object.keys(self._tmdbPagesConfigKey).forEach(function (type) {
+                        var el = document.getElementById('numTmdbPages_' + type);
+                        var configKey = self._tmdbPagesConfigKey[type];
+                        if (el) {
+                            config.TMDbLists[configKey] = Math.min(5, Math.max(1, parseInt(el.value, 10) || 1));
+                        }
+                    });
 
                     config.Widgets = self.state.sortedWidgets.map(function (w, i) {
                         var isAdm = self.isAdmin(w.WidgetType);

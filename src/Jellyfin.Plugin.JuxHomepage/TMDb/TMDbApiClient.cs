@@ -26,6 +26,9 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
 {
     private const string HttpClientName = "TMDb";
 
+    /// <summary>Hard ceiling on pages fetched per call, regardless of the requested count.</summary>
+    private const int MaxPagesPerFetch = 5;
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<TMDbApiClient> _logger;
@@ -50,36 +53,20 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<TMDbMovie>> GetTrendingMoviesAsync(CancellationToken cancellationToken)
-    {
-        var result = await GetAsync<TMDbTrending<TMDbMovie>>("trending/movie/week", cancellationToken)
-            .ConfigureAwait(false);
-        return result?.Results ?? [];
-    }
+    public Task<IReadOnlyList<TMDbMovie>> GetTrendingMoviesAsync(int pages, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbMovie>("trending/movie/week", pages, cancellationToken);
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<TMDbShow>> GetTrendingShowsAsync(CancellationToken cancellationToken)
-    {
-        var result = await GetAsync<TMDbTrending<TMDbShow>>("trending/tv/week", cancellationToken)
-            .ConfigureAwait(false);
-        return result?.Results ?? [];
-    }
+    public Task<IReadOnlyList<TMDbShow>> GetTrendingShowsAsync(int pages, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbShow>("trending/tv/week", pages, cancellationToken);
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(CancellationToken cancellationToken)
-    {
-        var result = await GetAsync<TMDbTrending<TMDbShow>>("tv/airing_today", cancellationToken)
-            .ConfigureAwait(false);
-        return result?.Results ?? [];
-    }
+    public Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(int pages, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbShow>("tv/airing_today", pages, cancellationToken);
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(CancellationToken cancellationToken)
-    {
-        var result = await GetAsync<TMDbTrending<TMDbMovie>>("movie/upcoming", cancellationToken)
-            .ConfigureAwait(false);
-        return result?.Results ?? [];
-    }
+    public Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(int pages, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbMovie>("movie/upcoming", pages, cancellationToken);
 
     /// <inheritdoc/>
     public async Task<string?> GetMovieExternalIdsAsync(int tmdbId, CancellationToken cancellationToken)
@@ -95,6 +82,34 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
         var result = await GetAsync<TMDbExternalIds>($"tv/{tmdbId}/external_ids", cancellationToken)
             .ConfigureAwait(false);
         return result?.ImdbId;
+    }
+
+    /// <summary>
+    /// Fetches and concatenates up to <paramref name="pages"/> pages (clamped to
+    /// <see cref="MaxPagesPerFetch"/>) of a standard TMDb paged list response. Stops early if a page
+    /// returns no results, which covers both "TMDb ran out of pages" and "the request failed"
+    /// (<see cref="GetAsync{T}"/> already logs the failure in the latter case).
+    /// </summary>
+    private async Task<IReadOnlyList<T>> GetPagedAsync<T>(string basePath, int pages, CancellationToken cancellationToken)
+    {
+        var results = new List<T>();
+        var clampedPages = Math.Clamp(pages, 1, MaxPagesPerFetch);
+
+        for (var page = 1; page <= clampedPages; page++)
+        {
+            var separator = basePath.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+            var pagedPath = $"{basePath}{separator}page={page}";
+
+            var pageResult = await GetAsync<TMDbTrending<T>>(pagedPath, cancellationToken).ConfigureAwait(false);
+            if (pageResult is null || pageResult.Results.Count == 0)
+            {
+                break;
+            }
+
+            results.AddRange(pageResult.Results);
+        }
+
+        return results;
     }
 
     private async Task<T?> GetAsync<T>(string path, CancellationToken cancellationToken)

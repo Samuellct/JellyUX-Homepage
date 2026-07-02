@@ -58,7 +58,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
     public async Task IsStale_FreshlyRefreshed_ReturnsFalse()
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
@@ -74,7 +74,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
     public async Task IsStale_OlderThanConfiguredInterval_ReturnsTrue()
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
@@ -109,7 +109,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
         var libraryItem = new Movie { Id = Guid.NewGuid(), Name = "Inception" };
 
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 27205, Title = "Inception" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(27205, It.IsAny<CancellationToken>()))
             .ReturnsAsync("tt1375666");
@@ -135,7 +135,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
         var libraryItem = new Movie { Id = Guid.NewGuid(), Name = "Inception" };
 
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 27205, Title = "Inception" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(27205, It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
@@ -160,7 +160,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
     public async Task RefreshTrendingMoviesAsync_NoMatchAtAll_LibraryItemIdStaysNull()
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 999, Title = "Unknown" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(999, It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
@@ -191,7 +191,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
         var libraryItem = new Movie { Id = Guid.NewGuid(), Name = "Inception" };
 
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 27205, Title = "Inception" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(27205, It.IsAny<CancellationToken>()))
             .ReturnsAsync("tt1375666");
@@ -209,7 +209,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
 
         // A subsequent refresh fails (e.g. the configured key became invalid) and the API client
         // degrades to an empty list, per its documented contract.
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
 
         await service.RefreshTrendingMoviesAsync(CancellationToken.None);
@@ -236,7 +236,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
     public async Task GetLastRefreshedUtc_AfterRefresh_ReturnsRecentTimestamp()
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
@@ -258,13 +258,13 @@ public sealed class TMDbCacheServiceTests : IDisposable
     public async Task RefreshAllAsync_CallsAllFourFetchesAndReportsProgress()
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
-        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
-        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
-        apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
 
         var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object);
@@ -272,10 +272,10 @@ public sealed class TMDbCacheServiceTests : IDisposable
 
         await service.RefreshAllAsync(progress, CancellationToken.None);
 
-        apiClientMock.Verify(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        apiClientMock.Verify(c => c.GetTrendingShowsAsync(It.IsAny<CancellationToken>()), Times.Once);
-        apiClientMock.Verify(c => c.GetAiringTodayAsync(It.IsAny<CancellationToken>()), Times.Once);
-        apiClientMock.Verify(c => c.GetUpcomingMoviesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        apiClientMock.Verify(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
+        apiClientMock.Verify(c => c.GetTrendingShowsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
+        apiClientMock.Verify(c => c.GetAiringTodayAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
+        apiClientMock.Verify(c => c.GetUpcomingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal([0d, 25d, 50d, 75d, 100d], progress.Values);
     }
 
@@ -283,13 +283,13 @@ public sealed class TMDbCacheServiceTests : IDisposable
     public async Task RefreshAllAsync_NullProgress_DoesNotThrow()
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
-        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
-        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
-        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
-        apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<CancellationToken>()))
+        apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
         apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);

@@ -10,24 +10,31 @@ namespace Jellyfin.Plugin.JuxHomepage.TMDb;
 public interface ITMDbApiClient
 {
     /// <summary>Fetches the current weekly trending movies.</summary>
+    /// <param name="pages">
+    /// Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items). Clamped to
+    /// 1-5 by the caller/config; fetching stops early if a page returns no results.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The trending movies, or an empty list if the key is missing/invalid or the request failed.</returns>
-    Task<IReadOnlyList<TMDbMovie>> GetTrendingMoviesAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<TMDbMovie>> GetTrendingMoviesAsync(int pages, CancellationToken cancellationToken);
 
     /// <summary>Fetches the current weekly trending TV shows.</summary>
+    /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The trending shows, or an empty list if the key is missing/invalid or the request failed.</returns>
-    Task<IReadOnlyList<TMDbShow>> GetTrendingShowsAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<TMDbShow>> GetTrendingShowsAsync(int pages, CancellationToken cancellationToken);
 
     /// <summary>Fetches TV shows airing today.</summary>
+    /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The airing-today shows, or an empty list if the key is missing/invalid or the request failed.</returns>
-    Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(int pages, CancellationToken cancellationToken);
 
     /// <summary>Fetches upcoming movie releases.</summary>
+    /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The upcoming movies, or an empty list if the key is missing/invalid or the request failed.</returns>
-    Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(int pages, CancellationToken cancellationToken);
 
     /// <summary>Fetches the IMDb identifier for a TMDb movie, used for library cross-referencing.</summary>
     /// <param name="tmdbId">The TMDb movie identifier.</param>

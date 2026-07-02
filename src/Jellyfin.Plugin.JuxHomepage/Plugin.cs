@@ -84,6 +84,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
                     ? null
                     : config.ApiKeys.TMDb.Trim();
             }
+
+            // Clamp TMDb list page counts to a sane range (1 page = up to 20 items; more pages
+            // means more cross-referencing API calls per refresh).
+            if (config.TMDbLists is not null)
+            {
+                config.TMDbLists.TrendingMoviesPages = Math.Clamp(config.TMDbLists.TrendingMoviesPages, 1, 5);
+                config.TMDbLists.TrendingShowsPages = Math.Clamp(config.TMDbLists.TrendingShowsPages, 1, 5);
+                config.TMDbLists.AiringTodayPages = Math.Clamp(config.TMDbLists.AiringTodayPages, 1, 5);
+                config.TMDbLists.UpcomingMoviesPages = Math.Clamp(config.TMDbLists.UpcomingMoviesPages, 1, 5);
+            }
         }
 
         // Call base last so ConfigurationChanged fires with the clamped values.

@@ -30,7 +30,7 @@ public sealed class TMDbApiClientTests
 
         var client = BuildClient(handler, V3Key);
 
-        var result = await client.GetTrendingMoviesAsync(CancellationToken.None);
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
 
         Assert.Single(result);
         Assert.Equal(27205, result[0].Id);
@@ -48,7 +48,7 @@ public sealed class TMDbApiClientTests
         var handler = new StubHttpMessageHandler(() => JsonResponse(new TMDbTrending<TMDbMovie>()));
         var client = BuildClient(handler, apiKey: null);
 
-        var result = await client.GetTrendingMoviesAsync(CancellationToken.None);
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
 
         Assert.Empty(result);
         Assert.Equal(0, handler.CallCount);
@@ -64,7 +64,7 @@ public sealed class TMDbApiClientTests
         var handler = new StubHttpMessageHandler(() => new HttpResponseMessage(HttpStatusCode.Unauthorized));
         var client = BuildClient(handler, V3Key);
 
-        var result = await client.GetTrendingMoviesAsync(CancellationToken.None);
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
 
         Assert.Empty(result);
         Assert.Equal(1, handler.CallCount);
@@ -86,7 +86,7 @@ public sealed class TMDbApiClientTests
 
         var client = BuildClient(handler, V3Key);
 
-        var result = await client.GetTrendingMoviesAsync(CancellationToken.None);
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
 
         Assert.Single(result);
         Assert.Equal("Recovered", result[0].Title);
@@ -102,10 +102,74 @@ public sealed class TMDbApiClientTests
 
         var client = BuildClient(handler, V3Key);
 
-        var result = await client.GetTrendingMoviesAsync(CancellationToken.None);
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
 
         Assert.Empty(result);
         Assert.Equal(2, handler.CallCount);
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-page fetching
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTrendingMoviesAsync_MultiplePages_ConcatenatesResults()
+    {
+        var handler = new StubHttpMessageHandler(
+            () => JsonResponse(new TMDbTrending<TMDbMovie>
+            {
+                Results = [new TMDbMovie { Id = 1, Title = "Page 1 Movie" }]
+            }),
+            () => JsonResponse(new TMDbTrending<TMDbMovie>
+            {
+                Results = [new TMDbMovie { Id = 2, Title = "Page 2 Movie" }]
+            }));
+
+        var client = BuildClient(handler, V3Key);
+
+        var result = await client.GetTrendingMoviesAsync(2, CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Page 1 Movie", result[0].Title);
+        Assert.Equal("Page 2 Movie", result[1].Title);
+        Assert.Equal(2, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task GetTrendingMoviesAsync_PageReturnsEmpty_StopsFetchingFurtherPages()
+    {
+        var handler = new StubHttpMessageHandler(
+            () => JsonResponse(new TMDbTrending<TMDbMovie>
+            {
+                Results = [new TMDbMovie { Id = 1, Title = "Only Movie" }]
+            }),
+            () => JsonResponse(new TMDbTrending<TMDbMovie> { Results = [] }));
+
+        var client = BuildClient(handler, V3Key);
+
+        var result = await client.GetTrendingMoviesAsync(5, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(2, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task GetTrendingMoviesAsync_PagesRequestClampedToMax()
+    {
+        var responders = Enumerable.Range(0, 10)
+            .Select(i => (Func<HttpResponseMessage>)(() => JsonResponse(new TMDbTrending<TMDbMovie>
+            {
+                Results = [new TMDbMovie { Id = i, Title = "M" + i }]
+            })))
+            .ToArray();
+        var handler = new StubHttpMessageHandler(responders);
+
+        var client = BuildClient(handler, V3Key);
+
+        var result = await client.GetTrendingMoviesAsync(999, CancellationToken.None);
+
+        Assert.Equal(5, result.Count);
+        Assert.Equal(5, handler.CallCount);
     }
 
     // -------------------------------------------------------------------------

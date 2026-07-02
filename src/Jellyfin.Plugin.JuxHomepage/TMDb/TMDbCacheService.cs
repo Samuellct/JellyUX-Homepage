@@ -74,20 +74,44 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     public IReadOnlyList<TMDbMovie> GetUpcomingMovies() => ReadCache<TMDbMovie>(TMDbCacheType.UpcomingMovies);
 
     /// <inheritdoc/>
-    public Task RefreshTrendingMoviesAsync(CancellationToken cancellationToken) =>
-        RefreshMoviesAsync(TMDbCacheType.TrendingMovies, _apiClient.GetTrendingMoviesAsync, cancellationToken);
+    public Task RefreshTrendingMoviesAsync(CancellationToken cancellationToken)
+    {
+        var pages = _getConfiguration()?.TMDbLists?.TrendingMoviesPages ?? 1;
+        return RefreshMoviesAsync(
+            TMDbCacheType.TrendingMovies,
+            ct => _apiClient.GetTrendingMoviesAsync(pages, ct),
+            cancellationToken);
+    }
 
     /// <inheritdoc/>
-    public Task RefreshUpcomingMoviesAsync(CancellationToken cancellationToken) =>
-        RefreshMoviesAsync(TMDbCacheType.UpcomingMovies, _apiClient.GetUpcomingMoviesAsync, cancellationToken);
+    public Task RefreshUpcomingMoviesAsync(CancellationToken cancellationToken)
+    {
+        var pages = _getConfiguration()?.TMDbLists?.UpcomingMoviesPages ?? 1;
+        return RefreshMoviesAsync(
+            TMDbCacheType.UpcomingMovies,
+            ct => _apiClient.GetUpcomingMoviesAsync(pages, ct),
+            cancellationToken);
+    }
 
     /// <inheritdoc/>
-    public Task RefreshTrendingShowsAsync(CancellationToken cancellationToken) =>
-        RefreshShowsAsync(TMDbCacheType.TrendingShows, _apiClient.GetTrendingShowsAsync, cancellationToken);
+    public Task RefreshTrendingShowsAsync(CancellationToken cancellationToken)
+    {
+        var pages = _getConfiguration()?.TMDbLists?.TrendingShowsPages ?? 1;
+        return RefreshShowsAsync(
+            TMDbCacheType.TrendingShows,
+            ct => _apiClient.GetTrendingShowsAsync(pages, ct),
+            cancellationToken);
+    }
 
     /// <inheritdoc/>
-    public Task RefreshAiringTodayAsync(CancellationToken cancellationToken) =>
-        RefreshShowsAsync(TMDbCacheType.AiringToday, _apiClient.GetAiringTodayAsync, cancellationToken);
+    public Task RefreshAiringTodayAsync(CancellationToken cancellationToken)
+    {
+        var pages = _getConfiguration()?.TMDbLists?.AiringTodayPages ?? 1;
+        return RefreshShowsAsync(
+            TMDbCacheType.AiringToday,
+            ct => _apiClient.GetAiringTodayAsync(pages, ct),
+            cancellationToken);
+    }
 
     /// <inheritdoc/>
     public bool IsStale(TMDbCacheType type)
