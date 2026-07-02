@@ -61,6 +61,7 @@
             <div class="verticalSection">
                 <h3 class="sectionTitle">TMDb Cache</h3>
                 <p class="fieldDescription">Status of the cached TMDb data used by Connected widgets.</p>
+                <p class="fieldDescription">Each page is about 20 items from TMDb, so "Pages: 3" fetches roughly 60 items for that list.</p>
                 <div id="juxTmdbStatusList"></div>
                 <button type="button" id="juxBtnRefreshTmdb" class="emby-button raised">
                     <span>Refresh now</span>
@@ -779,22 +780,34 @@
             // Populated once via GET TMDb/Genres; used to render the Discover widget's genre select.
             _tmdbGenres: [],
 
+            // Human-readable labels for each TMDbCacheType, shared by the full render and the
+            // lightweight text-only update.
+            _tmdbStatusLabels: {
+                TrendingMovies: 'Trending Movies',
+                TrendingShows: 'Trending Shows',
+                AiringToday: 'Airing Today',
+                UpcomingMovies: 'Upcoming Movies',
+                TopRatedMovies: 'Top Rated Movies',
+                TopRatedShows: 'Top Rated Shows',
+                NowPlayingMovies: 'Now Playing'
+            },
+
             // Renders the per-type TMDb cache status list (last refresh timestamp + item count),
             // plus a "Pages" input controlling how many TMDb result pages (20 items each) are
             // fetched and cached for that list.
+            //
+            // IMPORTANT: this (re)creates the Pages/Region <input>/<select> elements, discarding
+            // any value the admin has typed but not yet saved. Only call this when self.state.config
+            // is known to reflect the truth the admin should see (initial load, or right after a
+            // successful save) -- NEVER from a background poll like the post-"Refresh now" status
+            // check, which must use updateTmdbStatusText instead so it cannot silently wipe an
+            // in-progress, unsaved edit. (This is exactly the bug that let a stale default Pages
+            // value get silently re-displayed and then genuinely persisted over a real save.)
             renderTmdbStatus: function (statuses) {
                 var self = this;
                 var list = document.getElementById('juxTmdbStatusList');
                 if (!list) { return; }
-                var labels = {
-                    TrendingMovies: 'Trending Movies',
-                    TrendingShows: 'Trending Shows',
-                    AiringToday: 'Airing Today',
-                    UpcomingMovies: 'Upcoming Movies',
-                    TopRatedMovies: 'Top Rated Movies',
-                    TopRatedShows: 'Top Rated Shows',
-                    NowPlayingMovies: 'Now Playing'
-                };
+                var labels = self._tmdbStatusLabels;
                 var tmdbLists = (self.state.config && self.state.config.TMDbLists) || {};
                 var currentRegion = tmdbLists.NowPlayingRegion || '';
                 var html = '';
@@ -804,8 +817,8 @@
                     var pagesKey = self._tmdbPagesConfigKey[s.Type];
                     var pages = pagesKey ? (tmdbLists[pagesKey] || 1) : 1;
                     html += '<div class="jux-admin-tmdb-status-row">';
-                    html += '<span>' + self.escHtml(label) + ' (' + s.ItemCount + ' cached)</span>';
-                    html += '<span>' + self.escHtml(lastRefreshed) + '</span>';
+                    html += '<span id="tmdbLabel_' + s.Type + '">' + self.escHtml(label) + ' (' + s.ItemCount + ' cached)</span>';
+                    html += '<span id="tmdbRefreshed_' + s.Type + '">' + self.escHtml(lastRefreshed) + '</span>';
                     if (pagesKey) {
                         html += '<span class="jux-admin-tmdb-pages">';
                         html += '<label for="numTmdbPages_' + s.Type + '">Pages</label>';
@@ -830,6 +843,32 @@
                 list.innerHTML = html || '<p class="fieldDescription">No status available.</p>';
             },
 
+            // Updates ONLY the read-only "last refreshed" timestamp and item count text for each
+            // row, leaving the Pages/Region inputs completely untouched. Safe to call from a
+            // background status poll (e.g. after "Refresh now") without discarding an admin's
+            // in-progress, unsaved edit to those inputs. Falls back to a full renderTmdbStatus if
+            // the rows don't exist yet (e.g. this is somehow called before the first full render).
+            updateTmdbStatusText: function (statuses) {
+                var self = this;
+                var labels = self._tmdbStatusLabels;
+                var anyMissing = false;
+                (statuses || []).forEach(function (s) {
+                    var labelEl = document.getElementById('tmdbLabel_' + s.Type);
+                    var refreshedEl = document.getElementById('tmdbRefreshed_' + s.Type);
+                    if (!labelEl || !refreshedEl) {
+                        anyMissing = true;
+                        return;
+                    }
+                    var label = labels[s.Type] || s.Type;
+                    var lastRefreshed = s.LastRefreshedUtc ? new Date(s.LastRefreshedUtc).toLocaleString() : 'Never';
+                    labelEl.textContent = label + ' (' + s.ItemCount + ' cached)';
+                    refreshedEl.textContent = lastRefreshed;
+                });
+                if (anyMissing) {
+                    self.renderTmdbStatus(statuses);
+                }
+            },
+
             // Fetches the ISO country list once for the Now Playing region select.
             loadTmdbCountries: function () {
                 var self = this;
@@ -852,11 +891,13 @@
                 });
             },
 
-            // Fetches and renders the TMDb cache status; used on load and after a manual refresh.
+            // Fetches the TMDb cache status after a manual "Refresh now" and updates only the
+            // read-only timestamp/count text (see updateTmdbStatusText) -- it must NOT rebuild the
+            // Pages/Region inputs, since the admin may be mid-edit on them and hasn't saved yet.
             loadTmdbStatus: function () {
                 var self = this;
                 return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).then(function (statuses) {
-                    self.renderTmdbStatus(statuses);
+                    self.updateTmdbStatusText(statuses);
                 }).catch(function (err) {
                     console.error('[JUX Config] TMDb status load failed:', err);
                 });
@@ -975,7 +1016,14 @@
                         };
                     });
 
-                    return ApiClient.updatePluginConfiguration(self.PLUGIN_ID, config);
+                    return ApiClient.updatePluginConfiguration(self.PLUGIN_ID, config).then(function (result) {
+                        // Keep in-memory state honest with what was just actually persisted, so
+                        // that any later render (e.g. a background status poll falling back to a
+                        // full re-render because a row is missing) reflects real saved values
+                        // instead of what was loaded at the start of this page view.
+                        self.state.config = config;
+                        return result;
+                    });
                 }).then(function (result) {
                     Dashboard.hideLoadingMsg();
                     Dashboard.processPluginConfigurationUpdateResult(result);
