@@ -1,3 +1,9 @@
+## [0.9.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.9.0...v0.9.1) (2026-07-02)
+
+### Bug Fixes
+
+* log explicit per-type item and library-match counts on TMDb refresh ([02faa10](https://github.com/Samuellct/JellyUX-Homepage/commit/02faa1011c92a5838e69d21a13a0c822922c40c0))
+
 ## [0.9.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.8.0...v0.9.0) (2026-07-02)
 
 ### Features

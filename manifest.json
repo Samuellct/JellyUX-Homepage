@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.9.1.0",
+                "changelog": "### Bug Fixes\n\n* log explicit per-type item and library-match counts on TMDb refresh ([02faa10](https://github.com/Samuellct/JellyUX-Homepage/commit/02faa1011c92a5838e69d21a13a0c822922c40c0))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.9.1/jellyux-homepage_0.9.1.0.zip",
+                "checksum": "5b1fc45e9bca113ae64278b525f25875",
+                "timestamp": "2026-07-02T15:29:12Z"
+            },
+            {
                 "version": "0.9.0.0",
                 "changelog": "### Features\n\n* add TMDb cache service with library cross-referencing ([0bea103](https://github.com/Samuellct/JellyUX-Homepage/commit/0bea103046ce0269333f34566c4a5e2fb6eccfa3))\n* add TMDb daily refresh scheduled task ([a35b023](https://github.com/Samuellct/JellyUX-Homepage/commit/a35b0234bc59a16164989ae95691c54e0ae44e49))\n* add TMDb HTTP client with error handling ([a8e5496](https://github.com/Samuellct/JellyUX-Homepage/commit/a8e54962271cc167abde34103436fc6210363d93))",
                 "targetAbi": "10.11.0.0",
