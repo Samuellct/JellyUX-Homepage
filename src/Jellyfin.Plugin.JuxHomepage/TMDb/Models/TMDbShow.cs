@@ -5,7 +5,7 @@ namespace Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 /// <summary>
 /// A TV show as returned by TMDb's trending/airing-today list endpoints.
 /// </summary>
-public sealed class TMDbShow
+public sealed class TMDbShow : ITMDbCacheItem
 {
     /// <summary>Gets or sets the TMDb show identifier.</summary>
     [JsonPropertyName("id")]

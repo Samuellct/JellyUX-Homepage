@@ -37,6 +37,12 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<IHttpClientFactory>(),
             () => Plugin.Instance?.Configuration,
             serviceProvider.GetRequiredService<ILogger<TMDbApiClient>>()));
+        serviceCollection.AddSingleton<ITMDbCacheService>(serviceProvider => new TMDbCacheService(
+            serviceProvider.GetRequiredService<IApplicationPaths>(),
+            serviceProvider.GetRequiredService<ITMDbApiClient>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            () => Plugin.Instance?.Configuration,
+            serviceProvider.GetRequiredService<ILogger<TMDbCacheService>>()));
         serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
