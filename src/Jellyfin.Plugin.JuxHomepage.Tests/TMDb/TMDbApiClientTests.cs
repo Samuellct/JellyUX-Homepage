@@ -173,6 +173,63 @@ public sealed class TMDbApiClientTests
     }
 
     // -------------------------------------------------------------------------
+    // Discover-related endpoints
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetMovieGenresAsync_SuccessfulResponse_DeserializesGenres()
+    {
+        var handler = new StubHttpMessageHandler(() => JsonResponse(new TMDbGenreListResponse
+        {
+            Genres = [new TMDbGenre { Id = 28, Name = "Action" }]
+        }));
+
+        var client = BuildClient(handler, V3Key);
+
+        var result = await client.GetMovieGenresAsync(CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal(28, result[0].Id);
+        Assert.Equal("Action", result[0].Name);
+    }
+
+    [Fact]
+    public async Task SearchPersonAsync_SuccessfulResponse_DeserializesResults()
+    {
+        var handler = new StubHttpMessageHandler(() => JsonResponse(new TMDbTrending<TMDbSearchResult>
+        {
+            Results = [new TMDbSearchResult { Id = 6193, Name = "Leonardo DiCaprio" }]
+        }));
+
+        var client = BuildClient(handler, V3Key);
+
+        var result = await client.SearchPersonAsync("Leonardo", CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal("Leonardo DiCaprio", result[0].Name);
+    }
+
+    [Fact]
+    public async Task DiscoverMoviesAsync_DefaultFilter_FetchesConfiguredPages()
+    {
+        var handler = new StubHttpMessageHandler(
+            () => JsonResponse(new TMDbTrending<TMDbMovie>
+            {
+                Results = [new TMDbMovie { Id = 1, Title = "Discovered" }]
+            }),
+            () => JsonResponse(new TMDbTrending<TMDbMovie> { Results = [] }));
+
+        var client = BuildClient(handler, V3Key);
+        var filter = new TMDbDiscoverFilter { Pages = 2 };
+
+        var result = await client.DiscoverMoviesAsync(filter, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal("Discovered", result[0].Title);
+        Assert.Equal(2, handler.CallCount);
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

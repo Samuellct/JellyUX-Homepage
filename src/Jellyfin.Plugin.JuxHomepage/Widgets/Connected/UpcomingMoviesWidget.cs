@@ -36,5 +36,5 @@ public sealed class UpcomingMoviesWidget : ConnectedWidgetBase<TMDbMovie>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<TMDbMovie> GetCachedItems() => CacheService.GetUpcomingMovies();
+    protected override IReadOnlyList<TMDbMovie> GetCachedItems(WidgetPayload payload) => CacheService.GetUpcomingMovies();
 }

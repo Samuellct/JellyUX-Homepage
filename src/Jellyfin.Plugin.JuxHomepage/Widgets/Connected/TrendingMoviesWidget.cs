@@ -36,5 +36,5 @@ public sealed class TrendingMoviesWidget : ConnectedWidgetBase<TMDbMovie>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<TMDbMovie> GetCachedItems() => CacheService.GetTrendingMovies();
+    protected override IReadOnlyList<TMDbMovie> GetCachedItems(WidgetPayload payload) => CacheService.GetTrendingMovies();
 }

@@ -224,6 +224,32 @@
                 return desc && (desc.Category === 3 || desc.Category === 'Connected');
             },
 
+            DISCOVER_MOVIES_TYPE: 'jux.connected.discover-movies',
+
+            isDiscover: function (widgetType) {
+                return widgetType === this.DISCOVER_MOVIES_TYPE;
+            },
+
+            // Per-field autocomplete cache for the Discover widget's person/keyword/company inputs.
+            // Keyed by field name ("person"|"keyword"|"company"), each an array of {Value,Label}.
+            _discoverSearchCache: { person: [], keyword: [], company: [] },
+
+            getDiscoverLabelForValue: function (field, value) {
+                var vals = this._discoverSearchCache[field] || [];
+                for (var i = 0; i < vals.length; i++) {
+                    if (vals[i].Value === value) { return vals[i].Label; }
+                }
+                return value;
+            },
+
+            getDiscoverValueForLabel: function (field, label) {
+                var vals = this._discoverSearchCache[field] || [];
+                for (var i = 0; i < vals.length; i++) {
+                    if (vals[i].Label === label) { return vals[i].Value; }
+                }
+                return '';
+            },
+
             getDescriptor: function (widgetType) {
                 for (var i = 0; i < this.state.descriptors.length; i++) {
                     if (this.state.descriptors[i].WidgetType === widgetType) {
@@ -390,6 +416,83 @@
                             html += '</div>';
                         }
 
+                        if (self.isDiscover(w.WidgetType)) {
+                            var genreValue = self.getExtraParam(w, 'genreIds');
+                            var personValue = self.getExtraParam(w, 'personIds');
+                            var keywordValue = self.getExtraParam(w, 'keywordIds');
+                            var companyValue = self.getExtraParam(w, 'companyIds');
+                            var sortByValue = self.getExtraParam(w, 'sortBy') || 'popularity.desc';
+                            var yearValue = self.getExtraParam(w, 'year');
+                            var minRatingValue = self.getExtraParam(w, 'minRating');
+                            var minVotesValue = self.getExtraParam(w, 'minVotes') || '50';
+                            var discoverPagesValue = self.getExtraParam(w, 'pages') || '1';
+
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discGenre_' + i + '">Genre</label>';
+                            html += '<select id="discGenre_' + i + '" class="emby-select-withcolor emby-select jux-discover-genre">';
+                            html += '<option value="">Any genre</option>';
+                            self._tmdbGenres.forEach(function (g) {
+                                html += '<option value="' + self.escHtml(g.Value) + '"' + (g.Value === genreValue ? ' selected' : '') + '>' + self.escHtml(g.Label) + '</option>';
+                            });
+                            html += '</select>';
+                            html += '</div>';
+
+                            var discDatalistId = 'discVals_' + i;
+                            [
+                                ['person', 'Person', personValue],
+                                ['keyword', 'Keyword', keywordValue],
+                                ['company', 'Company', companyValue]
+                            ].forEach(function (field) {
+                                var fieldName = field[0], fieldLabel = field[1], fieldValue = field[2];
+                                var currentLabel = fieldValue ? self.getDiscoverLabelForValue(fieldName, fieldValue) : '';
+                                html += '<div class="inputContainer">';
+                                html += '<label class="inputLabel inputLabelUnfocused" for="disc' + fieldName + '_' + i + '">' + fieldLabel + '</label>';
+                                html += '<input id="disc' + fieldName + '_' + i + '" type="text" list="' + discDatalistId + '_' + fieldName + '"';
+                                html += ' class="emby-input jux-discover-' + fieldName + '" data-field="' + fieldName + '"';
+                                html += ' placeholder="Start typing to search..." value="' + self.escHtml(currentLabel || fieldValue) + '" />';
+                                html += '<datalist id="' + discDatalistId + '_' + fieldName + '"></datalist>';
+                                html += '</div>';
+                            });
+
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discSortBy_' + i + '">Sort by</label>';
+                            html += '<select id="discSortBy_' + i + '" class="emby-select-withcolor emby-select jux-discover-sortby">';
+                            [
+                                ['popularity.desc', 'Popularity'],
+                                ['vote_average.desc', 'Rating'],
+                                ['vote_count.desc', 'Vote count'],
+                                ['primary_release_date.desc', 'Release date'],
+                                ['revenue.desc', 'Revenue'],
+                                ['title.asc', 'Title']
+                            ].forEach(function (opt) {
+                                html += '<option value="' + opt[0] + '"' + (sortByValue === opt[0] ? ' selected' : '') + '>' + opt[1] + '</option>';
+                            });
+                            html += '</select>';
+                            html += '</div>';
+
+                            html += '<div class="jux-admin-row">';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discYear_' + i + '">Year</label>';
+                            html += '<input id="discYear_' + i + '" type="number" class="emby-input jux-discover-year" value="' + self.escHtml(yearValue) + '" />';
+                            html += '</div>';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discMinRating_' + i + '">Min rating</label>';
+                            html += '<input id="discMinRating_' + i + '" type="number" min="0" max="10" step="0.1" class="emby-input jux-discover-minrating" value="' + self.escHtml(minRatingValue) + '" />';
+                            html += '</div>';
+                            html += '</div>';
+
+                            html += '<div class="jux-admin-row">';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discMinVotes_' + i + '">Min votes</label>';
+                            html += '<input id="discMinVotes_' + i + '" type="number" min="0" class="emby-input jux-discover-minvotes" value="' + self.escHtml(minVotesValue) + '" />';
+                            html += '</div>';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discPages_' + i + '">Pages</label>';
+                            html += '<input id="discPages_' + i + '" type="number" min="1" max="5" class="emby-input jux-discover-pages" value="' + self.escHtml(discoverPagesValue) + '" />';
+                            html += '</div>';
+                            html += '</div>';
+                        }
+
                         html += '<div class="jux-admin-row">';
 
                         html += '<div class="inputContainer jux-admin-half">';
@@ -535,6 +638,38 @@
                         }, 300);
                     });
                 });
+
+                // Discover widget: search-as-you-type for person/keyword/company autocomplete.
+                var searchEndpoints = { person: 'TMDb/Search/Person', keyword: 'TMDb/Search/Keyword', company: 'TMDb/Search/Company' };
+                list.querySelectorAll('.jux-discover-person, .jux-discover-keyword, .jux-discover-company').forEach(function (inputEl) {
+                    var fieldName = inputEl.getAttribute('data-field');
+                    var datalistId = inputEl.getAttribute('list');
+                    var timer = null;
+                    inputEl.addEventListener('input', function () {
+                        clearTimeout(timer);
+                        var query = inputEl.value.trim();
+                        if (!query) { return; }
+                        timer = setTimeout(function () {
+                            var url = ApiClient.getUrl('JuxHomepage/' + searchEndpoints[fieldName], { query: query });
+                            ApiClient.getJSON(url).then(function (vals) {
+                                var dl = document.getElementById(datalistId);
+                                if (!dl) { return; }
+                                var dlHtml = '';
+                                (vals || []).forEach(function (v) {
+                                    dlHtml += '<option value="' + self.escHtml(v.Label) + '"></option>';
+                                });
+                                dl.innerHTML = dlHtml;
+                                var cache = self._discoverSearchCache[fieldName];
+                                (vals || []).forEach(function (v) {
+                                    for (var k = 0; k < cache.length; k++) {
+                                        if (cache[k].Value === v.Value) { return; }
+                                    }
+                                    cache.push(v);
+                                });
+                            }).catch(function () {});
+                        }, 300);
+                    });
+                });
             },
 
             readDomIntoState: function () {
@@ -577,6 +712,40 @@
                     if (excludeWatchedEl) {
                         w.ExtraParams = [{ Key: 'excludeWatched', Value: excludeWatchedEl.checked ? 'true' : 'false' }];
                     }
+                    if (self.isDiscover(w.WidgetType)) {
+                        var genreEl = card.querySelector('.jux-discover-genre');
+                        var personEl = card.querySelector('.jux-discover-person');
+                        var keywordEl = card.querySelector('.jux-discover-keyword');
+                        var companyEl = card.querySelector('.jux-discover-company');
+                        var sortByEl = card.querySelector('.jux-discover-sortby');
+                        var yearEl = card.querySelector('.jux-discover-year');
+                        var minRatingEl = card.querySelector('.jux-discover-minrating');
+                        var minVotesEl = card.querySelector('.jux-discover-minvotes');
+                        var pagesEl = card.querySelector('.jux-discover-pages');
+
+                        var instanceId = self.getExtraParam(w, 'value');
+                        var params = [{ Key: 'value', Value: instanceId }];
+
+                        if (genreEl && genreEl.value) { params.push({ Key: 'genreIds', Value: genreEl.value }); }
+                        [
+                            ['person', personEl],
+                            ['keyword', keywordEl],
+                            ['company', companyEl]
+                        ].forEach(function (entry) {
+                            var fieldName = entry[0], el = entry[1];
+                            if (!el) { return; }
+                            var label = el.value.trim();
+                            var resolved = label ? self.getDiscoverValueForLabel(fieldName, label) : '';
+                            if (resolved) { params.push({ Key: fieldName + 'Ids', Value: resolved }); }
+                        });
+                        if (sortByEl && sortByEl.value) { params.push({ Key: 'sortBy', Value: sortByEl.value }); }
+                        if (yearEl && yearEl.value) { params.push({ Key: 'year', Value: yearEl.value }); }
+                        if (minRatingEl && minRatingEl.value) { params.push({ Key: 'minRating', Value: minRatingEl.value }); }
+                        if (minVotesEl && minVotesEl.value) { params.push({ Key: 'minVotes', Value: minVotesEl.value }); }
+                        if (pagesEl && pagesEl.value) { params.push({ Key: 'pages', Value: pagesEl.value }); }
+
+                        w.ExtraParams = params;
+                    }
                 });
             },
 
@@ -606,6 +775,9 @@
 
             // Populated once via GET TMDb/Countries; used to render the Now Playing region select.
             _tmdbCountries: [],
+
+            // Populated once via GET TMDb/Genres; used to render the Discover widget's genre select.
+            _tmdbGenres: [],
 
             // Renders the per-type TMDb cache status list (last refresh timestamp + item count),
             // plus a "Pages" input controlling how many TMDb result pages (20 items each) are
@@ -669,6 +841,17 @@
                 });
             },
 
+            // Fetches the movie genre list once for the Discover widget's genre select.
+            loadTmdbGenres: function () {
+                var self = this;
+                if (self._tmdbGenres.length) { return Promise.resolve(); }
+                return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Genres')).then(function (genres) {
+                    self._tmdbGenres = genres || [];
+                }).catch(function (err) {
+                    console.error('[JUX Config] TMDb genres load failed:', err);
+                });
+            },
+
             // Fetches and renders the TMDb cache status; used on load and after a manual refresh.
             loadTmdbStatus: function () {
                 var self = this;
@@ -686,7 +869,8 @@
                     ApiClient.getPluginConfiguration(self.PLUGIN_ID),
                     ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Widgets')),
                     ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).catch(function () { return []; }),
-                    self.loadTmdbCountries()
+                    self.loadTmdbCountries(),
+                    self.loadTmdbGenres()
                 ]).then(function (results) {
                     self.state.config = results[0];
                     self.state.descriptors = results[1] || [];
@@ -823,7 +1007,25 @@
                             var desc = self.getDescriptor(widgetType);
                             var isPers = self.isPersonalized(widgetType);
                             var isConn = self.isConnected(widgetType);
+                            var isDisc = self.isDiscover(widgetType);
                             self.readDomIntoState();
+                            var extraParams = [];
+                            if (isPers) {
+                                extraParams = [{ Key: 'excludeWatched', Value: 'true' }];
+                            } else if (isDisc) {
+                                var newInstanceId = (window.crypto && window.crypto.randomUUID)
+                                    ? window.crypto.randomUUID()
+                                    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                                        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                                        return v.toString(16);
+                                    });
+                                extraParams = [
+                                    { Key: 'value', Value: newInstanceId },
+                                    { Key: 'sortBy', Value: 'popularity.desc' },
+                                    { Key: 'minVotes', Value: '50' },
+                                    { Key: 'pages', Value: '1' }
+                                ];
+                            }
                             self.state.sortedWidgets.push({
                                 WidgetType: widgetType,
                                 Enabled: true,
@@ -834,7 +1036,7 @@
                                 AllowUserOverride: false,
                                 MinInstances: 1,
                                 MaxInstances: isPers ? 3 : (isConn ? 1 : 5),
-                                ExtraParams: isPers ? [{ Key: 'excludeWatched', Value: 'true' }] : []
+                                ExtraParams: extraParams
                             });
                             sel.value = '';
                             self.renderWidgets();

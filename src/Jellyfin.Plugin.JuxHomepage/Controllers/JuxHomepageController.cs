@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
+using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Controller.Library;
@@ -306,6 +308,74 @@ public class JuxHomepageController : ControllerBase
         return Ok(values);
     }
 
+    /// <summary>
+    /// Returns the full TMDb movie genre list, for the Discover widget's genre picker.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=genre id, Label=name).</returns>
+    [HttpGet("TMDb/Genres")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> GetTMDbGenres(CancellationToken cancellationToken)
+    {
+        var genres = await _tmdbApiClient.GetMovieGenresAsync(cancellationToken).ConfigureAwait(false);
+        var values = genres
+            .Select(genre => new AdminWidgetValue(genre.Id.ToString(CultureInfo.InvariantCulture), genre.Name))
+            .OrderBy(value => value.Label, StringComparer.OrdinalIgnoreCase)
+            .ToList()
+            .AsReadOnly();
+
+        return Ok(values);
+    }
+
+    /// <summary>
+    /// Searches TMDb people by name, for the Discover widget's person autocomplete.
+    /// </summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=person id, Label=name).</returns>
+    [HttpGet("TMDb/Search/Person")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchTMDbPerson(
+        [FromQuery] string query,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await SearchTMDbAsync(_tmdbApiClient.SearchPersonAsync, query, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Searches TMDb keywords by name, for the Discover widget's keyword autocomplete.
+    /// </summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=keyword id, Label=name).</returns>
+    [HttpGet("TMDb/Search/Keyword")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchTMDbKeyword(
+        [FromQuery] string query,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await SearchTMDbAsync(_tmdbApiClient.SearchKeywordAsync, query, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Searches TMDb companies by name, for the Discover widget's company autocomplete.
+    /// </summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=company id, Label=name).</returns>
+    [HttpGet("TMDb/Search/Company")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchTMDbCompany(
+        [FromQuery] string query,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await SearchTMDbAsync(_tmdbApiClient.SearchCompanyAsync, query, cancellationToken).ConfigureAwait(false));
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -322,6 +392,23 @@ public class JuxHomepageController : ControllerBase
     private static void SetCacheHeaders(HttpResponse response)
     {
         response.Headers.CacheControl = "public, max-age=3600";
+    }
+
+    private static async Task<IReadOnlyList<AdminWidgetValue>> SearchTMDbAsync(
+        Func<string, CancellationToken, Task<IReadOnlyList<TMDbSearchResult>>> search,
+        string query,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return [];
+        }
+
+        var results = await search(query, cancellationToken).ConfigureAwait(false);
+        return results
+            .Select(r => new AdminWidgetValue(r.Id.ToString(CultureInfo.InvariantCulture), r.Name))
+            .ToList()
+            .AsReadOnly();
     }
 
     private int GetTMDbItemCount(TMDbCacheType type) => type switch

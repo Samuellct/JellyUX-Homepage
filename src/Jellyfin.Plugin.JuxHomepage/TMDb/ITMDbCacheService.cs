@@ -37,6 +37,11 @@ public interface ITMDbCacheService
     /// <returns>The cached movies, or an empty list if no refresh has completed yet.</returns>
     IReadOnlyList<TMDbMovie> GetNowPlayingMovies();
 
+    /// <summary>Reads the cached movies for a single Discover widget instance.</summary>
+    /// <param name="instanceId">The Discover widget instance's identifier (its config row's <c>ExtraParams["value"]</c>).</param>
+    /// <returns>The cached movies, or an empty list if no refresh has completed yet.</returns>
+    IReadOnlyList<TMDbMovie> GetDiscoverMovies(string instanceId);
+
     /// <summary>Refreshes the trending movies cache from TMDb, cross-referencing the local library.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task RefreshTrendingMoviesAsync(CancellationToken cancellationToken);
@@ -65,6 +70,12 @@ public interface ITMDbCacheService
     /// <param name="cancellationToken">Cancellation token.</param>
     Task RefreshNowPlayingMoviesAsync(CancellationToken cancellationToken);
 
+    /// <summary>Refreshes a single Discover widget instance's cache from TMDb, cross-referencing the local library.</summary>
+    /// <param name="instanceId">The Discover widget instance's identifier (its config row's <c>ExtraParams["value"]</c>).</param>
+    /// <param name="filter">The instance's configured filter parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RefreshDiscoverMoviesAsync(string instanceId, TMDbDiscoverFilter filter, CancellationToken cancellationToken);
+
     /// <summary>
     /// Returns whether the given cache type is missing or older than the configured refresh
     /// interval (<see cref="Configuration.CacheConfig.TMDbRefreshIntervalHours"/>).
@@ -82,9 +93,10 @@ public interface ITMDbCacheService
     DateTime? GetLastRefreshedUtc(TMDbCacheType type);
 
     /// <summary>
-    /// Refreshes all fixed TMDb cache types in sequence. Each individual refresh is already
-    /// fault-tolerant (a failure is logged and does not abort the others). Shared by the daily
-    /// scheduled task and the admin "Refresh now" action so neither duplicates the sequence.
+    /// Refreshes all fixed TMDb cache types in sequence, then refreshes every configured Discover
+    /// widget instance. Each individual refresh is already fault-tolerant (a failure is logged and
+    /// does not abort the others). Shared by the daily scheduled task and the admin "Refresh now"
+    /// action so neither duplicates the sequence.
     /// </summary>
     /// <param name="progress">
     /// Optional progress reporter, updated as each refresh completes. Pass null when progress

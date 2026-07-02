@@ -63,6 +63,35 @@ public interface ITMDbApiClient
     /// <returns>The countries, or an empty list if the key is missing/invalid or the request failed.</returns>
     Task<IReadOnlyList<TMDbCountry>> GetCountriesAsync(CancellationToken cancellationToken);
 
+    /// <summary>Fetches the full list of TMDb movie genres, for the Discover widget's genre picker.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The genres, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbGenre>> GetMovieGenresAsync(CancellationToken cancellationToken);
+
+    /// <summary>Searches TMDb people by name, for the Discover widget's person autocomplete.</summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching people, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbSearchResult>> SearchPersonAsync(string query, CancellationToken cancellationToken);
+
+    /// <summary>Searches TMDb keywords by name, for the Discover widget's keyword autocomplete.</summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching keywords, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbSearchResult>> SearchKeywordAsync(string query, CancellationToken cancellationToken);
+
+    /// <summary>Searches TMDb companies by name, for the Discover widget's company autocomplete.</summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching companies, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbSearchResult>> SearchCompanyAsync(string query, CancellationToken cancellationToken);
+
+    /// <summary>Fetches movies matching a Discover widget instance's configured filter.</summary>
+    /// <param name="filter">The filter parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The matching movies, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbMovie>> DiscoverMoviesAsync(TMDbDiscoverFilter filter, CancellationToken cancellationToken);
+
     /// <summary>Fetches the IMDb identifier for a TMDb movie, used for library cross-referencing.</summary>
     /// <param name="tmdbId">The TMDb movie identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

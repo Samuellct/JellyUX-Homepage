@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -94,6 +95,81 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
         var result = await GetAsync<List<TMDbCountry>>("configuration/countries", cancellationToken)
             .ConfigureAwait(false);
         return result ?? [];
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<TMDbGenre>> GetMovieGenresAsync(CancellationToken cancellationToken)
+    {
+        var result = await GetAsync<TMDbGenreListResponse>("genre/movie/list", cancellationToken)
+            .ConfigureAwait(false);
+        return result?.Genres ?? [];
+    }
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<TMDbSearchResult>> SearchPersonAsync(string query, CancellationToken cancellationToken) =>
+        SearchAsync("search/person", query, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<TMDbSearchResult>> SearchKeywordAsync(string query, CancellationToken cancellationToken) =>
+        SearchAsync("search/keyword", query, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<TMDbSearchResult>> SearchCompanyAsync(string query, CancellationToken cancellationToken) =>
+        SearchAsync("search/company", query, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<TMDbMovie>> DiscoverMoviesAsync(TMDbDiscoverFilter filter, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbMovie>(BuildDiscoverMoviePath(filter), filter.Pages, cancellationToken);
+
+    private async Task<IReadOnlyList<TMDbSearchResult>> SearchAsync(
+        string endpoint,
+        string query,
+        CancellationToken cancellationToken)
+    {
+        var path = $"{endpoint}?query={Uri.EscapeDataString(query)}";
+        var result = await GetAsync<TMDbTrending<TMDbSearchResult>>(path, cancellationToken).ConfigureAwait(false);
+        return result?.Results ?? [];
+    }
+
+    private static string BuildDiscoverMoviePath(TMDbDiscoverFilter filter)
+    {
+        var query = new List<string>
+        {
+            $"sort_by={Uri.EscapeDataString(filter.SortBy)}",
+            $"vote_count.gte={filter.VoteCountGte}"
+        };
+
+        if (filter.GenreIds is { Count: > 0 })
+        {
+            query.Add($"with_genres={string.Join(',', filter.GenreIds)}");
+        }
+
+        if (filter.PersonIds is { Count: > 0 })
+        {
+            query.Add($"with_people={string.Join(',', filter.PersonIds)}");
+        }
+
+        if (filter.KeywordIds is { Count: > 0 })
+        {
+            query.Add($"with_keywords={string.Join(',', filter.KeywordIds)}");
+        }
+
+        if (filter.CompanyIds is { Count: > 0 })
+        {
+            query.Add($"with_companies={string.Join(',', filter.CompanyIds)}");
+        }
+
+        if (filter.PrimaryReleaseYear.HasValue)
+        {
+            query.Add($"primary_release_year={filter.PrimaryReleaseYear.Value}");
+        }
+
+        if (filter.VoteAverageGte.HasValue)
+        {
+            query.Add($"vote_average.gte={filter.VoteAverageGte.Value.ToString(CultureInfo.InvariantCulture)}");
+        }
+
+        return $"discover/movie?{string.Join('&', query)}";
     }
 
     /// <inheritdoc/>

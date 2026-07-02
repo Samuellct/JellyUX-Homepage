@@ -82,8 +82,13 @@ public abstract class ConnectedWidgetBase<T> : IWidget
     /// <summary>
     /// Returns the currently cached TMDb items for this widget's data set (e.g. trending movies).
     /// </summary>
+    /// <param name="payload">
+    /// The request payload. Fixed single-instance widgets ignore it; multi-instance widgets (e.g.
+    /// Discover) read <see cref="WidgetPayload.AdditionalData"/> to identify which instance's cache
+    /// to read.
+    /// </param>
     /// <returns>The cached items, or an empty list if no refresh has completed yet.</returns>
-    protected abstract IReadOnlyList<T> GetCachedItems();
+    protected abstract IReadOnlyList<T> GetCachedItems(WidgetPayload payload);
 
     /// <inheritdoc/>
     public IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count)
@@ -100,7 +105,7 @@ public abstract class ConnectedWidgetBase<T> : IWidget
             return Task.FromResult(WidgetResult.Empty);
         }
 
-        var libraryIds = GetCachedItems()
+        var libraryIds = GetCachedItems(payload)
             .Where(i => i.LibraryItemId.HasValue)
             .Select(i => i.LibraryItemId!.Value)
             .ToList();

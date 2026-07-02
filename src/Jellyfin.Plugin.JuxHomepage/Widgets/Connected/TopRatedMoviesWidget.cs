@@ -37,5 +37,5 @@ public sealed class TopRatedMoviesWidget : ConnectedWidgetBase<TMDbMovie>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<TMDbMovie> GetCachedItems() => CacheService.GetTopRatedMovies();
+    protected override IReadOnlyList<TMDbMovie> GetCachedItems(WidgetPayload payload) => CacheService.GetTopRatedMovies();
 }

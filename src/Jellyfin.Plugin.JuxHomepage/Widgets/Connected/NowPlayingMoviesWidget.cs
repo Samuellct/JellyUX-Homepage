@@ -37,5 +37,5 @@ public sealed class NowPlayingMoviesWidget : ConnectedWidgetBase<TMDbMovie>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<TMDbMovie> GetCachedItems() => CacheService.GetNowPlayingMovies();
+    protected override IReadOnlyList<TMDbMovie> GetCachedItems(WidgetPayload payload) => CacheService.GetNowPlayingMovies();
 }

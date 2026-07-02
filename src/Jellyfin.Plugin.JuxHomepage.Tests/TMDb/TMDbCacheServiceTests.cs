@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
+using Jellyfin.Plugin.JuxHomepage.Widgets;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -31,7 +32,23 @@ public sealed class TMDbCacheServiceTests : IDisposable
             NullLogger<TMDbCacheService>.Instance);
     }
 
+    private TMDbCacheService BuildServiceWithWidgets(ITMDbApiClient apiClient, ILibraryManager libraryManager, WidgetConfig[] widgets)
+    {
+        var applicationPathsMock = new Mock<IApplicationPaths>();
+        applicationPathsMock.Setup(p => p.PluginConfigurationsPath).Returns(_tempDir);
+
+        return new TMDbCacheService(
+            applicationPathsMock.Object,
+            apiClient,
+            libraryManager,
+            () => new PluginConfiguration { Widgets = widgets },
+            NullLogger<TMDbCacheService>.Instance);
+    }
+
     private string CacheFilePath => Path.Combine(_tempDir, "Jellyfin.Plugin.JuxHomepage", "cache", "tmdb", "trending_movies.json");
+
+    private string DiscoverCacheFilePath(string instanceId) =>
+        Path.Combine(_tempDir, "Jellyfin.Plugin.JuxHomepage", "cache", "tmdb", $"discover_{Guid.Parse(instanceId):N}.json");
 
     // A library manager mock that never matches anything, for tests that only care about the
     // fetch/write/staleness mechanics, not cross-referencing itself.
@@ -317,6 +334,72 @@ public sealed class TMDbCacheServiceTests : IDisposable
         await service.RefreshAllAsync(null, CancellationToken.None);
 
         Assert.False(service.IsStale(TMDbCacheType.UpcomingMovies));
+    }
+
+    // -------------------------------------------------------------------------
+    // RefreshAllAsync: configured Discover instances
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RefreshAllAsync_ConfiguredDiscoverInstances_RefreshesEachIntoItsOwnCacheFile()
+    {
+        var instanceA = Guid.NewGuid().ToString();
+        var instanceB = Guid.NewGuid().ToString();
+
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+        apiClientMock.Setup(c => c.GetTopRatedMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+        apiClientMock.Setup(c => c.GetTopRatedShowsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetNowPlayingMoviesAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+        apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((string?)null);
+
+        apiClientMock.Setup(c => c.DiscoverMoviesAsync(
+                It.Is<TMDbDiscoverFilter>(f => f.SortBy == "popularity.desc"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "From A" }]);
+        apiClientMock.Setup(c => c.DiscoverMoviesAsync(
+                It.Is<TMDbDiscoverFilter>(f => f.SortBy == "vote_average.desc"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 2, Title = "From B" }]);
+
+        var widgets = new[]
+        {
+            new WidgetConfig
+            {
+                WidgetType = TMDbWidgetTypes.DiscoverMovies,
+                ExtraParams =
+                [
+                    new WidgetExtraParam { Key = "value", Value = instanceA },
+                    new WidgetExtraParam { Key = "sortBy", Value = "popularity.desc" }
+                ]
+            },
+            new WidgetConfig
+            {
+                WidgetType = TMDbWidgetTypes.DiscoverMovies,
+                ExtraParams =
+                [
+                    new WidgetExtraParam { Key = "value", Value = instanceB },
+                    new WidgetExtraParam { Key = "sortBy", Value = "vote_average.desc" }
+                ]
+            }
+        };
+
+        var service = BuildServiceWithWidgets(apiClientMock.Object, NoMatchLibraryManager(), widgets);
+
+        await service.RefreshAllAsync(null, CancellationToken.None);
+
+        Assert.True(File.Exists(DiscoverCacheFilePath(instanceA)));
+        Assert.True(File.Exists(DiscoverCacheFilePath(instanceB)));
+
+        var itemsA = service.GetDiscoverMovies(instanceA);
+        var itemsB = service.GetDiscoverMovies(instanceB);
+        Assert.Single(itemsA);
+        Assert.Equal("From A", itemsA[0].Title);
+        Assert.Single(itemsB);
+        Assert.Equal("From B", itemsB[0].Title);
     }
 
     public void Dispose()

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
+using Jellyfin.Plugin.JuxHomepage.Widgets;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -83,6 +84,9 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     public IReadOnlyList<TMDbMovie> GetNowPlayingMovies() => ReadCache<TMDbMovie>(TMDbCacheType.NowPlayingMovies);
 
     /// <inheritdoc/>
+    public IReadOnlyList<TMDbMovie> GetDiscoverMovies(string instanceId) => ReadDiscoverCache(instanceId);
+
+    /// <inheritdoc/>
     public Task RefreshTrendingMoviesAsync(CancellationToken cancellationToken)
     {
         var pages = _getConfiguration()?.TMDbLists?.TrendingMoviesPages ?? 1;
@@ -155,6 +159,36 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     }
 
     /// <inheritdoc/>
+    public async Task RefreshDiscoverMoviesAsync(string instanceId, TMDbDiscoverFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(instanceId, out _))
+        {
+            _logger.LogWarning("Refused to refresh Discover cache: instance id '{InstanceId}' is not a GUID.", instanceId);
+            return;
+        }
+
+        try
+        {
+            var items = await _apiClient.DiscoverMoviesAsync(filter, cancellationToken).ConfigureAwait(false);
+            var matched = await CrossReferenceAsync(
+                items,
+                _apiClient.GetMovieExternalIdsAsync,
+                [BaseItemKind.Movie],
+                cancellationToken).ConfigureAwait(false);
+            WriteDiscoverCacheUnlessEmpty(instanceId, items);
+            _logger.LogInformation(
+                "TMDb Discover cache '{InstanceId}' refreshed: {ItemCount} item(s), {MatchedCount} matched to the local library.",
+                instanceId,
+                items.Count,
+                matched);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh TMDb Discover cache '{InstanceId}'.", instanceId);
+        }
+    }
+
+    /// <inheritdoc/>
     public bool IsStale(TMDbCacheType type)
     {
         var path = GetPath(type);
@@ -195,6 +229,22 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         {
             await steps[i](cancellationToken).ConfigureAwait(false);
             progress?.Report((i + 1) * 100.0 / steps.Length);
+        }
+
+        var discoverRows = _getConfiguration()?.Widgets?
+            .Where(c => c.WidgetType == TMDbWidgetTypes.DiscoverMovies)
+            .ToList() ?? [];
+
+        foreach (var row in discoverRows)
+        {
+            var extra = row.ExtraParams.ToDictionary(p => p.Key, p => p.Value);
+            if (!extra.TryGetValue("value", out var instanceId) || string.IsNullOrEmpty(instanceId))
+            {
+                continue;
+            }
+
+            var filter = TMDbDiscoverFilter.FromExtraParams(extra);
+            await RefreshDiscoverMoviesAsync(instanceId, filter, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -394,6 +444,81 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         {
             _lock.ExitWriteLock();
         }
+    }
+
+    private IReadOnlyList<TMDbMovie> ReadDiscoverCache(string instanceId)
+    {
+        if (!Guid.TryParse(instanceId, out _))
+        {
+            return [];
+        }
+
+        var path = GetDiscoverPath(instanceId);
+
+        _lock.EnterReadLock();
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return [];
+            }
+
+            var json = File.ReadAllText(path);
+            var entry = JsonSerializer.Deserialize<TMDbCacheEntry<TMDbMovie>>(json);
+            return entry?.Items ?? [];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read TMDb Discover cache file for instance '{InstanceId}'.", instanceId);
+            return [];
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+
+    private void WriteDiscoverCacheUnlessEmpty(string instanceId, IReadOnlyList<TMDbMovie> items)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var path = GetDiscoverPath(instanceId);
+        var entry = new TMDbCacheEntry<TMDbMovie> { RefreshedAtUtc = DateTime.UtcNow, Items = items };
+        var json = JsonSerializer.Serialize(entry, SerializerOptions);
+
+        _lock.EnterWriteLock();
+        try
+        {
+            File.WriteAllText(path, json);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to write TMDb Discover cache file for instance '{InstanceId}'.", instanceId);
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
+    /// <summary>
+    /// Builds the cache file path for a Discover widget instance. <paramref name="instanceId"/> is
+    /// validated as a GUID by the only two callers (<see cref="RefreshDiscoverMoviesAsync"/> and
+    /// <see cref="GetDiscoverMovies"/> via the widget's own <c>ExtraParams["value"]</c>-derived
+    /// AdditionalData) before it ever reaches this method, but re-validating here is cheap defense
+    /// in depth against a malformed instance id being used as a file name.
+    /// </summary>
+    private string GetDiscoverPath(string instanceId)
+    {
+        if (!Guid.TryParse(instanceId, out var validated))
+        {
+            throw new ArgumentException("Discover instance id must be a GUID.", nameof(instanceId));
+        }
+
+        return Path.Combine(_cacheDir, $"discover_{validated:N}.json");
     }
 
     private string GetPath(TMDbCacheType type) => Path.Combine(_cacheDir, GetFileName(type));

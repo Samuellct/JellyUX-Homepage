@@ -36,5 +36,5 @@ public sealed class AiringTodayShowsWidget : ConnectedWidgetBase<TMDbShow>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<TMDbShow> GetCachedItems() => CacheService.GetAiringToday();
+    protected override IReadOnlyList<TMDbShow> GetCachedItems(WidgetPayload payload) => CacheService.GetAiringToday();
 }
