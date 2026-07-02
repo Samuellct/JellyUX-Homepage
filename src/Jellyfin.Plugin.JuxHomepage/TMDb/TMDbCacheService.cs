@@ -104,6 +104,31 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     }
 
     /// <inheritdoc/>
+    public DateTime? GetLastRefreshedUtc(TMDbCacheType type)
+    {
+        var path = GetPath(type);
+        return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
+    }
+
+    /// <inheritdoc/>
+    public async Task RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken)
+    {
+        progress?.Report(0);
+        await RefreshTrendingMoviesAsync(cancellationToken).ConfigureAwait(false);
+
+        progress?.Report(25);
+        await RefreshTrendingShowsAsync(cancellationToken).ConfigureAwait(false);
+
+        progress?.Report(50);
+        await RefreshAiringTodayAsync(cancellationToken).ConfigureAwait(false);
+
+        progress?.Report(75);
+        await RefreshUpcomingMoviesAsync(cancellationToken).ConfigureAwait(false);
+
+        progress?.Report(100);
+    }
+
+    /// <inheritdoc/>
     public void Dispose()
     {
         if (!_disposed)

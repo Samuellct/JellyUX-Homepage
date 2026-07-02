@@ -40,22 +40,11 @@ public sealed class TMDbDailyRefreshTask : IScheduledTask
     /// <inheritdoc/>
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        // Each Refresh*Async call is independently fault-tolerant (TMDbCacheService logs and
+        // RefreshAllAsync is independently fault-tolerant per cache type (TMDbCacheService logs and
         // swallows its own failures), and TMDbApiClient already skips silently when no API key is
-        // configured, so no special-casing is needed here beyond running all four in sequence.
-        progress.Report(0);
-        await _cacheService.RefreshTrendingMoviesAsync(cancellationToken).ConfigureAwait(false);
-
-        progress.Report(25);
-        await _cacheService.RefreshTrendingShowsAsync(cancellationToken).ConfigureAwait(false);
-
-        progress.Report(50);
-        await _cacheService.RefreshAiringTodayAsync(cancellationToken).ConfigureAwait(false);
-
-        progress.Report(75);
-        await _cacheService.RefreshUpcomingMoviesAsync(cancellationToken).ConfigureAwait(false);
-
-        progress.Report(100);
+        // configured, so no special-casing is needed here beyond delegating to it. Shared with the
+        // admin "Refresh now" action (JuxHomepageController) so the 4-call sequence isn't duplicated.
+        await _cacheService.RefreshAllAsync(progress, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("TMDb daily refresh completed.");
     }
 

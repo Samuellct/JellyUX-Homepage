@@ -59,6 +59,16 @@
             </div>
 
             <div class="verticalSection">
+                <h3 class="sectionTitle">TMDb Cache</h3>
+                <p class="fieldDescription">Status of the cached TMDb data used by Connected widgets.</p>
+                <div id="juxTmdbStatusList"></div>
+                <button type="button" id="juxBtnRefreshTmdb" class="emby-button raised">
+                    <span>Refresh now</span>
+                </button>
+                <div id="juxTmdbRefreshMsg" class="fieldDescription" style="display: none;"></div>
+            </div>
+
+            <div class="verticalSection">
                 <h3 class="sectionTitle">Widgets</h3>
                 <p class="fieldDescription">Use the arrows to change the display order. Changes take effect after saving.</p>
                 <div id="juxWidgetList"></div>
@@ -150,6 +160,16 @@
             padding-top: 0.75em;
             border-top: 1px solid var(--borderColor, rgba(255, 255, 255, 0.1));
         }
+        .jux-admin-tmdb-status-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1em;
+            padding: 0.4em 0;
+            border-bottom: 1px solid var(--borderColor, rgba(255, 255, 255, 0.1));
+        }
+        .jux-admin-tmdb-status-row:last-child {
+            border-bottom: none;
+        }
     </style>
 
     <script type="text/javascript">
@@ -187,6 +207,12 @@
                 var desc = this.getDescriptor(widgetType);
                 // Accept both numeric 2 and string "Personalized" to be safe.
                 return desc && (desc.Category === 2 || desc.Category === 'Personalized');
+            },
+
+            isConnected: function (widgetType) {
+                var desc = this.getDescriptor(widgetType);
+                // Accept both numeric 3 and string "Connected" to be safe.
+                return desc && (desc.Category === 3 || desc.Category === 'Connected');
             },
 
             getDescriptor: function (widgetType) {
@@ -290,6 +316,7 @@
                         var customName = w.CustomDisplayName || '';
                         var isAdm = self.isAdmin(w.WidgetType);
                         var isPers = self.isPersonalized(w.WidgetType);
+                        var isConn = self.isConnected(w.WidgetType);
                         var currentValue = self.getExtraValue(w);
                         var currentLabel = currentValue ? self.getLabelForValue(w.WidgetType, currentValue) : '';
 
@@ -319,7 +346,7 @@
                         html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-down"';
                         html += ' data-index="' + i + '"' + (isLast ? ' disabled' : '') + ' title="Move down">';
                         html += '<span class="material-icons">arrow_downward</span></button>';
-                        if (isAdm || isPers) {
+                        if (isAdm || isPers || isConn) {
                             html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-remove"';
                             html += ' data-index="' + i + '" title="Remove section">';
                             html += '<span class="material-icons">delete</span></button>';
@@ -550,11 +577,44 @@
                 if (!sel) { return; }
                 var html = '<option value="">-- choose a type --</option>';
                 self.state.descriptors.forEach(function (d) {
-                    if (self.isAdmin(d.WidgetType) || self.isPersonalized(d.WidgetType)) {
+                    if (self.isAdmin(d.WidgetType) || self.isPersonalized(d.WidgetType) || self.isConnected(d.WidgetType)) {
                         html += '<option value="' + self.escHtml(d.WidgetType) + '">' + self.escHtml(d.DisplayName) + '</option>';
                     }
                 });
                 sel.innerHTML = html;
+            },
+
+            // Renders the per-type TMDb cache status list (last refresh timestamp + item count).
+            renderTmdbStatus: function (statuses) {
+                var self = this;
+                var list = document.getElementById('juxTmdbStatusList');
+                if (!list) { return; }
+                var labels = {
+                    TrendingMovies: 'Trending Movies',
+                    TrendingShows: 'Trending Shows',
+                    AiringToday: 'Airing Today',
+                    UpcomingMovies: 'Upcoming Movies'
+                };
+                var html = '';
+                (statuses || []).forEach(function (s) {
+                    var label = labels[s.Type] || s.Type;
+                    var lastRefreshed = s.LastRefreshedUtc ? new Date(s.LastRefreshedUtc).toLocaleString() : 'Never';
+                    html += '<div class="jux-admin-tmdb-status-row">';
+                    html += '<span>' + self.escHtml(label) + ' (' + s.ItemCount + ' cached)</span>';
+                    html += '<span>' + self.escHtml(lastRefreshed) + '</span>';
+                    html += '</div>';
+                });
+                list.innerHTML = html || '<p class="fieldDescription">No status available.</p>';
+            },
+
+            // Fetches and renders the TMDb cache status; used on load and after a manual refresh.
+            loadTmdbStatus: function () {
+                var self = this;
+                return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).then(function (statuses) {
+                    self.renderTmdbStatus(statuses);
+                }).catch(function (err) {
+                    console.error('[JUX Config] TMDb status load failed:', err);
+                });
             },
 
             loadConfig: function () {
@@ -562,10 +622,12 @@
                 Dashboard.showLoadingMsg();
                 Promise.all([
                     ApiClient.getPluginConfiguration(self.PLUGIN_ID),
-                    ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Widgets'))
+                    ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Widgets')),
+                    ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).catch(function () { return []; })
                 ]).then(function (results) {
                     self.state.config = results[0];
                     self.state.descriptors = results[1] || [];
+                    self.renderTmdbStatus(results[2] || []);
 
                     var warning = self.state.config.StartupWarning;
                     var banner = document.getElementById('juxWarningBanner');
@@ -684,6 +746,7 @@
 
                             var desc = self.getDescriptor(widgetType);
                             var isPers = self.isPersonalized(widgetType);
+                            var isConn = self.isConnected(widgetType);
                             self.readDomIntoState();
                             self.state.sortedWidgets.push({
                                 WidgetType: widgetType,
@@ -694,11 +757,40 @@
                                 ViewMode: desc ? (desc.ViewMode || 'Portrait') : 'Portrait',
                                 AllowUserOverride: false,
                                 MinInstances: 1,
-                                MaxInstances: isPers ? 3 : 5,
+                                MaxInstances: isPers ? 3 : (isConn ? 1 : 5),
                                 ExtraParams: isPers ? [{ Key: 'excludeWatched', Value: 'true' }] : []
                             });
                             sel.value = '';
                             self.renderWidgets();
+                        });
+                    }
+
+                    var refreshBtn = document.getElementById('juxBtnRefreshTmdb');
+                    var refreshMsg = document.getElementById('juxTmdbRefreshMsg');
+                    if (refreshBtn) {
+                        refreshBtn.addEventListener('click', function () {
+                            refreshBtn.disabled = true;
+                            if (refreshMsg) {
+                                refreshMsg.textContent = 'Refresh started, this may take a few seconds...';
+                                refreshMsg.style.display = '';
+                            }
+                            ApiClient.ajax({
+                                type: 'POST',
+                                url: ApiClient.getUrl('JuxHomepage/TMDb/Refresh')
+                            }).then(function () {
+                                setTimeout(function () {
+                                    self.loadTmdbStatus().then(function () {
+                                        refreshBtn.disabled = false;
+                                        if (refreshMsg) { refreshMsg.style.display = 'none'; }
+                                    });
+                                }, 5000);
+                            }).catch(function (err) {
+                                console.error('[JUX Config] TMDb refresh trigger failed:', err);
+                                refreshBtn.disabled = false;
+                                if (refreshMsg) {
+                                    refreshMsg.textContent = 'Failed to trigger refresh. See browser console for details.';
+                                }
+                            });
                         });
                     }
 

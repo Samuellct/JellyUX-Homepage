@@ -166,11 +166,98 @@ public sealed class TMDbCacheServiceTests : IDisposable
         Assert.Null(result[0].LibraryItemId);
     }
 
+    // -------------------------------------------------------------------------
+    // GetLastRefreshedUtc
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void GetLastRefreshedUtc_NoRefreshYet_ReturnsNull()
+    {
+        var service = BuildService(new Mock<ITMDbApiClient>().Object, new Mock<ILibraryManager>().Object);
+
+        Assert.Null(service.GetLastRefreshedUtc(TMDbCacheType.TrendingMovies));
+    }
+
+    [Fact]
+    public async Task GetLastRefreshedUtc_AfterRefresh_ReturnsRecentTimestamp()
+    {
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+
+        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object);
+
+        await service.RefreshTrendingMoviesAsync(CancellationToken.None);
+        var lastRefreshed = service.GetLastRefreshedUtc(TMDbCacheType.TrendingMovies);
+
+        Assert.NotNull(lastRefreshed);
+        Assert.True(DateTime.UtcNow - lastRefreshed!.Value < TimeSpan.FromMinutes(1));
+    }
+
+    // -------------------------------------------------------------------------
+    // RefreshAllAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RefreshAllAsync_CallsAllFourFetchesAndReportsProgress()
+    {
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+
+        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object);
+        var progress = new SyncProgress();
+
+        await service.RefreshAllAsync(progress, CancellationToken.None);
+
+        apiClientMock.Verify(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        apiClientMock.Verify(c => c.GetTrendingShowsAsync(It.IsAny<CancellationToken>()), Times.Once);
+        apiClientMock.Verify(c => c.GetAiringTodayAsync(It.IsAny<CancellationToken>()), Times.Once);
+        apiClientMock.Verify(c => c.GetUpcomingMoviesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal([0d, 25d, 50d, 75d, 100d], progress.Values);
+    }
+
+    [Fact]
+    public async Task RefreshAllAsync_NullProgress_DoesNotThrow()
+    {
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+
+        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object);
+
+        await service.RefreshAllAsync(null, CancellationToken.None);
+
+        Assert.False(service.IsStale(TMDbCacheType.UpcomingMovies));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDir))
         {
             Directory.Delete(_tempDir, recursive: true);
         }
+    }
+
+    // Synchronous IProgress<double> test double -- unlike System.Progress<T>, which marshals
+    // callbacks via SynchronizationContext.Post/ThreadPool and is not guaranteed to have delivered
+    // them by the time an awaited call returns, this reports immediately and deterministically.
+    private sealed class SyncProgress : IProgress<double>
+    {
+        public List<double> Values { get; } = [];
+
+        public void Report(double value) => Values.Add(value);
     }
 }

@@ -1,11 +1,13 @@
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JuxHomepage.Controllers;
 
@@ -22,6 +24,8 @@ public class JuxHomepageController : ControllerBase
     private readonly IWidgetRegistry _registry;
     private readonly WidgetService _widgetService;
     private readonly IUserManager _userManager;
+    private readonly ITMDbCacheService _tmdbCacheService;
+    private readonly ILogger<JuxHomepageController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JuxHomepageController"/> class.
@@ -29,11 +33,20 @@ public class JuxHomepageController : ControllerBase
     /// <param name="registry">The widget registry.</param>
     /// <param name="widgetService">The widget orchestration service.</param>
     /// <param name="userManager">Jellyfin user manager.</param>
-    public JuxHomepageController(IWidgetRegistry registry, WidgetService widgetService, IUserManager userManager)
+    /// <param name="tmdbCacheService">TMDb disk cache service.</param>
+    /// <param name="logger">Logger.</param>
+    public JuxHomepageController(
+        IWidgetRegistry registry,
+        WidgetService widgetService,
+        IUserManager userManager,
+        ITMDbCacheService tmdbCacheService,
+        ILogger<JuxHomepageController> logger)
     {
         _registry = registry;
         _widgetService = widgetService;
         _userManager = userManager;
+        _tmdbCacheService = tmdbCacheService;
+        _logger = logger;
     }
 
     // -------------------------------------------------------------------------
@@ -223,6 +236,52 @@ public class JuxHomepageController : ControllerBase
         return Ok(adminWidget.GetAvailableValues(user, search));
     }
 
+    /// <summary>
+    /// Returns the last-refreshed timestamp and cached item count for each TMDb cache type, for
+    /// display in the admin UI.
+    /// </summary>
+    /// <returns>An array of <see cref="TMDbCacheStatusDto"/> objects, one per <see cref="TMDbCacheType"/>.</returns>
+    [HttpGet("TMDb/Status")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<IReadOnlyList<TMDbCacheStatusDto>> GetTMDbStatus()
+    {
+        var statuses = Enum.GetValues<TMDbCacheType>()
+            .Select(type => new TMDbCacheStatusDto(
+                type.ToString(),
+                _tmdbCacheService.GetLastRefreshedUtc(type),
+                GetTMDbItemCount(type)))
+            .ToList()
+            .AsReadOnly();
+
+        return Ok(statuses);
+    }
+
+    /// <summary>
+    /// Triggers an immediate refresh of all four TMDb cache types. Runs in the background; the
+    /// response does not wait for the refresh to complete.
+    /// </summary>
+    /// <returns>202 Accepted, immediately.</returns>
+    [HttpPost("TMDb/Refresh")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public IActionResult RefreshTMDbCache()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _tmdbCacheService.RefreshAllAsync(null, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Manually triggered TMDb refresh failed.");
+            }
+        });
+
+        return Accepted();
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -241,8 +300,23 @@ public class JuxHomepageController : ControllerBase
         response.Headers.CacheControl = "public, max-age=3600";
     }
 
+    private int GetTMDbItemCount(TMDbCacheType type) => type switch
+    {
+        TMDbCacheType.TrendingMovies => _tmdbCacheService.GetTrendingMovies().Count,
+        TMDbCacheType.TrendingShows => _tmdbCacheService.GetTrendingShows().Count,
+        TMDbCacheType.AiringToday => _tmdbCacheService.GetAiringToday().Count,
+        TMDbCacheType.UpcomingMovies => _tmdbCacheService.GetUpcomingMovies().Count,
+        _ => 0
+    };
+
     /// <summary>Plugin status metadata returned by /JuxHomepage/meta.</summary>
     /// <param name="Enabled">Whether the plugin is active.</param>
     /// <param name="Warning">Startup warning if a dependency is missing; otherwise null.</param>
     public record PluginMeta(bool Enabled, string? Warning);
+
+    /// <summary>TMDb cache status entry returned by /JuxHomepage/TMDb/Status.</summary>
+    /// <param name="Type">The <see cref="TMDbCacheType"/> name (e.g. "TrendingMovies").</param>
+    /// <param name="LastRefreshedUtc">UTC timestamp of the last successful refresh, or null if never refreshed.</param>
+    /// <param name="ItemCount">The number of items currently cached for this type.</param>
+    public record TMDbCacheStatusDto(string Type, DateTime? LastRefreshedUtc, int ItemCount);
 }

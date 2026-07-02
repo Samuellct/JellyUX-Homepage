@@ -48,4 +48,24 @@ public interface ITMDbCacheService
     /// <param name="type">The cache type to check.</param>
     /// <returns>True if the cache is absent or stale; otherwise false.</returns>
     bool IsStale(TMDbCacheType type);
+
+    /// <summary>
+    /// Returns the UTC timestamp of the last successful refresh for the given cache type, for
+    /// display in the admin UI.
+    /// </summary>
+    /// <param name="type">The cache type to check.</param>
+    /// <returns>The last refresh timestamp, or null if the cache has never been refreshed.</returns>
+    DateTime? GetLastRefreshedUtc(TMDbCacheType type);
+
+    /// <summary>
+    /// Refreshes all four TMDb cache types in sequence. Each individual refresh is already
+    /// fault-tolerant (a failure is logged and does not abort the others). Shared by the daily
+    /// scheduled task and the admin "Refresh now" action so neither duplicates the sequence.
+    /// </summary>
+    /// <param name="progress">
+    /// Optional progress reporter, updated at 0/25/50/75/100 as each of the four refreshes
+    /// completes. Pass null when progress reporting is not needed (e.g. a fire-and-forget trigger).
+    /// </param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken);
 }
