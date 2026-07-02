@@ -151,7 +151,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
                 _apiClient.GetMovieExternalIdsAsync,
                 [BaseItemKind.Movie],
                 cancellationToken).ConfigureAwait(false);
-            WriteCache(type, items);
+            WriteCacheUnlessEmpty(type, items);
             LogRefreshOutcome(type, items.Count, matched);
         }
         catch (Exception ex)
@@ -173,7 +173,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
                 _apiClient.GetShowExternalIdsAsync,
                 [BaseItemKind.Series],
                 cancellationToken).ConfigureAwait(false);
-            WriteCache(type, items);
+            WriteCacheUnlessEmpty(type, items);
             LogRefreshOutcome(type, items.Count, matched);
         }
         catch (Exception ex)
@@ -193,7 +193,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         if (itemCount == 0)
         {
             _logger.LogInformation(
-                "TMDb cache '{Type}' refreshed with 0 items -- check for a preceding TMDbApiClient warning/error (missing or invalid API key, or a network failure).",
+                "TMDb cache '{Type}' refresh returned 0 items -- check for a preceding TMDbApiClient warning/error (missing or invalid API key, or a network failure). The previous cache, if any, was left untouched.",
                 type);
             return;
         }
@@ -293,8 +293,20 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         }
     }
 
-    private void WriteCache<T>(TMDbCacheType type, IReadOnlyList<T> items)
+    /// <summary>
+    /// Writes the cache file for the given type, unless <paramref name="items"/> is empty. An empty
+    /// result almost always means the fetch failed (missing/invalid key, network error) rather than
+    /// TMDb genuinely having nothing to report, so overwriting a previously-populated cache with an
+    /// empty one would silently destroy good data on a transient failure (e.g. a temporarily invalid
+    /// API key). <see cref="LogRefreshOutcome"/> still surfaces the empty result either way.
+    /// </summary>
+    private void WriteCacheUnlessEmpty<T>(TMDbCacheType type, IReadOnlyList<T> items)
     {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
         var path = GetPath(type);
         var entry = new TMDbCacheEntry<T> { RefreshedAtUtc = DateTime.UtcNow, Items = items };
         var json = JsonSerializer.Serialize(entry, SerializerOptions);

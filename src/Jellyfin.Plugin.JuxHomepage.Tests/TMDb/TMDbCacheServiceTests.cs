@@ -33,6 +33,15 @@ public sealed class TMDbCacheServiceTests : IDisposable
 
     private string CacheFilePath => Path.Combine(_tempDir, "Jellyfin.Plugin.JuxHomepage", "cache", "tmdb", "trending_movies.json");
 
+    // A library manager mock that never matches anything, for tests that only care about the
+    // fetch/write/staleness mechanics, not cross-referencing itself.
+    private static ILibraryManager NoMatchLibraryManager()
+    {
+        var mock = new Mock<ILibraryManager>();
+        mock.Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>())).Returns([]);
+        return mock.Object;
+    }
+
     // -------------------------------------------------------------------------
     // IsStale
     // -------------------------------------------------------------------------
@@ -50,9 +59,11 @@ public sealed class TMDbCacheServiceTests : IDisposable
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
         apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
+        apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
-        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object, refreshIntervalHours: 24);
+        var service = BuildService(apiClientMock.Object, NoMatchLibraryManager(), refreshIntervalHours: 24);
 
         await service.RefreshTrendingMoviesAsync(CancellationToken.None);
 
@@ -64,9 +75,11 @@ public sealed class TMDbCacheServiceTests : IDisposable
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
         apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
+        apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
-        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object, refreshIntervalHours: 1);
+        var service = BuildService(apiClientMock.Object, NoMatchLibraryManager(), refreshIntervalHours: 1);
 
         await service.RefreshTrendingMoviesAsync(CancellationToken.None);
         File.SetLastWriteTimeUtc(CacheFilePath, DateTime.UtcNow.AddHours(-2));
@@ -167,6 +180,47 @@ public sealed class TMDbCacheServiceTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Empty refresh must not clobber a previously-populated cache (regression test: a fetch
+    // failure, e.g. an invalid API key producing HTTP 401s, previously overwrote a good cache with
+    // an empty one, silently destroying real cross-referenced data).
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RefreshTrendingMoviesAsync_EmptyResultAfterPopulatedCache_PreservesExistingCache()
+    {
+        var libraryItem = new Movie { Id = Guid.NewGuid(), Name = "Inception" };
+
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 27205, Title = "Inception" }]);
+        apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(27205, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("tt1375666");
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns([libraryItem]);
+
+        var service = BuildService(apiClientMock.Object, libraryManagerMock.Object);
+
+        // First refresh succeeds and populates the cache.
+        await service.RefreshTrendingMoviesAsync(CancellationToken.None);
+        Assert.Single(service.GetTrendingMovies());
+
+        // A subsequent refresh fails (e.g. the configured key became invalid) and the API client
+        // degrades to an empty list, per its documented contract.
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+
+        await service.RefreshTrendingMoviesAsync(CancellationToken.None);
+
+        // The good cache from the first refresh must still be there.
+        var result = service.GetTrendingMovies();
+        Assert.Single(result);
+        Assert.Equal("Inception", result[0].Title);
+    }
+
+    // -------------------------------------------------------------------------
     // GetLastRefreshedUtc
     // -------------------------------------------------------------------------
 
@@ -183,9 +237,11 @@ public sealed class TMDbCacheServiceTests : IDisposable
     {
         var apiClientMock = new Mock<ITMDbApiClient>();
         apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
+        apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
-        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object);
+        var service = BuildService(apiClientMock.Object, NoMatchLibraryManager());
 
         await service.RefreshTrendingMoviesAsync(CancellationToken.None);
         var lastRefreshed = service.GetLastRefreshedUtc(TMDbCacheType.TrendingMovies);
@@ -234,9 +290,11 @@ public sealed class TMDbCacheServiceTests : IDisposable
         apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
         apiClientMock.Setup(c => c.GetUpcomingMoviesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[new TMDbMovie { Id = 1, Title = "A" }]);
+        apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
-        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object);
+        var service = BuildService(apiClientMock.Object, NoMatchLibraryManager());
 
         await service.RefreshAllAsync(null, CancellationToken.None);
 
