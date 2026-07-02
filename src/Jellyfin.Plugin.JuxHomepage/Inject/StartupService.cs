@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Tasks;
@@ -13,9 +14,18 @@ namespace Jellyfin.Plugin.JuxHomepage.Inject;
 /// </summary>
 public class StartupService : IScheduledTask
 {
+    private static readonly TMDbCacheType[] TMDbCacheTypes =
+    [
+        TMDbCacheType.TrendingMovies,
+        TMDbCacheType.TrendingShows,
+        TMDbCacheType.AiringToday,
+        TMDbCacheType.UpcomingMovies
+    ];
+
     private readonly IApplicationPaths _applicationPaths;
     private readonly ILogger<StartupService> _logger;
     private readonly FileTransformationDetector _detector;
+    private readonly ITMDbCacheService _tmdbCacheService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StartupService"/> class.
@@ -23,14 +33,17 @@ public class StartupService : IScheduledTask
     /// <param name="applicationPaths">Application paths, including WebPath.</param>
     /// <param name="logger">Logger.</param>
     /// <param name="detector">FileTransformation reflection bridge.</param>
+    /// <param name="tmdbCacheService">TMDb cache service, used to refresh a missing/stale cache immediately.</param>
     public StartupService(
         IApplicationPaths applicationPaths,
         ILogger<StartupService> logger,
-        FileTransformationDetector detector)
+        FileTransformationDetector detector,
+        ITMDbCacheService tmdbCacheService)
     {
         _applicationPaths = applicationPaths;
         _logger = logger;
         _detector = detector;
+        _tmdbCacheService = tmdbCacheService;
     }
 
     /// <inheritdoc/>
@@ -50,6 +63,8 @@ public class StartupService : IScheduledTask
     {
         progress.Report(0);
         SeedDefaultWidgetConfiguration();
+
+        await RefreshStaleTMDbCacheAsync(cancellationToken).ConfigureAwait(false);
 
         if (!_detector.IsAvailable())
         {
@@ -95,6 +110,48 @@ public class StartupService : IScheduledTask
             Type = TaskTriggerInfoType.StartupTrigger
         };
     }
+
+    /// <summary>
+    /// Immediately refreshes any TMDb cache type that is missing or older than the configured
+    /// refresh interval, so a fresh install (or one that restarted after the daily 3 AM window was
+    /// missed) does not have to wait for the next scheduled run. Best-effort: a failure here must
+    /// never prevent the FileTransformation registration that follows.
+    /// </summary>
+    private async Task RefreshStaleTMDbCacheAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var refreshed = 0;
+            foreach (var type in TMDbCacheTypes)
+            {
+                if (!_tmdbCacheService.IsStale(type))
+                {
+                    continue;
+                }
+
+                await RefreshTMDbCacheType(type, cancellationToken).ConfigureAwait(false);
+                refreshed++;
+            }
+
+            if (refreshed > 0)
+            {
+                _logger.LogInformation("Refreshed {Count} stale TMDb cache type(s) at startup.", refreshed);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh TMDb cache at startup.");
+        }
+    }
+
+    private Task RefreshTMDbCacheType(TMDbCacheType type, CancellationToken cancellationToken) => type switch
+    {
+        TMDbCacheType.TrendingMovies => _tmdbCacheService.RefreshTrendingMoviesAsync(cancellationToken),
+        TMDbCacheType.TrendingShows => _tmdbCacheService.RefreshTrendingShowsAsync(cancellationToken),
+        TMDbCacheType.AiringToday => _tmdbCacheService.RefreshAiringTodayAsync(cancellationToken),
+        TMDbCacheType.UpcomingMovies => _tmdbCacheService.RefreshUpcomingMoviesAsync(cancellationToken),
+        _ => Task.CompletedTask
+    };
 
     private void SeedDefaultWidgetConfiguration()
     {
