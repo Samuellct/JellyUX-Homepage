@@ -1,0 +1,43 @@
+using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
+
+namespace Jellyfin.Plugin.JuxHomepage.TMDb;
+
+/// <summary>
+/// Client for TMDb (The Movie Database) API v3 list and external-ids endpoints.
+/// All methods degrade gracefully: a missing API key, an invalid key (HTTP 401), or a network
+/// failure (after one retry) results in an empty list or null, never an exception.
+/// </summary>
+public interface ITMDbApiClient
+{
+    /// <summary>Fetches the current weekly trending movies.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The trending movies, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbMovie>> GetTrendingMoviesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Fetches the current weekly trending TV shows.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The trending shows, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbShow>> GetTrendingShowsAsync(CancellationToken cancellationToken);
+
+    /// <summary>Fetches TV shows airing today.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The airing-today shows, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(CancellationToken cancellationToken);
+
+    /// <summary>Fetches upcoming movie releases.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The upcoming movies, or an empty list if the key is missing/invalid or the request failed.</returns>
+    Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Fetches the IMDb identifier for a TMDb movie, used for library cross-referencing.</summary>
+    /// <param name="tmdbId">The TMDb movie identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The IMDb identifier (e.g. "tt1375666"), or null if unknown/unavailable.</returns>
+    Task<string?> GetMovieExternalIdsAsync(int tmdbId, CancellationToken cancellationToken);
+
+    /// <summary>Fetches the IMDb identifier for a TMDb TV show, used for library cross-referencing.</summary>
+    /// <param name="tmdbId">The TMDb show identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The IMDb identifier (e.g. "tt1234567"), or null if unknown/unavailable.</returns>
+    Task<string?> GetShowExternalIdsAsync(int tmdbId, CancellationToken cancellationToken);
+}

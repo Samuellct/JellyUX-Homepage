@@ -5,6 +5,7 @@ using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
+using Jellyfin.Plugin.JuxHomepage.TMDb;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Library;
@@ -27,6 +28,15 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<SessionCache>();
         serviceCollection.AddHostedService<ConfigurationChangeListener>();
         serviceCollection.AddSingleton<IUserConfigurationStore, UserConfigurationStore>();
+        serviceCollection.AddHttpClient("TMDb", client =>
+        {
+            client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        serviceCollection.AddSingleton<ITMDbApiClient>(serviceProvider => new TMDbApiClient(
+            serviceProvider.GetRequiredService<IHttpClientFactory>(),
+            () => Plugin.Instance?.Configuration,
+            serviceProvider.GetRequiredService<ILogger<TMDbApiClient>>()));
         serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
