@@ -3,6 +3,7 @@ using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
@@ -86,6 +87,11 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterNativeWidget<FavoriteActorWidget>(registry, serviceProvider, logger);
             RegisterNativeWidget<FavoriteDirectorWidget>(registry, serviceProvider, logger);
             RegisterNativeWidget<BecauseYouWatchedWidget>(registry, serviceProvider, logger);
+
+            // Register connected widgets. Like admin/personalized widgets, these have no default
+            // WidgetConfig rows; the admin adds instances explicitly via the configuration page.
+            // Each displays TMDb data cross-referenced against the local library by ITMDbCacheService.
+            RegisterNativeWidget<TrendingMoviesWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
             var pluginDir = Path.Combine(
