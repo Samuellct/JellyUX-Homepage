@@ -1,3 +1,10 @@
+## [0.11.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.11.0...v0.11.1) (2026-07-02)
+
+### Bug Fixes
+
+* broaden On TV widget results using tv/on_the_air instead of tv/airing_today ([74543a3](https://github.com/Samuellct/JellyUX-Homepage/commit/74543a34a3746fb6c89c8b9474db27bca7962945))
+* stop background TMDb status poll from wiping unsaved Pages/Region edits ([5dd8c0a](https://github.com/Samuellct/JellyUX-Homepage/commit/5dd8c0a83e67903790e4a27d2fcebb7f2d5b997b))
+
 ## [0.11.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.10.1...v0.11.0) (2026-07-02)
 
 ### Features
