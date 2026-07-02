@@ -63,7 +63,10 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
 
     /// <inheritdoc/>
     public Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(int pages, CancellationToken cancellationToken) =>
-        GetPagedAsync<TMDbShow>("tv/airing_today", pages, cancellationToken);
+        // "tv/on_the_air" (shows with an episode airing in the next 7 days) is used instead of
+        // "tv/airing_today" (only shows whose episode airs today/tomorrow, far too narrow a
+        // window to populate a useful section).
+        GetPagedAsync<TMDbShow>("tv/on_the_air", pages, cancellationToken);
 
     /// <inheritdoc/>
     public Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(int pages, CancellationToken cancellationToken) =>

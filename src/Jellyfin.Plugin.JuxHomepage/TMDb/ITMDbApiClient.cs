@@ -24,10 +24,13 @@ public interface ITMDbApiClient
     /// <returns>The trending shows, or an empty list if the key is missing/invalid or the request failed.</returns>
     Task<IReadOnlyList<TMDbShow>> GetTrendingShowsAsync(int pages, CancellationToken cancellationToken);
 
-    /// <summary>Fetches TV shows airing today.</summary>
+    /// <summary>
+    /// Fetches TV shows currently "on the air" (with an episode airing in the next 7 days, per
+    /// TMDb's <c>tv/on_the_air</c> endpoint -- broader than the literal "airing today" name).
+    /// </summary>
     /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The airing-today shows, or an empty list if the key is missing/invalid or the request failed.</returns>
+    /// <returns>The on-the-air shows, or an empty list if the key is missing/invalid or the request failed.</returns>
     Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(int pages, CancellationToken cancellationToken);
 
     /// <summary>Fetches upcoming movie releases.</summary>

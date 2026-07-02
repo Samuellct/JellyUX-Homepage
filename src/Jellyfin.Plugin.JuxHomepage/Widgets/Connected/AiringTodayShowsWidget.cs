@@ -6,7 +6,8 @@ using MediaBrowser.Controller.Library;
 namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 
 /// <summary>
-/// Displays TV shows airing today (from TMDb) that are present in the local library.
+/// Displays TV shows currently on the air (from TMDb's <c>tv/on_the_air</c> endpoint -- an episode
+/// airing within the next 7 days) that are present in the local library.
 /// </summary>
 public sealed class AiringTodayShowsWidget : ConnectedWidgetBase<TMDbShow>
 {
@@ -30,7 +31,7 @@ public sealed class AiringTodayShowsWidget : ConnectedWidgetBase<TMDbShow>
     public override string WidgetType => "jux.connected.airing-today";
 
     /// <inheritdoc/>
-    public override string DefaultDisplayName => "Airing Today";
+    public override string DefaultDisplayName => "On TV";
 
     /// <inheritdoc/>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
