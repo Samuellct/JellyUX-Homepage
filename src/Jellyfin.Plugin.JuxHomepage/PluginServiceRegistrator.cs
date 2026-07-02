@@ -92,6 +92,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             // WidgetConfig rows; the admin adds instances explicitly via the configuration page.
             // Each displays TMDb data cross-referenced against the local library by ITMDbCacheService.
             RegisterNativeWidget<TrendingMoviesWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<TrendingShowsWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<AiringTodayShowsWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<UpcomingMoviesWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
             var pluginDir = Path.Combine(
