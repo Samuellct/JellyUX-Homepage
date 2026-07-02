@@ -1,3 +1,11 @@
+## [0.9.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.8.0...v0.9.0) (2026-07-02)
+
+### Features
+
+* add TMDb cache service with library cross-referencing ([0bea103](https://github.com/Samuellct/JellyUX-Homepage/commit/0bea103046ce0269333f34566c4a5e2fb6eccfa3))
+* add TMDb daily refresh scheduled task ([a35b023](https://github.com/Samuellct/JellyUX-Homepage/commit/a35b0234bc59a16164989ae95691c54e0ae44e49))
+* add TMDb HTTP client with error handling ([a8e5496](https://github.com/Samuellct/JellyUX-Homepage/commit/a8e54962271cc167abde34103436fc6210363d93))
+
 ## [0.8.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.7.1...v0.8.0) (2026-07-01)
 
 ### Features
