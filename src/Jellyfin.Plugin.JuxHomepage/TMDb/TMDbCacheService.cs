@@ -121,12 +121,13 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         try
         {
             var items = await fetch(cancellationToken).ConfigureAwait(false);
-            await CrossReferenceAsync(
+            var matched = await CrossReferenceAsync(
                 items,
                 _apiClient.GetMovieExternalIdsAsync,
                 [BaseItemKind.Movie],
                 cancellationToken).ConfigureAwait(false);
             WriteCache(type, items);
+            LogRefreshOutcome(type, items.Count, matched);
         }
         catch (Exception ex)
         {
@@ -142,12 +143,13 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         try
         {
             var items = await fetch(cancellationToken).ConfigureAwait(false);
-            await CrossReferenceAsync(
+            var matched = await CrossReferenceAsync(
                 items,
                 _apiClient.GetShowExternalIdsAsync,
                 [BaseItemKind.Series],
                 cancellationToken).ConfigureAwait(false);
             WriteCache(type, items);
+            LogRefreshOutcome(type, items.Count, matched);
         }
         catch (Exception ex)
         {
@@ -156,17 +158,43 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     }
 
     /// <summary>
+    /// Logs an explicit, unambiguous summary of a refresh's outcome. In particular, an empty item
+    /// count almost always means the API key is missing/invalid or the request failed -- both of
+    /// which are already logged in detail by <see cref="TMDbApiClient"/> -- rather than a genuine
+    /// "TMDb has nothing to report" result.
+    /// </summary>
+    private void LogRefreshOutcome(TMDbCacheType type, int itemCount, int matchedCount)
+    {
+        if (itemCount == 0)
+        {
+            _logger.LogInformation(
+                "TMDb cache '{Type}' refreshed with 0 items -- check for a preceding TMDbApiClient warning/error (missing or invalid API key, or a network failure).",
+                type);
+            return;
+        }
+
+        _logger.LogInformation(
+            "TMDb cache '{Type}' refreshed: {ItemCount} item(s), {MatchedCount} matched to the local library.",
+            type,
+            itemCount,
+            matchedCount);
+    }
+
+    /// <summary>
     /// Sets <see cref="ITMDbCacheItem.LibraryItemId"/> on each item by looking it up in the local
     /// library, primarily by IMDb ID (fetched via <paramref name="getExternalImdbId"/>), falling
     /// back to a direct TMDb ID match when no IMDb ID is available or no match is found.
     /// </summary>
-    private async Task CrossReferenceAsync<T>(
+    /// <returns>The number of items that were matched to a local library item.</returns>
+    private async Task<int> CrossReferenceAsync<T>(
         IReadOnlyList<T> items,
         Func<int, CancellationToken, Task<string?>> getExternalImdbId,
         BaseItemKind[] includeItemTypes,
         CancellationToken cancellationToken)
         where T : ITMDbCacheItem
     {
+        var matched = 0;
+
         foreach (var item in items)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -191,7 +219,13 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
                 includeItemTypes);
 
             item.LibraryItemId = match?.Id;
+            if (match is not null)
+            {
+                matched++;
+            }
         }
+
+        return matched;
     }
 
     private BaseItem? FindLibraryMatch(MetadataProvider provider, string value, BaseItemKind[] includeItemTypes)
