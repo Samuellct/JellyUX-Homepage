@@ -1,3 +1,9 @@
+## [0.10.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.10.0...v0.10.1) (2026-07-02)
+
+### Bug Fixes
+
+* preserve existing TMDb cache instead of overwriting with an empty result ([7d148fb](https://github.com/Samuellct/JellyUX-Homepage/commit/7d148fb30146675d023ec018846e318b59a83854))
+
 ## [0.10.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.9.1...v0.10.0) (2026-07-02)
 
 ### Features

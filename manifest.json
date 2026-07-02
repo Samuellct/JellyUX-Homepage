@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.10.1.0",
+                "changelog": "### Bug Fixes\n\n* preserve existing TMDb cache instead of overwriting with an empty result ([7d148fb](https://github.com/Samuellct/JellyUX-Homepage/commit/7d148fb30146675d023ec018846e318b59a83854))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.10.1/jellyux-homepage_0.10.1.0.zip",
+                "checksum": "252b2dd85623fac270baba6407f5339e",
+                "timestamp": "2026-07-02T19:01:38Z"
+            },
+            {
                 "version": "0.10.0.0",
                 "changelog": "### Features\n\n* add TMDb refresh status and manual trigger in admin UI ([557a5ff](https://github.com/Samuellct/JellyUX-Homepage/commit/557a5ffe008085b8304c8c0dd657705b9651337d))\n* add TrendingMoviesWidget ([3386e63](https://github.com/Samuellct/JellyUX-Homepage/commit/3386e635ed0f09806147f9ccab6be0b999740ddf))\n* add TrendingShowsWidget, AiringTodayShowsWidget, UpcomingMoviesWidget ([4da93dc](https://github.com/Samuellct/JellyUX-Homepage/commit/4da93dc089022727631e8b3d6dfccda25929aaa2))",
                 "targetAbi": "10.11.0.0",
