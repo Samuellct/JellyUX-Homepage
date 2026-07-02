@@ -1,3 +1,15 @@
+## [0.11.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.10.1...v0.11.0) (2026-07-02)
+
+### Features
+
+* add configurable pagination to TMDb list fetches ([f1868e1](https://github.com/Samuellct/JellyUX-Homepage/commit/f1868e14532babaaa6d8b0070a2d12911441548a))
+* add customizable DiscoverMoviesWidget with TMDb autocomplete ([24d9db7](https://github.com/Samuellct/JellyUX-Homepage/commit/24d9db75f3ce50f712bfdf0daed425d7c048d64a))
+* add TopRatedMoviesWidget, TopRatedShowsWidget, and NowPlayingMoviesWidget ([3b86684](https://github.com/Samuellct/JellyUX-Homepage/commit/3b866845efc1bc514c3978e0d129683f8e280e8d))
+
+### Bug Fixes
+
+* match widget config row by instance value in on-demand section fetch ([bb9261d](https://github.com/Samuellct/JellyUX-Homepage/commit/bb9261dd38d0bd5bbe6552299dc9b98e90dfcf62))
+
 ## [0.10.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.10.0...v0.10.1) (2026-07-02)
 
 ### Bug Fixes

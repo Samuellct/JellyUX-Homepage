@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.11.0.0",
+                "changelog": "### Features\n\n* add configurable pagination to TMDb list fetches ([f1868e1](https://github.com/Samuellct/JellyUX-Homepage/commit/f1868e14532babaaa6d8b0070a2d12911441548a))\n* add customizable DiscoverMoviesWidget with TMDb autocomplete ([24d9db7](https://github.com/Samuellct/JellyUX-Homepage/commit/24d9db75f3ce50f712bfdf0daed425d7c048d64a))\n* add TopRatedMoviesWidget, TopRatedShowsWidget, and NowPlayingMoviesWidget ([3b86684](https://github.com/Samuellct/JellyUX-Homepage/commit/3b866845efc1bc514c3978e0d129683f8e280e8d))\n\n### Bug Fixes\n\n* match widget config row by instance value in on-demand section fetch ([bb9261d](https://github.com/Samuellct/JellyUX-Homepage/commit/bb9261dd38d0bd5bbe6552299dc9b98e90dfcf62))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.11.0/jellyux-homepage_0.11.0.0.zip",
+                "checksum": "557a5c2b887de569025f2bced46c660b",
+                "timestamp": "2026-07-02T20:16:06Z"
+            },
+            {
                 "version": "0.10.1.0",
                 "changelog": "### Bug Fixes\n\n* preserve existing TMDb cache instead of overwriting with an empty result ([7d148fb](https://github.com/Samuellct/JellyUX-Homepage/commit/7d148fb30146675d023ec018846e318b59a83854))",
                 "targetAbi": "10.11.0.0",
