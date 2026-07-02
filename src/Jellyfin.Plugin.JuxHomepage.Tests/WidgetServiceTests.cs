@@ -236,6 +236,54 @@ public sealed class WidgetServiceTests : IDisposable
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task GetWidgetItems_TwoRowsSameType_ForwardsOwnInstanceExtraParams()
+    {
+        const string widgetType = "jux.connected.discover-movies";
+        WidgetPayload? capturedPayload = null;
+
+        var mock = new Mock<IWidget>();
+        mock.Setup(w => w.WidgetType).Returns(widgetType);
+        mock.Setup(w => w.GetItemsAsync(It.IsAny<WidgetPayload>(), It.IsAny<CancellationToken>()))
+            .Callback<WidgetPayload, CancellationToken>((payload, _) => capturedPayload = payload)
+            .ReturnsAsync(new WidgetResult([], 0));
+
+        var service = BuildService(
+            registeredWidgets: [mock.Object],
+            globalWidgets:
+            [
+                new WidgetConfig
+                {
+                    WidgetType = widgetType,
+                    Enabled = true,
+                    Order = 0,
+                    ExtraParams =
+                    [
+                        new WidgetExtraParam { Key = "value", Value = "instance-a" },
+                        new WidgetExtraParam { Key = "sortBy", Value = "popularity.desc" }
+                    ]
+                },
+                new WidgetConfig
+                {
+                    WidgetType = widgetType,
+                    Enabled = true,
+                    Order = 10,
+                    ExtraParams =
+                    [
+                        new WidgetExtraParam { Key = "value", Value = "instance-b" },
+                        new WidgetExtraParam { Key = "sortBy", Value = "vote_average.desc" }
+                    ]
+                }
+            ]);
+
+        await service.GetWidgetItems(
+            Guid.NewGuid(), widgetType, additionalData: "instance-b",
+            startIndex: 0, limit: 20, CancellationToken.None);
+
+        Assert.NotNull(capturedPayload);
+        Assert.Equal("vote_average.desc", capturedPayload!.ExtraParams!["sortBy"]);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------

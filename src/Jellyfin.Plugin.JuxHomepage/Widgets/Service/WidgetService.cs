@@ -103,9 +103,10 @@ public sealed class WidgetService
             return null;
         }
 
-        // Forward the configured ExtraParams (e.g. "excludeWatched" for personalized widgets) so
-        // on-demand section fetches honor the same settings as the layout probe.
-        var configRow = _getConfiguration()?.Widgets?.FirstOrDefault(c => c.WidgetType == widgetType);
+        // Forward the configured ExtraParams (e.g. "excludeWatched" for personalized widgets, or a
+        // Discover instance's filter parameters) so on-demand section fetches honor the same
+        // settings as the layout probe.
+        var configRow = ResolveConfigRow(widgetType, additionalData);
         IReadOnlyDictionary<string, string>? extra = configRow is not null && configRow.ExtraParams.Length > 0
             ? configRow.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
             : null;
@@ -289,6 +290,34 @@ public sealed class WidgetService
             Order = config.Order + index,
             MinItems = config.MinItems
         };
+    }
+
+    /// <summary>
+    /// Resolves the config row for an on-demand section fetch. When multiple rows share the same
+    /// <paramref name="widgetType"/> (e.g. several Discover instances with different filters), the
+    /// row whose <c>ExtraParams["value"]</c> matches <paramref name="additionalData"/> is preferred
+    /// so each instance's own parameters are forwarded rather than always the first configured row.
+    /// Falls back to the first match by type, preserving prior behavior for single-instance widgets.
+    /// </summary>
+    private WidgetConfig? ResolveConfigRow(string widgetType, string? additionalData)
+    {
+        var candidates = _getConfiguration()?.Widgets?.Where(c => c.WidgetType == widgetType).ToList();
+        if (candidates is null || candidates.Count == 0)
+        {
+            return null;
+        }
+
+        if (additionalData is not null)
+        {
+            var match = candidates.FirstOrDefault(c => c.ExtraParams.Any(p =>
+                p.Key == "value" && p.Value == additionalData));
+            if (match is not null)
+            {
+                return match;
+            }
+        }
+
+        return candidates[0];
     }
 
     private static WidgetInstanceConfig BuildInstanceConfig(WidgetConfig config, IWidget widget)
