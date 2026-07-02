@@ -598,8 +598,14 @@
                 TrendingMovies: 'TrendingMoviesPages',
                 TrendingShows: 'TrendingShowsPages',
                 AiringToday: 'AiringTodayPages',
-                UpcomingMovies: 'UpcomingMoviesPages'
+                UpcomingMovies: 'UpcomingMoviesPages',
+                TopRatedMovies: 'TopRatedMoviesPages',
+                TopRatedShows: 'TopRatedShowsPages',
+                NowPlayingMovies: 'NowPlayingMoviesPages'
             },
+
+            // Populated once via GET TMDb/Countries; used to render the Now Playing region select.
+            _tmdbCountries: [],
 
             // Renders the per-type TMDb cache status list (last refresh timestamp + item count),
             // plus a "Pages" input controlling how many TMDb result pages (20 items each) are
@@ -612,9 +618,13 @@
                     TrendingMovies: 'Trending Movies',
                     TrendingShows: 'Trending Shows',
                     AiringToday: 'Airing Today',
-                    UpcomingMovies: 'Upcoming Movies'
+                    UpcomingMovies: 'Upcoming Movies',
+                    TopRatedMovies: 'Top Rated Movies',
+                    TopRatedShows: 'Top Rated Shows',
+                    NowPlayingMovies: 'Now Playing'
                 };
                 var tmdbLists = (self.state.config && self.state.config.TMDbLists) || {};
+                var currentRegion = tmdbLists.NowPlayingRegion || '';
                 var html = '';
                 (statuses || []).forEach(function (s) {
                     var label = labels[s.Type] || s.Type;
@@ -631,9 +641,32 @@
                         html += ' class="emby-input jux-admin-tmdb-pages-input" value="' + pages + '" />';
                         html += '</span>';
                     }
+                    if (s.Type === 'NowPlayingMovies') {
+                        html += '<span class="jux-admin-tmdb-pages">';
+                        html += '<label for="selNowPlayingRegion">Region</label>';
+                        html += '<select id="selNowPlayingRegion" class="emby-select jux-admin-tmdb-pages-input">';
+                        html += '<option value="">Default (all regions)</option>';
+                        self._tmdbCountries.forEach(function (c) {
+                            var selected = c.Value === currentRegion ? ' selected' : '';
+                            html += '<option value="' + self.escHtml(c.Value) + '"' + selected + '>' + self.escHtml(c.Label) + '</option>';
+                        });
+                        html += '</select>';
+                        html += '</span>';
+                    }
                     html += '</div>';
                 });
                 list.innerHTML = html || '<p class="fieldDescription">No status available.</p>';
+            },
+
+            // Fetches the ISO country list once for the Now Playing region select.
+            loadTmdbCountries: function () {
+                var self = this;
+                if (self._tmdbCountries.length) { return Promise.resolve(); }
+                return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Countries')).then(function (countries) {
+                    self._tmdbCountries = countries || [];
+                }).catch(function (err) {
+                    console.error('[JUX Config] TMDb countries load failed:', err);
+                });
             },
 
             // Fetches and renders the TMDb cache status; used on load and after a manual refresh.
@@ -652,7 +685,8 @@
                 Promise.all([
                     ApiClient.getPluginConfiguration(self.PLUGIN_ID),
                     ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Widgets')),
-                    ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).catch(function () { return []; })
+                    ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).catch(function () { return []; }),
+                    self.loadTmdbCountries()
                 ]).then(function (results) {
                     self.state.config = results[0];
                     self.state.descriptors = results[1] || [];
@@ -735,6 +769,10 @@
                             config.TMDbLists[configKey] = Math.min(5, Math.max(1, parseInt(el.value, 10) || 1));
                         }
                     });
+                    var regionEl = document.getElementById('selNowPlayingRegion');
+                    if (regionEl) {
+                        config.TMDbLists.NowPlayingRegion = regionEl.value || null;
+                    }
 
                     config.Widgets = self.state.sortedWidgets.map(function (w, i) {
                         var isAdm = self.isAdmin(w.WidgetType);

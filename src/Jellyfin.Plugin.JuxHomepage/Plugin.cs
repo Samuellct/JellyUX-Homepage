@@ -93,6 +93,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
                 config.TMDbLists.TrendingShowsPages = Math.Clamp(config.TMDbLists.TrendingShowsPages, 1, 5);
                 config.TMDbLists.AiringTodayPages = Math.Clamp(config.TMDbLists.AiringTodayPages, 1, 5);
                 config.TMDbLists.UpcomingMoviesPages = Math.Clamp(config.TMDbLists.UpcomingMoviesPages, 1, 5);
+                config.TMDbLists.TopRatedMoviesPages = Math.Clamp(config.TMDbLists.TopRatedMoviesPages, 1, 5);
+                config.TMDbLists.TopRatedShowsPages = Math.Clamp(config.TMDbLists.TopRatedShowsPages, 1, 5);
+                config.TMDbLists.NowPlayingMoviesPages = Math.Clamp(config.TMDbLists.NowPlayingMoviesPages, 1, 5);
+                config.TMDbLists.NowPlayingRegion = string.IsNullOrWhiteSpace(config.TMDbLists.NowPlayingRegion)
+                    ? null
+                    : config.TMDbLists.NowPlayingRegion.Trim().ToUpperInvariant();
             }
         }
 

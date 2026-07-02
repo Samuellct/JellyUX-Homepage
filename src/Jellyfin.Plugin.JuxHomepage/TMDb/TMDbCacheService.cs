@@ -74,6 +74,15 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     public IReadOnlyList<TMDbMovie> GetUpcomingMovies() => ReadCache<TMDbMovie>(TMDbCacheType.UpcomingMovies);
 
     /// <inheritdoc/>
+    public IReadOnlyList<TMDbMovie> GetTopRatedMovies() => ReadCache<TMDbMovie>(TMDbCacheType.TopRatedMovies);
+
+    /// <inheritdoc/>
+    public IReadOnlyList<TMDbShow> GetTopRatedShows() => ReadCache<TMDbShow>(TMDbCacheType.TopRatedShows);
+
+    /// <inheritdoc/>
+    public IReadOnlyList<TMDbMovie> GetNowPlayingMovies() => ReadCache<TMDbMovie>(TMDbCacheType.NowPlayingMovies);
+
+    /// <inheritdoc/>
     public Task RefreshTrendingMoviesAsync(CancellationToken cancellationToken)
     {
         var pages = _getConfiguration()?.TMDbLists?.TrendingMoviesPages ?? 1;
@@ -114,6 +123,38 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     }
 
     /// <inheritdoc/>
+    public Task RefreshTopRatedMoviesAsync(CancellationToken cancellationToken)
+    {
+        var pages = _getConfiguration()?.TMDbLists?.TopRatedMoviesPages ?? 1;
+        return RefreshMoviesAsync(
+            TMDbCacheType.TopRatedMovies,
+            ct => _apiClient.GetTopRatedMoviesAsync(pages, ct),
+            cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public Task RefreshTopRatedShowsAsync(CancellationToken cancellationToken)
+    {
+        var pages = _getConfiguration()?.TMDbLists?.TopRatedShowsPages ?? 1;
+        return RefreshShowsAsync(
+            TMDbCacheType.TopRatedShows,
+            ct => _apiClient.GetTopRatedShowsAsync(pages, ct),
+            cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public Task RefreshNowPlayingMoviesAsync(CancellationToken cancellationToken)
+    {
+        var tmdbLists = _getConfiguration()?.TMDbLists;
+        var pages = tmdbLists?.NowPlayingMoviesPages ?? 1;
+        var region = tmdbLists?.NowPlayingRegion;
+        return RefreshMoviesAsync(
+            TMDbCacheType.NowPlayingMovies,
+            ct => _apiClient.GetNowPlayingMoviesAsync(pages, region, ct),
+            cancellationToken);
+    }
+
+    /// <inheritdoc/>
     public bool IsStale(TMDbCacheType type)
     {
         var path = GetPath(type);
@@ -137,19 +178,24 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// <inheritdoc/>
     public async Task RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken)
     {
+        // Seven fixed refreshes, evenly spaced across 0-100.
+        Func<CancellationToken, Task>[] steps =
+        [
+            RefreshTrendingMoviesAsync,
+            RefreshTrendingShowsAsync,
+            RefreshAiringTodayAsync,
+            RefreshUpcomingMoviesAsync,
+            RefreshTopRatedMoviesAsync,
+            RefreshTopRatedShowsAsync,
+            RefreshNowPlayingMoviesAsync
+        ];
+
         progress?.Report(0);
-        await RefreshTrendingMoviesAsync(cancellationToken).ConfigureAwait(false);
-
-        progress?.Report(25);
-        await RefreshTrendingShowsAsync(cancellationToken).ConfigureAwait(false);
-
-        progress?.Report(50);
-        await RefreshAiringTodayAsync(cancellationToken).ConfigureAwait(false);
-
-        progress?.Report(75);
-        await RefreshUpcomingMoviesAsync(cancellationToken).ConfigureAwait(false);
-
-        progress?.Report(100);
+        for (var i = 0; i < steps.Length; i++)
+        {
+            await steps[i](cancellationToken).ConfigureAwait(false);
+            progress?.Report((i + 1) * 100.0 / steps.Length);
+        }
     }
 
     /// <inheritdoc/>
@@ -358,6 +404,9 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         TMDbCacheType.TrendingShows => "trending_shows.json",
         TMDbCacheType.AiringToday => "airing_today.json",
         TMDbCacheType.UpcomingMovies => "upcoming_movies.json",
+        TMDbCacheType.TopRatedMovies => "top_rated_movies.json",
+        TMDbCacheType.TopRatedShows => "top_rated_shows.json",
+        TMDbCacheType.NowPlayingMovies => "now_playing_movies.json",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown TMDb cache type.")
     };
 }

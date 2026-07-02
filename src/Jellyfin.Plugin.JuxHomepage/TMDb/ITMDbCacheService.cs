@@ -25,6 +25,18 @@ public interface ITMDbCacheService
     /// <returns>The cached movies, or an empty list if no refresh has completed yet.</returns>
     IReadOnlyList<TMDbMovie> GetUpcomingMovies();
 
+    /// <summary>Reads the cached all-time top rated movies.</summary>
+    /// <returns>The cached movies, or an empty list if no refresh has completed yet.</returns>
+    IReadOnlyList<TMDbMovie> GetTopRatedMovies();
+
+    /// <summary>Reads the cached all-time top rated TV shows.</summary>
+    /// <returns>The cached shows, or an empty list if no refresh has completed yet.</returns>
+    IReadOnlyList<TMDbShow> GetTopRatedShows();
+
+    /// <summary>Reads the cached movies currently in theatres.</summary>
+    /// <returns>The cached movies, or an empty list if no refresh has completed yet.</returns>
+    IReadOnlyList<TMDbMovie> GetNowPlayingMovies();
+
     /// <summary>Refreshes the trending movies cache from TMDb, cross-referencing the local library.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task RefreshTrendingMoviesAsync(CancellationToken cancellationToken);
@@ -40,6 +52,18 @@ public interface ITMDbCacheService
     /// <summary>Refreshes the upcoming-movies cache from TMDb, cross-referencing the local library.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task RefreshUpcomingMoviesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Refreshes the top-rated-movies cache from TMDb, cross-referencing the local library.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RefreshTopRatedMoviesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Refreshes the top-rated-shows cache from TMDb, cross-referencing the local library.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RefreshTopRatedShowsAsync(CancellationToken cancellationToken);
+
+    /// <summary>Refreshes the now-playing-movies cache from TMDb, cross-referencing the local library.</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RefreshNowPlayingMoviesAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns whether the given cache type is missing or older than the configured refresh
@@ -58,13 +82,13 @@ public interface ITMDbCacheService
     DateTime? GetLastRefreshedUtc(TMDbCacheType type);
 
     /// <summary>
-    /// Refreshes all four TMDb cache types in sequence. Each individual refresh is already
+    /// Refreshes all fixed TMDb cache types in sequence. Each individual refresh is already
     /// fault-tolerant (a failure is logged and does not abort the others). Shared by the daily
     /// scheduled task and the admin "Refresh now" action so neither duplicates the sequence.
     /// </summary>
     /// <param name="progress">
-    /// Optional progress reporter, updated at 0/25/50/75/100 as each of the four refreshes
-    /// completes. Pass null when progress reporting is not needed (e.g. a fire-and-forget trigger).
+    /// Optional progress reporter, updated as each refresh completes. Pass null when progress
+    /// reporting is not needed (e.g. a fire-and-forget trigger).
     /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken);

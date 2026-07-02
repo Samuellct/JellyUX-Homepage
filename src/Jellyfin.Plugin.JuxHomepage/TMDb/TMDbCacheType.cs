@@ -1,7 +1,7 @@
 namespace Jellyfin.Plugin.JuxHomepage.TMDb;
 
 /// <summary>
-/// Identifies one of the four TMDb data sets persisted to disk by <see cref="ITMDbCacheService"/>.
+/// Identifies one of the fixed TMDb data sets persisted to disk by <see cref="ITMDbCacheService"/>.
 /// </summary>
 public enum TMDbCacheType
 {
@@ -15,5 +15,14 @@ public enum TMDbCacheType
     AiringToday,
 
     /// <summary>Upcoming movie releases.</summary>
-    UpcomingMovies
+    UpcomingMovies,
+
+    /// <summary>All-time top rated movies (TMDb's own vote_count.gte-filtered ranking).</summary>
+    TopRatedMovies,
+
+    /// <summary>All-time top rated TV shows.</summary>
+    TopRatedShows,
+
+    /// <summary>Movies currently in theatres, optionally scoped to a configured region.</summary>
+    NowPlayingMovies
 }

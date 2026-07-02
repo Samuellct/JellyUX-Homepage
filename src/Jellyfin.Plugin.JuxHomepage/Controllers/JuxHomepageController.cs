@@ -25,6 +25,7 @@ public class JuxHomepageController : ControllerBase
     private readonly WidgetService _widgetService;
     private readonly IUserManager _userManager;
     private readonly ITMDbCacheService _tmdbCacheService;
+    private readonly ITMDbApiClient _tmdbApiClient;
     private readonly ILogger<JuxHomepageController> _logger;
 
     /// <summary>
@@ -34,18 +35,21 @@ public class JuxHomepageController : ControllerBase
     /// <param name="widgetService">The widget orchestration service.</param>
     /// <param name="userManager">Jellyfin user manager.</param>
     /// <param name="tmdbCacheService">TMDb disk cache service.</param>
+    /// <param name="tmdbApiClient">TMDb HTTP API client.</param>
     /// <param name="logger">Logger.</param>
     public JuxHomepageController(
         IWidgetRegistry registry,
         WidgetService widgetService,
         IUserManager userManager,
         ITMDbCacheService tmdbCacheService,
+        ITMDbApiClient tmdbApiClient,
         ILogger<JuxHomepageController> logger)
     {
         _registry = registry;
         _widgetService = widgetService;
         _userManager = userManager;
         _tmdbCacheService = tmdbCacheService;
+        _tmdbApiClient = tmdbApiClient;
         _logger = logger;
     }
 
@@ -282,6 +286,26 @@ public class JuxHomepageController : ControllerBase
         return Accepted();
     }
 
+    /// <summary>
+    /// Returns the ISO 3166-1 country list from TMDb, for use in the Now Playing region picker.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=country code, Label=name).</returns>
+    [HttpGet("TMDb/Countries")]
+    [Authorize(Roles = "Administrator")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> GetTMDbCountries(CancellationToken cancellationToken)
+    {
+        var countries = await _tmdbApiClient.GetCountriesAsync(cancellationToken).ConfigureAwait(false);
+        var values = countries
+            .Select(country => new AdminWidgetValue(country.Code, country.Name))
+            .OrderBy(value => value.Label, StringComparer.OrdinalIgnoreCase)
+            .ToList()
+            .AsReadOnly();
+
+        return Ok(values);
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -306,6 +330,9 @@ public class JuxHomepageController : ControllerBase
         TMDbCacheType.TrendingShows => _tmdbCacheService.GetTrendingShows().Count,
         TMDbCacheType.AiringToday => _tmdbCacheService.GetAiringToday().Count,
         TMDbCacheType.UpcomingMovies => _tmdbCacheService.GetUpcomingMovies().Count,
+        TMDbCacheType.TopRatedMovies => _tmdbCacheService.GetTopRatedMovies().Count,
+        TMDbCacheType.TopRatedShows => _tmdbCacheService.GetTopRatedShows().Count,
+        TMDbCacheType.NowPlayingMovies => _tmdbCacheService.GetNowPlayingMovies().Count,
         _ => 0
     };
 

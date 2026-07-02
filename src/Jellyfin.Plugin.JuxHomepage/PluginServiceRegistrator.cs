@@ -95,6 +95,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterNativeWidget<TrendingShowsWidget>(registry, serviceProvider, logger);
             RegisterNativeWidget<AiringTodayShowsWidget>(registry, serviceProvider, logger);
             RegisterNativeWidget<UpcomingMoviesWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<TopRatedMoviesWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<TopRatedShowsWidget>(registry, serviceProvider, logger);
+            RegisterNativeWidget<NowPlayingMoviesWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
             var pluginDir = Path.Combine(

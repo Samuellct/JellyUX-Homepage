@@ -69,6 +69,34 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
         GetPagedAsync<TMDbMovie>("movie/upcoming", pages, cancellationToken);
 
     /// <inheritdoc/>
+    public Task<IReadOnlyList<TMDbMovie>> GetTopRatedMoviesAsync(int pages, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbMovie>("movie/top_rated", pages, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<TMDbShow>> GetTopRatedShowsAsync(int pages, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbShow>("tv/top_rated", pages, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<TMDbMovie>> GetNowPlayingMoviesAsync(
+        int pages,
+        string? region,
+        CancellationToken cancellationToken)
+    {
+        var path = string.IsNullOrEmpty(region)
+            ? "movie/now_playing"
+            : $"movie/now_playing?region={Uri.EscapeDataString(region)}";
+        return GetPagedAsync<TMDbMovie>(path, pages, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<TMDbCountry>> GetCountriesAsync(CancellationToken cancellationToken)
+    {
+        var result = await GetAsync<List<TMDbCountry>>("configuration/countries", cancellationToken)
+            .ConfigureAwait(false);
+        return result ?? [];
+    }
+
+    /// <inheritdoc/>
     public async Task<string?> GetMovieExternalIdsAsync(int tmdbId, CancellationToken cancellationToken)
     {
         var result = await GetAsync<TMDbExternalIds>($"movie/{tmdbId}/external_ids", cancellationToken)
