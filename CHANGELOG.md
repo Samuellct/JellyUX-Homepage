@@ -1,3 +1,11 @@
+## [0.10.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.9.1...v0.10.0) (2026-07-02)
+
+### Features
+
+* add TMDb refresh status and manual trigger in admin UI ([557a5ff](https://github.com/Samuellct/JellyUX-Homepage/commit/557a5ffe008085b8304c8c0dd657705b9651337d))
+* add TrendingMoviesWidget ([3386e63](https://github.com/Samuellct/JellyUX-Homepage/commit/3386e635ed0f09806147f9ccab6be0b999740ddf))
+* add TrendingShowsWidget, AiringTodayShowsWidget, UpcomingMoviesWidget ([4da93dc](https://github.com/Samuellct/JellyUX-Homepage/commit/4da93dc089022727631e8b3d6dfccda25929aaa2))
+
 ## [0.9.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.9.0...v0.9.1) (2026-07-02)
 
 ### Bug Fixes
