@@ -32,7 +32,7 @@ public sealed class TMDbDailyRefreshTask : IScheduledTask
     public string Key => "Jellyfin.Plugin.JuxHomepage.TMDbRefresh";
 
     /// <inheritdoc/>
-    public string Description => "Refreshes cached TMDb trending, airing, and upcoming data.";
+    public string Description => "Refreshes cached TMDb trending, airing, top rated, and now playing data.";
 
     /// <inheritdoc/>
     public string Category => "JellyUX Homepage";

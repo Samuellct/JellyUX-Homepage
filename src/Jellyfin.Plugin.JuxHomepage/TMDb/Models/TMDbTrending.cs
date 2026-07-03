@@ -4,8 +4,8 @@ namespace Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 
 /// <summary>
 /// Generic paged response envelope returned by every TMDb list endpoint used by this plugin
-/// (trending movies/shows, airing today, upcoming movies). The shape is identical across all
-/// four endpoints, so a single generic type is reused rather than one wrapper per endpoint.
+/// (trending, on the air, top rated, now playing, discover, search). The shape is identical
+/// across all of them, so a single generic type is reused rather than one wrapper per endpoint.
 /// </summary>
 /// <typeparam name="T">The item type contained in <see cref="Results"/> (e.g. <see cref="TMDbMovie"/>).</typeparam>
 public sealed class TMDbTrending<T>

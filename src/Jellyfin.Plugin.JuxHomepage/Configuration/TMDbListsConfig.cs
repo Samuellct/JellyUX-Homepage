@@ -18,9 +18,6 @@ public sealed class TMDbListsConfig
     /// <summary>Gets or sets the number of pages (1-5) to fetch for shows airing today.</summary>
     public int AiringTodayPages { get; set; } = 1;
 
-    /// <summary>Gets or sets the number of pages (1-5) to fetch for upcoming movies.</summary>
-    public int UpcomingMoviesPages { get; set; } = 1;
-
     /// <summary>Gets or sets the number of pages (1-5) to fetch for top rated movies.</summary>
     public int TopRatedMoviesPages { get; set; } = 1;
 

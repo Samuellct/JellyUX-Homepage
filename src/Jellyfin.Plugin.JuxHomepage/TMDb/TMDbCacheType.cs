@@ -14,9 +14,6 @@ public enum TMDbCacheType
     /// <summary>TV shows airing today.</summary>
     AiringToday,
 
-    /// <summary>Upcoming movie releases.</summary>
-    UpcomingMovies,
-
     /// <summary>All-time top rated movies (TMDb's own vote_count.gte-filtered ranking).</summary>
     TopRatedMovies,
 

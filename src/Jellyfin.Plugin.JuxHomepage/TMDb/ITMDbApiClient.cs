@@ -33,12 +33,6 @@ public interface ITMDbApiClient
     /// <returns>The on-the-air shows, or an empty list if the key is missing/invalid or the request failed.</returns>
     Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(int pages, CancellationToken cancellationToken);
 
-    /// <summary>Fetches upcoming movie releases.</summary>
-    /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The upcoming movies, or an empty list if the key is missing/invalid or the request failed.</returns>
-    Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(int pages, CancellationToken cancellationToken);
-
     /// <summary>Fetches all-time top rated movies.</summary>
     /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
     /// <param name="cancellationToken">Cancellation token.</param>

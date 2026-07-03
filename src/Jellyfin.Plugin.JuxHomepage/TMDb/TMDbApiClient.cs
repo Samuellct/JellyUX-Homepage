@@ -69,10 +69,6 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
         GetPagedAsync<TMDbShow>("tv/on_the_air", pages, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<TMDbMovie>> GetUpcomingMoviesAsync(int pages, CancellationToken cancellationToken) =>
-        GetPagedAsync<TMDbMovie>("movie/upcoming", pages, cancellationToken);
-
-    /// <inheritdoc/>
     public Task<IReadOnlyList<TMDbMovie>> GetTopRatedMoviesAsync(int pages, CancellationToken cancellationToken) =>
         GetPagedAsync<TMDbMovie>("movie/top_rated", pages, cancellationToken);
 

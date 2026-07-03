@@ -18,8 +18,7 @@ public class StartupService : IScheduledTask
     [
         TMDbCacheType.TrendingMovies,
         TMDbCacheType.TrendingShows,
-        TMDbCacheType.AiringToday,
-        TMDbCacheType.UpcomingMovies
+        TMDbCacheType.AiringToday
     ];
 
     private readonly IApplicationPaths _applicationPaths;
@@ -149,7 +148,6 @@ public class StartupService : IScheduledTask
         TMDbCacheType.TrendingMovies => _tmdbCacheService.RefreshTrendingMoviesAsync(cancellationToken),
         TMDbCacheType.TrendingShows => _tmdbCacheService.RefreshTrendingShowsAsync(cancellationToken),
         TMDbCacheType.AiringToday => _tmdbCacheService.RefreshAiringTodayAsync(cancellationToken),
-        TMDbCacheType.UpcomingMovies => _tmdbCacheService.RefreshUpcomingMoviesAsync(cancellationToken),
         _ => Task.CompletedTask
     };
 

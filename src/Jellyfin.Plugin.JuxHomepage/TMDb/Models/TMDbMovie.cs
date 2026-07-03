@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 
 /// <summary>
-/// A movie as returned by TMDb's trending/upcoming list endpoints.
+/// A movie as returned by TMDb's trending/top-rated/now-playing/discover list endpoints.
 /// </summary>
 public sealed class TMDbMovie : ITMDbCacheItem
 {

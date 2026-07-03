@@ -12,7 +12,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 /// <summary>
 /// Abstract base class for JellyUX Homepage connected widgets.
 /// <para>
-/// Connected widgets display TMDb data (trending/upcoming/airing) that has been cross-referenced
+/// Connected widgets display TMDb data (trending/on the air/top rated/now playing/discover) that
+/// has been cross-referenced
 /// against the local Jellyfin library by <see cref="ITMDbCacheService"/>. Only cached entries that
 /// carry a non-null <see cref="ITMDbCacheItem.LibraryItemId"/> -- i.e. items the user actually owns
 /// -- are ever displayed; a cached entry with no local match is not a playable Jellyfin item and is

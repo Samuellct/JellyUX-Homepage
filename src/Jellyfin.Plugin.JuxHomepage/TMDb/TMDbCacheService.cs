@@ -72,9 +72,6 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     public IReadOnlyList<TMDbShow> GetAiringToday() => ReadCache<TMDbShow>(TMDbCacheType.AiringToday);
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbMovie> GetUpcomingMovies() => ReadCache<TMDbMovie>(TMDbCacheType.UpcomingMovies);
-
-    /// <inheritdoc/>
     public IReadOnlyList<TMDbMovie> GetTopRatedMovies() => ReadCache<TMDbMovie>(TMDbCacheType.TopRatedMovies);
 
     /// <inheritdoc/>
@@ -93,16 +90,6 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         return RefreshMoviesAsync(
             TMDbCacheType.TrendingMovies,
             ct => _apiClient.GetTrendingMoviesAsync(pages, ct),
-            cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public Task RefreshUpcomingMoviesAsync(CancellationToken cancellationToken)
-    {
-        var pages = _getConfiguration()?.TMDbLists?.UpcomingMoviesPages ?? 1;
-        return RefreshMoviesAsync(
-            TMDbCacheType.UpcomingMovies,
-            ct => _apiClient.GetUpcomingMoviesAsync(pages, ct),
             cancellationToken);
     }
 
@@ -212,13 +199,12 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// <inheritdoc/>
     public async Task RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken)
     {
-        // Seven fixed refreshes, evenly spaced across 0-100.
+        // Six fixed refreshes, evenly spaced across 0-100.
         Func<CancellationToken, Task>[] steps =
         [
             RefreshTrendingMoviesAsync,
             RefreshTrendingShowsAsync,
             RefreshAiringTodayAsync,
-            RefreshUpcomingMoviesAsync,
             RefreshTopRatedMoviesAsync,
             RefreshTopRatedShowsAsync,
             RefreshNowPlayingMoviesAsync
@@ -552,7 +538,6 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         TMDbCacheType.TrendingMovies => "trending_movies.json",
         TMDbCacheType.TrendingShows => "trending_shows.json",
         TMDbCacheType.AiringToday => "airing_today.json",
-        TMDbCacheType.UpcomingMovies => "upcoming_movies.json",
         TMDbCacheType.TopRatedMovies => "top_rated_movies.json",
         TMDbCacheType.TopRatedShows => "top_rated_shows.json",
         TMDbCacheType.NowPlayingMovies => "now_playing_movies.json",

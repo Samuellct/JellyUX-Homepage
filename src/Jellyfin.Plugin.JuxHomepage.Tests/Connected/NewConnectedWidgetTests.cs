@@ -145,6 +145,6 @@ public sealed class NewConnectedWidgetTests
 
         Assert.Equal(0, result.TotalRecordCount);
         cacheServiceMock.Verify(c => c.GetNowPlayingMovies(), Times.AtLeastOnce);
-        cacheServiceMock.Verify(c => c.GetUpcomingMovies(), Times.Never);
+        cacheServiceMock.Verify(c => c.GetTopRatedMovies(), Times.Never);
     }
 }

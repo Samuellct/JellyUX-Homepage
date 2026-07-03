@@ -21,10 +21,6 @@ public interface ITMDbCacheService
     /// <returns>The cached shows, or an empty list if no refresh has completed yet.</returns>
     IReadOnlyList<TMDbShow> GetAiringToday();
 
-    /// <summary>Reads the cached upcoming movie releases.</summary>
-    /// <returns>The cached movies, or an empty list if no refresh has completed yet.</returns>
-    IReadOnlyList<TMDbMovie> GetUpcomingMovies();
-
     /// <summary>Reads the cached all-time top rated movies.</summary>
     /// <returns>The cached movies, or an empty list if no refresh has completed yet.</returns>
     IReadOnlyList<TMDbMovie> GetTopRatedMovies();
@@ -53,10 +49,6 @@ public interface ITMDbCacheService
     /// <summary>Refreshes the airing-today cache from TMDb, cross-referencing the local library.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task RefreshAiringTodayAsync(CancellationToken cancellationToken);
-
-    /// <summary>Refreshes the upcoming-movies cache from TMDb, cross-referencing the local library.</summary>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    Task RefreshUpcomingMoviesAsync(CancellationToken cancellationToken);
 
     /// <summary>Refreshes the top-rated-movies cache from TMDb, cross-referencing the local library.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>

@@ -416,7 +416,6 @@ public class JuxHomepageController : ControllerBase
         TMDbCacheType.TrendingMovies => _tmdbCacheService.GetTrendingMovies().Count,
         TMDbCacheType.TrendingShows => _tmdbCacheService.GetTrendingShows().Count,
         TMDbCacheType.AiringToday => _tmdbCacheService.GetAiringToday().Count,
-        TMDbCacheType.UpcomingMovies => _tmdbCacheService.GetUpcomingMovies().Count,
         TMDbCacheType.TopRatedMovies => _tmdbCacheService.GetTopRatedMovies().Count,
         TMDbCacheType.TopRatedShows => _tmdbCacheService.GetTopRatedShows().Count,
         TMDbCacheType.NowPlayingMovies => _tmdbCacheService.GetNowPlayingMovies().Count,
