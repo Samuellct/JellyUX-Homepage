@@ -1,6 +1,7 @@
 using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 using MediaBrowser.Controller.Dto;
@@ -15,6 +16,21 @@ namespace Jellyfin.Plugin.JuxHomepage.Tests.Personalized;
 
 public sealed class PersonalizedWidgetTests
 {
+    // Real LocalizationService (not a mock) with English entries for every personalized ".format"
+    // template, matching the literal English text these widgets used before i18n. Keeps existing
+    // assertions ("More Action", "Directed by Christopher Nolan", ...) unchanged.
+    private static readonly ILocalizationService TestLocalization = new LocalizationService(
+        new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["en"] = new Dictionary<string, string>
+            {
+                ["jux.personalized.favorite-genre.format"] = "More {value}",
+                ["jux.personalized.favorite-actor.format"] = "Movies with {value}",
+                ["jux.personalized.favorite-director.format"] = "Directed by {value}",
+                ["jux.personalized.because-you-watched.format"] = "Because you watched {value}"
+            }
+        });
+
     // Builds a real ScoringService backed by mocked Jellyfin services, so FavoriteGenreWidget's
     // fan-out (CreateInstances) exercises the real scoring pipeline with controlled watch history.
     private static ScoringService BuildScoringService(User user, IReadOnlyList<BaseItem> watched)
@@ -48,7 +64,8 @@ public sealed class PersonalizedWidgetTests
             (userManagerMock ?? new Mock<IUserManager>()).Object,
             (libraryManagerMock ?? new Mock<ILibraryManager>()).Object,
             (dtoServiceMock ?? new Mock<IDtoService>()).Object,
-            scoringService);
+            scoringService,
+            TestLocalization);
 
     // -------------------------------------------------------------------------
     // Descriptor
@@ -230,7 +247,8 @@ public sealed class PersonalizedWidgetTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            BuildScoringService(user, []));
+            BuildScoringService(user, []),
+            TestLocalization);
 
         var d = widget.GetDescriptor();
 
@@ -247,7 +265,8 @@ public sealed class PersonalizedWidgetTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            BuildScoringService(user, []));
+            BuildScoringService(user, []),
+            TestLocalization);
 
         var d = widget.GetDescriptor();
 
@@ -283,7 +302,8 @@ public sealed class PersonalizedWidgetTests
             userManagerMock.Object,
             libraryManagerMock.Object,
             dtoServiceMock.Object,
-            BuildScoringService(user, []));
+            BuildScoringService(user, []),
+            TestLocalization);
 
         await widget.GetItemsAsync(
             new WidgetPayload { UserId = user.Id, AdditionalData = "Brad Pitt" },
@@ -323,7 +343,8 @@ public sealed class PersonalizedWidgetTests
             userManagerMock.Object,
             libraryManagerMock.Object,
             new Mock<IDtoService>().Object,
-            scoringService);
+            scoringService,
+            TestLocalization);
 
         var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
 
@@ -345,7 +366,8 @@ public sealed class PersonalizedWidgetTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            BuildScoringService(user, []));
+            BuildScoringService(user, []),
+            TestLocalization);
 
         var d = widget.GetDescriptor();
 
@@ -362,7 +384,8 @@ public sealed class PersonalizedWidgetTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            BuildScoringService(user, []));
+            BuildScoringService(user, []),
+            TestLocalization);
 
         var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
 
@@ -399,7 +422,8 @@ public sealed class PersonalizedWidgetTests
             userManagerMock.Object,
             libraryManagerMock.Object,
             dtoServiceMock.Object,
-            BuildScoringService(user, []));
+            BuildScoringService(user, []),
+            TestLocalization);
 
         await widget.GetItemsAsync(
             new WidgetPayload { UserId = user.Id, AdditionalData = reference.Id.ToString() },
@@ -436,7 +460,8 @@ public sealed class PersonalizedWidgetTests
             userManagerMock.Object,
             libraryManagerMock.Object,
             dtoServiceMock.Object,
-            BuildScoringService(user, []));
+            BuildScoringService(user, []),
+            TestLocalization);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = user.Id, AdditionalData = Guid.NewGuid().ToString() },

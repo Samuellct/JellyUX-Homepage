@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using MediaBrowser.Model.Dto;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,7 +31,7 @@ public sealed class WidgetServiceTests : IDisposable
                 new WidgetConfig { WidgetType = widgetType, Enabled = true, MinItems = minItems, Order = 0 }
             ]);
 
-        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, CancellationToken.None);
+        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
 
         Assert.Single(result);
         Assert.Equal(widgetType, result[0].WidgetType);
@@ -50,7 +51,7 @@ public sealed class WidgetServiceTests : IDisposable
                 new WidgetConfig { WidgetType = widgetType, Enabled = true, MinItems = minItems, Order = 0 }
             ]);
 
-        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, CancellationToken.None);
+        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
 
         Assert.Empty(result);
     }
@@ -75,7 +76,7 @@ public sealed class WidgetServiceTests : IDisposable
                 new WidgetConfig { WidgetType = "c", Enabled = true, MinItems = 1, Order = 10 }
             ]);
 
-        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, CancellationToken.None);
+        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
 
         Assert.Equal(3, result.Count);
         Assert.Equal("b", result[0].WidgetType);
@@ -107,8 +108,8 @@ public sealed class WidgetServiceTests : IDisposable
         var service = BuildService(registeredWidgets: widgets, globalWidgets: configs);
         var userId = Guid.NewGuid();
 
-        var page0 = await service.GetWidgetsForUser(userId, page: 0, CancellationToken.None);
-        var page1 = await service.GetWidgetsForUser(userId, page: 1, CancellationToken.None);
+        var page0 = await service.GetWidgetsForUser(userId, page: 0, lang: "en", CancellationToken.None);
+        var page1 = await service.GetWidgetsForUser(userId, page: 1, lang: "en", CancellationToken.None);
 
         Assert.Equal(20, page0.Count);
         Assert.Equal(5, page1.Count);
@@ -151,13 +152,67 @@ public sealed class WidgetServiceTests : IDisposable
                 }
             ]);
 
-        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, CancellationToken.None);
+        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
 
         Assert.Equal(2, result.Count);
         Assert.Equal("Action", result[0].AdditionalData);
         Assert.Equal("Comedy", result[1].AdditionalData);
         Assert.Equal("Action", result[0].DisplayName);
         Assert.Equal("Comedy", result[1].DisplayName);
+    }
+
+    // -------------------------------------------------------------------------
+    // Localization (11.3): DisplayName is translated per-request when no CustomDisplayName is set,
+    // but an explicit CustomDisplayName always wins regardless of language.
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetWidgetsForUser_NoCustomDisplayName_TranslatesUsingRequestedLanguage()
+    {
+        const string widgetType = "jux.native.my-media";
+        var localization = new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["fr"] = new Dictionary<string, string> { [widgetType] = "Mes médias" },
+            ["en"] = new Dictionary<string, string> { [widgetType] = "My Media" }
+        });
+
+        var widget = MakeWidget(widgetType, totalRecordCount: 10);
+        var service = BuildService(
+            registeredWidgets: [widget],
+            globalWidgets: [new WidgetConfig { WidgetType = widgetType, Enabled = true, MinItems = 1, Order = 0 }],
+            localizationService: localization);
+
+        var resultEn = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
+        var resultFr = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "fr", CancellationToken.None);
+
+        Assert.Equal("My Media", resultEn[0].DisplayName);
+        Assert.Equal("Mes médias", resultFr[0].DisplayName);
+    }
+
+    [Fact]
+    public async Task GetWidgetsForUser_CustomDisplayNameSet_IgnoresTranslationRegardlessOfLanguage()
+    {
+        const string widgetType = "jux.native.my-media";
+        var localization = new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["fr"] = new Dictionary<string, string> { [widgetType] = "Mes médias" },
+            ["en"] = new Dictionary<string, string> { [widgetType] = "My Media" }
+        });
+
+        var widget = MakeWidget(widgetType, totalRecordCount: 10);
+        var service = BuildService(
+            registeredWidgets: [widget],
+            globalWidgets:
+            [
+                new WidgetConfig { WidgetType = widgetType, CustomDisplayName = "Ma section perso", Enabled = true, MinItems = 1, Order = 0 }
+            ],
+            localizationService: localization);
+
+        var resultEn = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
+        var resultFr = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "fr", CancellationToken.None);
+
+        Assert.Equal("Ma section perso", resultEn[0].DisplayName);
+        Assert.Equal("Ma section perso", resultFr[0].DisplayName);
     }
 
     // -------------------------------------------------------------------------
@@ -194,7 +249,7 @@ public sealed class WidgetServiceTests : IDisposable
                 }
             ]);
 
-        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, CancellationToken.None);
+        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
 
         Assert.Equal(2, result.Count);
         Assert.Equal("Action", result[0].AdditionalData);
@@ -288,7 +343,10 @@ public sealed class WidgetServiceTests : IDisposable
     // Helpers
     // -------------------------------------------------------------------------
 
-    private WidgetService BuildService(IWidget[] registeredWidgets, WidgetConfig[] globalWidgets)
+    private WidgetService BuildService(
+        IWidget[] registeredWidgets,
+        WidgetConfig[] globalWidgets,
+        ILocalizationService? localizationService = null)
     {
         var registry = new WidgetRegistry();
         foreach (var w in registeredWidgets)
@@ -306,6 +364,7 @@ public sealed class WidgetServiceTests : IDisposable
             registry,
             _sessionCache,
             _userConfigStoreMock.Object,
+            localizationService ?? new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>()),
             () => config,
             NullLogger<WidgetService>.Instance);
     }

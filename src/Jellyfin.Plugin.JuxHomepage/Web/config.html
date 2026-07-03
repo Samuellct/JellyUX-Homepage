@@ -9,7 +9,7 @@
 
         <div class="verticalSection">
             <div class="sectionTitleContainer">
-                <h2 class="sectionTitle">JellyUX Homepage</h2>
+                <h2 class="sectionTitle" data-i18n="admin.page.title">JellyUX Homepage</h2>
             </div>
         </div>
 
@@ -20,82 +20,82 @@
         <form class="juxConfigForm">
 
             <div class="verticalSection">
-                <h3 class="sectionTitle">General</h3>
+                <h3 class="sectionTitle" data-i18n="admin.general.title">General</h3>
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
                         <input type="checkbox" id="chkEnabled" class="emby-checkbox" />
-                        <span class="checkboxLabel">Enable JellyUX Homepage</span>
+                        <span class="checkboxLabel" data-i18n="admin.general.enable.label">Enable JellyUX Homepage</span>
                         <span class="checkboxOutline">
                             <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
                             <span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>
                         </span>
                     </label>
-                    <div class="fieldDescription">Show JellyUX widgets on the home screen. Disable to revert to the native Jellyfin home screen.</div>
+                    <div class="fieldDescription" data-i18n="admin.general.enable.help">Show JellyUX widgets on the home screen. Disable to revert to the native Jellyfin home screen.</div>
                 </div>
             </div>
 
             <div class="verticalSection">
-                <h3 class="sectionTitle">API Keys</h3>
+                <h3 class="sectionTitle" data-i18n="admin.apikeys.title">API Keys</h3>
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="txtTMDb">TMDb API Key</label>
+                    <label class="inputLabel inputLabelUnfocused" for="txtTMDb" data-i18n="admin.apikeys.tmdb.label">TMDb API Key</label>
                     <input id="txtTMDb" type="text" class="emby-input" autocomplete="off" />
-                    <div class="fieldDescription">Required for Connected widgets that use The Movie Database. Leave empty if not needed. Accepted formats: 32-character hexadecimal key (v3), or v4 bearer token starting with "ey".</div>
-                    <div id="juxTmdbError" class="fieldDescription jux-admin-field-error" style="display: none;">Invalid TMDb key format. Expected: 32 hexadecimal characters, a v4 bearer token, or leave empty.</div>
+                    <div class="fieldDescription" data-i18n="admin.apikeys.tmdb.help">Required for Connected widgets that use The Movie Database. Leave empty if not needed. Accepted formats: 32-character hexadecimal key (v3), or v4 bearer token starting with "ey".</div>
+                    <div id="juxTmdbError" class="fieldDescription jux-admin-field-error" style="display: none;" data-i18n="admin.apikeys.tmdb.error">Invalid TMDb key format. Expected: 32 hexadecimal characters, a v4 bearer token, or leave empty.</div>
                 </div>
             </div>
 
             <div class="verticalSection">
-                <h3 class="sectionTitle">Cache</h3>
+                <h3 class="sectionTitle" data-i18n="admin.cache.title">Cache</h3>
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="numSessionTtl">Session cache TTL (minutes)</label>
+                    <label class="inputLabel inputLabelUnfocused" for="numSessionTtl" data-i18n="admin.cache.sessionttl.label">Session cache TTL (minutes)</label>
                     <input id="numSessionTtl" type="number" min="1" class="emby-input" />
-                    <div class="fieldDescription">How long the home screen widget layout is cached per user. Reduce to see configuration changes more quickly; increase to lower server load.</div>
+                    <div class="fieldDescription" data-i18n="admin.cache.sessionttl.help">How long the home screen widget layout is cached per user. Reduce to see configuration changes more quickly; increase to lower server load.</div>
                 </div>
                 <div class="inputContainer">
-                    <label class="inputLabel inputLabelUnfocused" for="numTMDbRefresh">TMDb refresh interval (hours)</label>
+                    <label class="inputLabel inputLabelUnfocused" for="numTMDbRefresh" data-i18n="admin.cache.tmdbrefresh.label">TMDb refresh interval (hours)</label>
                     <input id="numTMDbRefresh" type="number" min="1" class="emby-input" />
-                    <div class="fieldDescription">How often TMDb data is refreshed. Increase to reduce external API calls; decrease for fresher content.</div>
+                    <div class="fieldDescription" data-i18n="admin.cache.tmdbrefresh.help">How often TMDb data is refreshed. Increase to reduce external API calls; decrease for fresher content.</div>
                 </div>
             </div>
 
             <div class="verticalSection">
-                <h3 class="sectionTitle">TMDb Cache</h3>
-                <p class="fieldDescription">Status of the cached TMDb data used by Connected widgets.</p>
-                <p class="fieldDescription">Each page is about 20 items from TMDb, so "Pages: 3" fetches roughly 60 items for that list.</p>
+                <h3 class="sectionTitle" data-i18n="admin.tmdbcache.title">TMDb Cache</h3>
+                <p class="fieldDescription" data-i18n="admin.tmdbcache.help">Status of the cached TMDb data used by Connected widgets.</p>
+                <p class="fieldDescription" data-i18n="admin.tmdbcache.pageshint">Each page is about 20 items from TMDb, so "Pages: 3" fetches roughly 60 items for that list.</p>
                 <div id="juxTmdbStatusList"></div>
                 <button type="button" id="juxBtnRefreshTmdb" class="emby-button raised">
-                    <span>Refresh now</span>
+                    <span data-i18n="admin.tmdbcache.refreshnow">Refresh now</span>
                 </button>
                 <div id="juxTmdbRefreshMsg" class="fieldDescription" style="display: none;"></div>
             </div>
 
             <div class="verticalSection">
-                <h3 class="sectionTitle">Widgets</h3>
-                <p class="fieldDescription">Use the arrows to change the display order. Changes take effect after saving.</p>
+                <h3 class="sectionTitle" data-i18n="admin.widgets.title">Widgets</h3>
+                <p class="fieldDescription" data-i18n="admin.widgets.help">Use the arrows to change the display order. Changes take effect after saving.</p>
                 <div id="juxWidgetList"></div>
 
                 <div class="jux-admin-add-section">
-                    <h4 class="sectionTitle" style="margin-top: 1.5em;">Add a section</h4>
+                    <h4 class="sectionTitle" style="margin-top: 1.5em;" data-i18n="admin.addsection.title">Add a section</h4>
                     <div class="jux-admin-row" style="align-items: flex-end;">
                         <div class="inputContainer jux-admin-half">
-                            <label class="inputLabel inputLabelUnfocused" for="juxAddWidgetType">Section type</label>
+                            <label class="inputLabel inputLabelUnfocused" for="juxAddWidgetType" data-i18n="admin.addsection.type.label">Section type</label>
                             <select id="juxAddWidgetType" class="emby-select-withcolor emby-select">
-                                <option value="">-- choose a type --</option>
+                                <option value="" data-i18n="admin.addsection.type.placeholder">-- choose a type --</option>
                             </select>
                         </div>
                         <div class="jux-admin-half" style="padding-bottom: 0.5em;">
                             <button type="button" id="juxBtnAddWidget" class="emby-button raised">
-                                <span>Add</span>
+                                <span data-i18n="admin.addsection.add">Add</span>
                             </button>
                         </div>
                     </div>
-                    <div id="juxAddWidgetError" class="fieldDescription jux-admin-field-error" style="display: none;">Please choose a section type before adding.</div>
+                    <div id="juxAddWidgetError" class="fieldDescription jux-admin-field-error" style="display: none;" data-i18n="admin.addsection.error">Please choose a section type before adding.</div>
                 </div>
             </div>
 
             <div class="verticalSection">
                 <button type="submit" class="emby-button raised button-submit block">
-                    <span>Save</span>
+                    <span data-i18n="admin.save">Save</span>
                 </button>
             </div>
 
@@ -190,12 +190,67 @@
             _submitBound: false,
             // Cache of available values per widgetType, loaded on demand.
             _valuesCache: {},
+            // Flat key -> translated string dictionary, loaded once via GET JuxHomepage/Localizations.
+            _i18n: {},
             state: {
                 config: null,
                 descriptors: [],
                 sortedWidgets: [],
                 // Map of widgetType -> { Value: label } for collection-type widgets (Value != Label).
                 valueLabelMap: {}
+            },
+
+            // Jellyfin's own display language, kept in sync on <html lang="..."> by jellyfin-web's
+            // Globalize.updateCurrentCulture() every time the user changes it in their profile
+            // settings. Reading it here (rather than the browser's Accept-Language header) is the
+            // only reliable way to know the language actually selected in Jellyfin, since that
+            // choice is stored client-side only (userSettings.language(), never synced to the server).
+            _currentLang: function () {
+                return (document.documentElement.lang || 'en').split('-')[0].toLowerCase();
+            },
+
+            // Fetches the full translation dictionary for the current language once per page load.
+            loadLocalizations: function () {
+                var self = this;
+                return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Localizations', { lang: self._currentLang() }))
+                    .then(function (dict) {
+                        self._i18n = dict || {};
+                    }).catch(function (err) {
+                        console.error('[JUX Config] Localizations load failed:', err);
+                        self._i18n = {};
+                    });
+            },
+
+            // Translates a key, optionally substituting named placeholders (e.g. "{count}") with
+            // the values in params. Falls back to the raw key if it's missing from the dictionary,
+            // matching the server-side LocalizationService's own fallback behavior.
+            t: function (key, params) {
+                var self = this;
+                var s = (self._i18n && self._i18n[key]) || key;
+                if (params) {
+                    Object.keys(params).forEach(function (name) {
+                        s = s.replace('{' + name + '}', params[name]);
+                    });
+                }
+                return s;
+            },
+
+            // Translates a widget's default display name client-side (WidgetType is used directly
+            // as the translation key, see fr.json/en.json), falling back to the English
+            // DisplayName already returned by GET JuxHomepage/Widgets if the key is missing.
+            translatedWidgetName: function (widgetType, desc) {
+                var self = this;
+                if (self._i18n && self._i18n[widgetType]) { return self._i18n[widgetType]; }
+                return desc ? desc.DisplayName : widgetType;
+            },
+
+            // Sweeps every static element tagged with data-i18n and replaces its text with the
+            // translated value. Safe to call multiple times (idempotent).
+            translateStaticText: function () {
+                var self = this;
+                document.querySelectorAll('[data-i18n]').forEach(function (el) {
+                    el.textContent = self.t(el.getAttribute('data-i18n'));
+                });
             },
 
             validateTmdb: function (value) {
@@ -341,11 +396,11 @@
                 var adminTypes = [];
 
                 if (widgets.length === 0) {
-                    list.innerHTML = '<p class="fieldDescription">No widgets configured.</p>';
+                    list.innerHTML = '<p class="fieldDescription">' + self.escHtml(self.t('admin.widgets.empty')) + '</p>';
                 } else {
                     widgets.forEach(function (w, i) {
                         var desc = self.getDescriptor(w.WidgetType);
-                        var defaultName = desc ? desc.DisplayName : w.WidgetType;
+                        var defaultName = self.translatedWidgetName(w.WidgetType, desc);
                         var category = desc ? desc.Category : '';
                         var isFirst = i === 0;
                         var isLast = i === widgets.length - 1;
@@ -370,21 +425,26 @@
                         html += '</label>';
 
                         if (category !== undefined && category !== null && category !== '') {
-                            var categoryLabels = { 0: 'Native', 1: 'Admin', 2: 'Personalized', 3: 'Connected' };
+                            var categoryLabels = {
+                                0: self.t('admin.category.native'),
+                                1: self.t('admin.category.admin'),
+                                2: self.t('admin.category.personalized'),
+                                3: self.t('admin.category.connected')
+                            };
                             var catLabel = categoryLabels[category] || String(category);
                             html += '<span class="jux-admin-category-badge">' + self.escHtml(catLabel) + '</span>';
                         }
 
                         html += '<div class="jux-admin-order-buttons">';
                         html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-up"';
-                        html += ' data-index="' + i + '"' + (isFirst ? ' disabled' : '') + ' title="Move up">';
+                        html += ' data-index="' + i + '"' + (isFirst ? ' disabled' : '') + ' title="' + self.escHtml(self.t('admin.order.up')) + '">';
                         html += '<span class="material-icons">arrow_upward</span></button>';
                         html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-down"';
-                        html += ' data-index="' + i + '"' + (isLast ? ' disabled' : '') + ' title="Move down">';
+                        html += ' data-index="' + i + '"' + (isLast ? ' disabled' : '') + ' title="' + self.escHtml(self.t('admin.order.down')) + '">';
                         html += '<span class="material-icons">arrow_downward</span></button>';
                         if (isAdm || isPers || isConn) {
                             html += '<button type="button" class="emby-button paper-icon-button-light jux-admin-btn-remove"';
-                            html += ' data-index="' + i + '" title="Remove section">';
+                            html += ' data-index="' + i + '" title="' + self.escHtml(self.t('admin.order.remove')) + '">';
                             html += '<span class="material-icons">delete</span></button>';
                         }
                         html += '</div>';
@@ -395,25 +455,25 @@
                         if (isAdm) {
                             var datalistId = 'juxVals_' + i;
                             html += '<div class="inputContainer">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetValue_' + i + '">Value</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetValue_' + i + '">' + self.escHtml(self.t('admin.value.label')) + '</label>';
                             html += '<input id="widgetValue_' + i + '" type="text" list="' + datalistId + '"';
                             html += ' class="emby-input jux-admin-widget-value"';
-                            html += ' placeholder="Start typing to search..."';
+                            html += ' placeholder="' + self.escHtml(self.t('admin.value.placeholder')) + '"';
                             html += ' value="' + self.escHtml(currentLabel || currentValue) + '" />';
                             html += '<datalist id="' + datalistId + '"></datalist>';
-                            html += '<div class="fieldDescription jux-admin-value-error" style="display:none;" id="juxValError_' + i + '">A value is required for this section.</div>';
+                            html += '<div class="fieldDescription jux-admin-value-error" style="display:none;" id="juxValError_' + i + '">' + self.escHtml(self.t('admin.value.error')) + '</div>';
                             html += '</div>';
                         }
 
                         if (isPers) {
-                            html += '<p class="fieldDescription">Section names are generated per user (e.g. "Because you watched ...").</p>';
+                            html += '<p class="fieldDescription">' + self.escHtml(self.t('admin.personalized.note')) + '</p>';
                         } else {
                             html += '<div class="inputContainer">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">Display name</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetName_' + i + '">' + self.escHtml(self.t('admin.name.label')) + '</label>';
                             html += '<input id="widgetName_' + i + '" type="text" class="emby-input jux-admin-widget-name"';
                             html += ' placeholder="' + self.escHtml(defaultName) + '"';
                             html += ' value="' + self.escHtml(customName) + '" />';
-                            html += '<div class="fieldDescription">Leave empty to use the default name.</div>';
+                            html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.name.help')) + '</div>';
                             html += '</div>';
                         }
 
@@ -429,9 +489,9 @@
                             var discoverPagesValue = self.getExtraParam(w, 'pages') || '1';
 
                             html += '<div class="inputContainer">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="discGenre_' + i + '">Genre</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discGenre_' + i + '">' + self.escHtml(self.t('admin.discover.genre.label')) + '</label>';
                             html += '<select id="discGenre_' + i + '" class="emby-select-withcolor emby-select jux-discover-genre">';
-                            html += '<option value="">Any genre</option>';
+                            html += '<option value="">' + self.escHtml(self.t('admin.discover.genre.any')) + '</option>';
                             self._tmdbGenres.forEach(function (g) {
                                 html += '<option value="' + self.escHtml(g.Value) + '"' + (g.Value === genreValue ? ' selected' : '') + '>' + self.escHtml(g.Label) + '</option>';
                             });
@@ -440,55 +500,55 @@
 
                             var discDatalistId = 'discVals_' + i;
                             [
-                                ['person', 'Person', personValue],
-                                ['keyword', 'Keyword', keywordValue],
-                                ['company', 'Company', companyValue]
+                                ['person', self.t('admin.discover.person'), personValue],
+                                ['keyword', self.t('admin.discover.keyword'), keywordValue],
+                                ['company', self.t('admin.discover.company'), companyValue]
                             ].forEach(function (field) {
                                 var fieldName = field[0], fieldLabel = field[1], fieldValue = field[2];
                                 var currentLabel = fieldValue ? self.getDiscoverLabelForValue(fieldName, fieldValue) : '';
                                 html += '<div class="inputContainer">';
-                                html += '<label class="inputLabel inputLabelUnfocused" for="disc' + fieldName + '_' + i + '">' + fieldLabel + '</label>';
+                                html += '<label class="inputLabel inputLabelUnfocused" for="disc' + fieldName + '_' + i + '">' + self.escHtml(fieldLabel) + '</label>';
                                 html += '<input id="disc' + fieldName + '_' + i + '" type="text" list="' + discDatalistId + '_' + fieldName + '"';
                                 html += ' class="emby-input jux-discover-' + fieldName + '" data-field="' + fieldName + '"';
-                                html += ' placeholder="Start typing to search..." value="' + self.escHtml(currentLabel || fieldValue) + '" />';
+                                html += ' placeholder="' + self.escHtml(self.t('admin.discover.search.placeholder')) + '" value="' + self.escHtml(currentLabel || fieldValue) + '" />';
                                 html += '<datalist id="' + discDatalistId + '_' + fieldName + '"></datalist>';
                                 html += '</div>';
                             });
 
                             html += '<div class="inputContainer">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="discSortBy_' + i + '">Sort by</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discSortBy_' + i + '">' + self.escHtml(self.t('admin.discover.sortby.label')) + '</label>';
                             html += '<select id="discSortBy_' + i + '" class="emby-select-withcolor emby-select jux-discover-sortby">';
                             [
-                                ['popularity.desc', 'Popularity'],
-                                ['vote_average.desc', 'Rating'],
-                                ['vote_count.desc', 'Vote count'],
-                                ['primary_release_date.desc', 'Release date'],
-                                ['revenue.desc', 'Revenue'],
-                                ['title.asc', 'Title']
+                                ['popularity.desc', self.t('admin.discover.sortby.popularity')],
+                                ['vote_average.desc', self.t('admin.discover.sortby.rating')],
+                                ['vote_count.desc', self.t('admin.discover.sortby.votecount')],
+                                ['primary_release_date.desc', self.t('admin.discover.sortby.releasedate')],
+                                ['revenue.desc', self.t('admin.discover.sortby.revenue')],
+                                ['title.asc', self.t('admin.discover.sortby.title')]
                             ].forEach(function (opt) {
-                                html += '<option value="' + opt[0] + '"' + (sortByValue === opt[0] ? ' selected' : '') + '>' + opt[1] + '</option>';
+                                html += '<option value="' + opt[0] + '"' + (sortByValue === opt[0] ? ' selected' : '') + '>' + self.escHtml(opt[1]) + '</option>';
                             });
                             html += '</select>';
                             html += '</div>';
 
                             html += '<div class="jux-admin-row">';
                             html += '<div class="inputContainer jux-admin-half">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="discYear_' + i + '">Year</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discYear_' + i + '">' + self.escHtml(self.t('admin.discover.year')) + '</label>';
                             html += '<input id="discYear_' + i + '" type="number" class="emby-input jux-discover-year" value="' + self.escHtml(yearValue) + '" />';
                             html += '</div>';
                             html += '<div class="inputContainer jux-admin-half">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="discMinRating_' + i + '">Min rating</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discMinRating_' + i + '">' + self.escHtml(self.t('admin.discover.minrating')) + '</label>';
                             html += '<input id="discMinRating_' + i + '" type="number" min="0" max="10" step="0.1" class="emby-input jux-discover-minrating" value="' + self.escHtml(minRatingValue) + '" />';
                             html += '</div>';
                             html += '</div>';
 
                             html += '<div class="jux-admin-row">';
                             html += '<div class="inputContainer jux-admin-half">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="discMinVotes_' + i + '">Min votes</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discMinVotes_' + i + '">' + self.escHtml(self.t('admin.discover.minvotes')) + '</label>';
                             html += '<input id="discMinVotes_' + i + '" type="number" min="0" class="emby-input jux-discover-minvotes" value="' + self.escHtml(minVotesValue) + '" />';
                             html += '</div>';
                             html += '<div class="inputContainer jux-admin-half">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="discPages_' + i + '">Pages</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="discPages_' + i + '">' + self.escHtml(self.t('admin.discover.pages')) + '</label>';
                             html += '<input id="discPages_' + i + '" type="number" min="1" max="5" class="emby-input jux-discover-pages" value="' + self.escHtml(discoverPagesValue) + '" />';
                             html += '</div>';
                             html += '</div>';
@@ -497,24 +557,30 @@
                         html += '<div class="jux-admin-row">';
 
                         html += '<div class="inputContainer jux-admin-half">';
-                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetMin_' + i + '">Min items</label>';
+                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetMin_' + i + '">' + self.escHtml(self.t('admin.minitems.label')) + '</label>';
                         html += '<input id="widgetMin_' + i + '" type="number" min="0" class="emby-input jux-admin-min-items" value="' + w.MinItems + '" />';
-                        html += '<div class="fieldDescription">Section hidden if below this count.</div>';
+                        html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.minitems.help')) + '</div>';
                         html += '</div>';
 
                         html += '<div class="inputContainer jux-admin-half">';
-                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetMax_' + i + '">Max items</label>';
+                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetMax_' + i + '">' + self.escHtml(self.t('admin.maxitems.label')) + '</label>';
                         html += '<input id="widgetMax_' + i + '" type="number" min="1" class="emby-input jux-admin-max-items" value="' + w.MaxItems + '" />';
-                        html += '<div class="fieldDescription">Maximum items fetched per section.</div>';
+                        html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.maxitems.help')) + '</div>';
                         html += '</div>';
 
                         html += '</div>';
 
                         html += '<div class="inputContainer">';
-                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetView_' + i + '">View mode</label>';
+                        html += '<label class="inputLabel inputLabelUnfocused" for="widgetView_' + i + '">' + self.escHtml(self.t('admin.viewmode.label')) + '</label>';
                         html += '<select id="widgetView_' + i + '" class="emby-select-withcolor emby-select jux-admin-view-mode">';
-                        ['Landscape', 'Portrait', 'Square'].forEach(function (vm) {
-                            html += '<option value="' + vm + '"' + (w.ViewMode === vm ? ' selected' : '') + '>' + vm + '</option>';
+                        // The persisted value must stay the English canonical WidgetViewMode constant
+                        // (read server-side); only the visible option text is translated.
+                        [
+                            ['Landscape', self.t('admin.viewmode.landscape')],
+                            ['Portrait', self.t('admin.viewmode.portrait')],
+                            ['Square', self.t('admin.viewmode.square')]
+                        ].forEach(function (vm) {
+                            html += '<option value="' + vm[0] + '"' + (w.ViewMode === vm[0] ? ' selected' : '') + '>' + self.escHtml(vm[1]) + '</option>';
                         });
                         html += '</select>';
                         html += '</div>';
@@ -523,23 +589,23 @@
                             var excludeWatched = self.getExtraParam(w, 'excludeWatched') !== 'false';
 
                             html += '<div class="inputContainer">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetInstances_' + i + '">Number of sections</label>';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetInstances_' + i + '">' + self.escHtml(self.t('admin.instances.label')) + '</label>';
                             html += '<input id="widgetInstances_' + i + '" type="number" min="1" max="10"';
                             html += ' class="emby-input jux-admin-instances" value="' + (w.MaxInstances || 3) + '" />';
-                            html += '<div class="fieldDescription">Up to this many sections are shown per user, one per top-scored value.</div>';
+                            html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.instances.help')) + '</div>';
                             html += '</div>';
 
                             html += '<div class="checkboxContainer checkboxContainer-withDescription">';
                             html += '<label class="emby-checkbox-label">';
                             html += '<input type="checkbox" id="widgetExcludeWatched_' + i + '" class="emby-checkbox jux-admin-exclude-watched"';
                             html += (excludeWatched ? ' checked' : '') + ' />';
-                            html += '<span class="checkboxLabel">Exclude already watched</span>';
+                            html += '<span class="checkboxLabel">' + self.escHtml(self.t('admin.excludewatched.label')) + '</span>';
                             html += '<span class="checkboxOutline">';
                             html += '<span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>';
                             html += '<span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>';
                             html += '</span>';
                             html += '</label>';
-                            html += '<div class="fieldDescription">When enabled, titles the user has already watched are not recommended.</div>';
+                            html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.excludewatched.help')) + '</div>';
                             html += '</div>';
                         }
 
@@ -754,10 +820,10 @@
                 var self = this;
                 var sel = document.getElementById('juxAddWidgetType');
                 if (!sel) { return; }
-                var html = '<option value="">-- choose a type --</option>';
+                var html = '<option value="">' + self.escHtml(self.t('admin.addsection.type.placeholder')) + '</option>';
                 self.state.descriptors.forEach(function (d) {
                     if (self.isAdmin(d.WidgetType) || self.isPersonalized(d.WidgetType) || self.isConnected(d.WidgetType)) {
-                        html += '<option value="' + self.escHtml(d.WidgetType) + '">' + self.escHtml(d.DisplayName) + '</option>';
+                        html += '<option value="' + self.escHtml(d.WidgetType) + '">' + self.escHtml(self.translatedWidgetName(d.WidgetType, d)) + '</option>';
                     }
                 });
                 sel.innerHTML = html;
@@ -779,15 +845,16 @@
             // Populated once via GET TMDb/Genres; used to render the Discover widget's genre select.
             _tmdbGenres: [],
 
-            // Human-readable labels for each TMDbCacheType, shared by the full render and the
-            // lightweight text-only update.
+            // Maps a TMDbCacheType status entry's "Type" to the translation key of its widget's
+            // name (these types correspond 1:1 with a Connected widget, so the same WidgetType key
+            // already in fr.json/en.json is reused rather than duplicating the label).
             _tmdbStatusLabels: {
-                TrendingMovies: 'Trending Movies',
-                TrendingShows: 'Trending Shows',
-                AiringToday: 'On TV',
-                TopRatedMovies: 'Top Rated Movies',
-                TopRatedShows: 'Top Rated Shows',
-                NowPlayingMovies: 'Now Playing'
+                TrendingMovies: 'jux.connected.trending-movies',
+                TrendingShows: 'jux.connected.trending-shows',
+                AiringToday: 'jux.connected.airing-today',
+                TopRatedMovies: 'jux.connected.top-rated-movies',
+                TopRatedShows: 'jux.connected.top-rated-shows',
+                NowPlayingMovies: 'jux.connected.now-playing-movies'
             },
 
             // Renders the per-type TMDb cache status list (last refresh timestamp + item count),
@@ -810,25 +877,26 @@
                 var currentRegion = tmdbLists.NowPlayingRegion || '';
                 var html = '';
                 (statuses || []).forEach(function (s) {
-                    var label = labels[s.Type] || s.Type;
-                    var lastRefreshed = s.LastRefreshedUtc ? new Date(s.LastRefreshedUtc).toLocaleString() : 'Never';
+                    var labelKey = labels[s.Type];
+                    var label = labelKey ? self.t(labelKey) : s.Type;
+                    var lastRefreshed = s.LastRefreshedUtc ? new Date(s.LastRefreshedUtc).toLocaleString() : self.t('admin.tmdbstatus.never');
                     var pagesKey = self._tmdbPagesConfigKey[s.Type];
                     var pages = pagesKey ? (tmdbLists[pagesKey] || 1) : 1;
                     html += '<div class="jux-admin-tmdb-status-row">';
-                    html += '<span id="tmdbLabel_' + s.Type + '">' + self.escHtml(label) + ' (' + s.ItemCount + ' cached)</span>';
+                    html += '<span id="tmdbLabel_' + s.Type + '">' + self.escHtml(self.t('admin.tmdbstatus.cached', { label: label, count: s.ItemCount })) + '</span>';
                     html += '<span id="tmdbRefreshed_' + s.Type + '">' + self.escHtml(lastRefreshed) + '</span>';
                     if (pagesKey) {
                         html += '<span class="jux-admin-tmdb-pages">';
-                        html += '<label for="numTmdbPages_' + s.Type + '">Pages</label>';
+                        html += '<label for="numTmdbPages_' + s.Type + '">' + self.escHtml(self.t('admin.tmdbstatus.pages')) + '</label>';
                         html += '<input type="number" min="1" max="5" id="numTmdbPages_' + s.Type + '"';
                         html += ' class="emby-input jux-admin-tmdb-pages-input" value="' + pages + '" />';
                         html += '</span>';
                     }
                     if (s.Type === 'NowPlayingMovies') {
                         html += '<span class="jux-admin-tmdb-pages">';
-                        html += '<label for="selNowPlayingRegion">Region</label>';
+                        html += '<label for="selNowPlayingRegion">' + self.escHtml(self.t('admin.tmdbregion.label')) + '</label>';
                         html += '<select id="selNowPlayingRegion" class="emby-select jux-admin-tmdb-pages-input">';
-                        html += '<option value="">Default (all regions)</option>';
+                        html += '<option value="">' + self.escHtml(self.t('admin.tmdbregion.default')) + '</option>';
                         self._tmdbCountries.forEach(function (c) {
                             var selected = c.Value === currentRegion ? ' selected' : '';
                             html += '<option value="' + self.escHtml(c.Value) + '"' + selected + '>' + self.escHtml(c.Label) + '</option>';
@@ -838,7 +906,7 @@
                     }
                     html += '</div>';
                 });
-                list.innerHTML = html || '<p class="fieldDescription">No status available.</p>';
+                list.innerHTML = html || '<p class="fieldDescription">' + self.escHtml(self.t('admin.tmdbstatus.empty')) + '</p>';
             },
 
             // Updates ONLY the read-only "last refreshed" timestamp and item count text for each
@@ -857,9 +925,10 @@
                         anyMissing = true;
                         return;
                     }
-                    var label = labels[s.Type] || s.Type;
-                    var lastRefreshed = s.LastRefreshedUtc ? new Date(s.LastRefreshedUtc).toLocaleString() : 'Never';
-                    labelEl.textContent = label + ' (' + s.ItemCount + ' cached)';
+                    var labelKey = labels[s.Type];
+                    var label = labelKey ? self.t(labelKey) : s.Type;
+                    var lastRefreshed = s.LastRefreshedUtc ? new Date(s.LastRefreshedUtc).toLocaleString() : self.t('admin.tmdbstatus.never');
+                    labelEl.textContent = self.t('admin.tmdbstatus.cached', { label: label, count: s.ItemCount });
                     refreshedEl.textContent = lastRefreshed;
                 });
                 if (anyMissing) {
@@ -909,10 +978,12 @@
                     ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Widgets')),
                     ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).catch(function () { return []; }),
                     self.loadTmdbCountries(),
-                    self.loadTmdbGenres()
+                    self.loadTmdbGenres(),
+                    self.loadLocalizations()
                 ]).then(function (results) {
                     self.state.config = results[0];
                     self.state.descriptors = results[1] || [];
+                    self.translateStaticText();
                     self.renderTmdbStatus(results[2] || []);
 
                     var warning = self.state.config.StartupWarning;
@@ -1095,7 +1166,7 @@
                         refreshBtn.addEventListener('click', function () {
                             refreshBtn.disabled = true;
                             if (refreshMsg) {
-                                refreshMsg.textContent = 'Refresh started, this may take a few seconds...';
+                                refreshMsg.textContent = self.t('admin.tmdbrefresh.inprogress');
                                 refreshMsg.style.display = '';
                             }
                             ApiClient.ajax({
@@ -1112,7 +1183,7 @@
                                 console.error('[JUX Config] TMDb refresh trigger failed:', err);
                                 refreshBtn.disabled = false;
                                 if (refreshMsg) {
-                                    refreshMsg.textContent = 'Failed to trigger refresh. See browser console for details.';
+                                    refreshMsg.textContent = self.t('admin.tmdbrefresh.failed');
                                 }
                             });
                         });

@@ -54,6 +54,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<IWidgetRegistry>(),
             serviceProvider.GetRequiredService<SessionCache>(),
             serviceProvider.GetRequiredService<IUserConfigurationStore>(),
+            serviceProvider.GetRequiredService<ILocalizationService>(),
             () => Plugin.Instance?.Configuration,
             serviceProvider.GetRequiredService<ILogger<WidgetService>>()));
 

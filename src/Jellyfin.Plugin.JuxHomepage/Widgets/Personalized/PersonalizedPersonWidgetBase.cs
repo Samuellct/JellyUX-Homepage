@@ -1,4 +1,5 @@
 using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -18,8 +19,9 @@ public abstract class PersonalizedPersonWidgetBase : PersonalizedWidgetBase
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ScoringService scoringService)
-        : base(userManager, libraryManager, dtoService, scoringService)
+        ScoringService scoringService,
+        ILocalizationService localizationService)
+        : base(userManager, libraryManager, dtoService, scoringService, localizationService)
     {
     }
 

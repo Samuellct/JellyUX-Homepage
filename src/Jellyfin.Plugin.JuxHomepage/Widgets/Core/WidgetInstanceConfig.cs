@@ -32,4 +32,11 @@ public sealed class WidgetInstanceConfig
     /// (e.g. a library ID for a per-library widget).
     /// </summary>
     public string? AdditionalData { get; set; }
+
+    /// <summary>
+    /// Gets or sets the normalized language code (e.g. "fr", "en") this instance's <see cref="DisplayName"/>
+    /// was resolved for. Read by fan-out widgets (e.g. personalized widgets) so a per-instance name they
+    /// build themselves is translated in the same language as the rest of the layout.
+    /// </summary>
+    public string? Lang { get; set; }
 }

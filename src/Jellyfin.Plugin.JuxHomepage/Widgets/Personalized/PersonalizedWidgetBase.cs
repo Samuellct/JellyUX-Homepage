@@ -1,5 +1,6 @@
 using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -36,16 +37,19 @@ public abstract class PersonalizedWidgetBase : IWidget
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
     /// <param name="scoringService">User preference scoring service.</param>
+    /// <param name="localizationService">Widget display-name translation service.</param>
     protected PersonalizedWidgetBase(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ScoringService scoringService)
+        ScoringService scoringService,
+        ILocalizationService localizationService)
     {
         UserManager = userManager;
         LibraryManager = libraryManager;
         DtoService = dtoService;
         ScoringService = scoringService;
+        LocalizationService = localizationService;
     }
 
     /// <summary>Gets the Jellyfin user manager.</summary>
@@ -59,6 +63,9 @@ public abstract class PersonalizedWidgetBase : IWidget
 
     /// <summary>Gets the user preference scoring service.</summary>
     protected ScoringService ScoringService { get; }
+
+    /// <summary>Gets the widget display-name translation service.</summary>
+    protected ILocalizationService LocalizationService { get; }
 
     /// <inheritdoc/>
     public abstract string WidgetType { get; }
@@ -96,11 +103,13 @@ public abstract class PersonalizedWidgetBase : IWidget
     protected abstract IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count);
 
     /// <summary>
-    /// Formats the section display name for a scored value's label (e.g. "More Action").
+    /// Formats the section display name for a scored value's label (e.g. "More Action"), translated
+    /// for <paramref name="lang"/>.
     /// </summary>
     /// <param name="label">The scored value's human-readable label.</param>
+    /// <param name="lang">The language to translate the format template into.</param>
     /// <returns>The display name shown for this instance's section.</returns>
-    protected abstract string FormatDisplayName(string label);
+    protected abstract string FormatDisplayName(string label, string? lang);
 
     /// <summary>
     /// Applies the widget-specific filter to the query using the resolved scored value.
@@ -117,7 +126,7 @@ public abstract class PersonalizedWidgetBase : IWidget
         {
             var clone = (PersonalizedWidgetBase)MemberwiseClone();
             clone._value = scored.Value;
-            clone._displayName = FormatDisplayName(scored.Label);
+            clone._displayName = FormatDisplayName(scored.Label, config.Lang);
             yield return clone;
         }
     }

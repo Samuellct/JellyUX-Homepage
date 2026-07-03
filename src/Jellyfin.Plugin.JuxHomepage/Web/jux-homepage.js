@@ -100,7 +100,11 @@
 
     function _loadPage(elem, apiClient, userId, userSettings, page) {
         return apiClient.getJSON(
-            apiClient.getUrl('JuxHomepage/Sections', { userId: userId, page: page })
+            apiClient.getUrl('JuxHomepage/Sections', {
+                userId: userId,
+                page: page,
+                lang: document.documentElement.lang || 'en'
+            })
         ).then(function (descriptors) {
             if (!descriptors || descriptors.length === 0) {
                 return;

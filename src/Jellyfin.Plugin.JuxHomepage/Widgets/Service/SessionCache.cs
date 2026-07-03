@@ -15,7 +15,7 @@ public sealed class SessionCache : IDisposable
     private const int CleanupIntervalMinutes = 5;
     private const int GarbageCollectAfterMinutes = 60;
 
-    private readonly ConcurrentDictionary<Guid, SessionData> _cache = new();
+    private readonly ConcurrentDictionary<(Guid UserId, string Lang), SessionData> _cache = new();
     private readonly Timer _cleanupTimer;
     private bool _disposed;
 
@@ -32,16 +32,17 @@ public sealed class SessionCache : IDisposable
     }
 
     /// <summary>
-    /// Attempts to retrieve a cached descriptor list for the given user.
+    /// Attempts to retrieve a cached descriptor list for the given user and language.
     /// Updates <see cref="SessionData.LastAccessed"/> on a cache hit to extend the entry's life.
     /// </summary>
     /// <param name="userId">The user whose layout to retrieve.</param>
+    /// <param name="lang">The language the cached layout's display names were translated for.</param>
     /// <param name="ttl">The maximum age of an entry before it is considered stale.</param>
     /// <param name="descriptors">The cached descriptors, or null on a miss.</param>
     /// <returns>True if a valid cached entry was found; otherwise false.</returns>
-    public bool TryGet(Guid userId, TimeSpan ttl, out IReadOnlyList<WidgetDescriptor>? descriptors)
+    public bool TryGet(Guid userId, string? lang, TimeSpan ttl, out IReadOnlyList<WidgetDescriptor>? descriptors)
     {
-        if (_cache.TryGetValue(userId, out var data) &&
+        if (_cache.TryGetValue((userId, NormalizeKey(lang)), out var data) &&
             DateTime.UtcNow - data.LastAccessed < ttl)
         {
             data.LastAccessed = DateTime.UtcNow;
@@ -54,13 +55,14 @@ public sealed class SessionCache : IDisposable
     }
 
     /// <summary>
-    /// Stores or replaces the descriptor list for the given user.
+    /// Stores or replaces the descriptor list for the given user and language.
     /// </summary>
     /// <param name="userId">The user whose layout to cache.</param>
+    /// <param name="lang">The language the layout's display names were translated for.</param>
     /// <param name="descriptors">The ordered list of descriptors that passed MinItems filtering.</param>
-    public void Set(Guid userId, IReadOnlyList<WidgetDescriptor> descriptors)
+    public void Set(Guid userId, string? lang, IReadOnlyList<WidgetDescriptor> descriptors)
     {
-        _cache[userId] = new SessionData
+        _cache[(userId, NormalizeKey(lang))] = new SessionData
         {
             LastAccessed = DateTime.UtcNow,
             Descriptors = descriptors
@@ -68,10 +70,25 @@ public sealed class SessionCache : IDisposable
     }
 
     /// <summary>
-    /// Removes the cached layout for the given user, forcing a fresh rebuild on next request.
+    /// Removes every cached layout for the given user, across all languages, forcing a fresh
+    /// rebuild on the user's next request regardless of which language they're viewing in.
     /// </summary>
-    /// <param name="userId">The user whose cache entry to remove.</param>
-    public void Invalidate(Guid userId) => _cache.TryRemove(userId, out _);
+    /// <param name="userId">The user whose cache entries to remove.</param>
+    public void Invalidate(Guid userId)
+    {
+        foreach (var key in _cache.Keys.Where(k => k.UserId == userId).ToList())
+        {
+            _cache.TryRemove(key, out _);
+        }
+    }
+
+    /// <summary>
+    /// Normalizes a raw language tag to a stable cache-key component, mirroring
+    /// <see cref="Localization.LocalizationService"/>'s own normalization ("fr-FR" -&gt; "fr") so
+    /// equivalent language tags share one cache entry instead of quietly duplicating it.
+    /// </summary>
+    private static string NormalizeKey(string? lang) =>
+        string.IsNullOrWhiteSpace(lang) ? "en" : lang.Split('-', 2)[0].ToLowerInvariant();
 
     /// <summary>
     /// Removes all cached layouts, forcing a fresh rebuild for every user on their next request.

@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JuxHomepage.Widgets;
@@ -22,6 +23,7 @@ public sealed class WidgetService
     private readonly IWidgetRegistry _registry;
     private readonly SessionCache _sessionCache;
     private readonly IUserConfigurationStore _userConfigStore;
+    private readonly ILocalizationService _localizationService;
     private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<WidgetService> _logger;
 
@@ -31,6 +33,7 @@ public sealed class WidgetService
     /// <param name="registry">The widget registry.</param>
     /// <param name="sessionCache">The session layout cache.</param>
     /// <param name="userConfigStore">The per-user configuration store.</param>
+    /// <param name="localizationService">Widget display-name translation service.</param>
     /// <param name="getConfiguration">
     /// Factory that returns the current plugin configuration.
     /// Defaults to <c>Plugin.Instance?.Configuration</c> in production.
@@ -40,12 +43,14 @@ public sealed class WidgetService
         IWidgetRegistry registry,
         SessionCache sessionCache,
         IUserConfigurationStore userConfigStore,
+        ILocalizationService localizationService,
         Func<PluginConfiguration?> getConfiguration,
         ILogger<WidgetService> logger)
     {
         _registry = registry;
         _sessionCache = sessionCache;
         _userConfigStore = userConfigStore;
+        _localizationService = localizationService;
         _getConfiguration = getConfiguration;
         _logger = logger;
     }
@@ -57,23 +62,29 @@ public sealed class WidgetService
     /// </summary>
     /// <param name="userId">The requesting user's identifier.</param>
     /// <param name="page">Zero-based page index (each page contains up to <c>20</c> descriptors).</param>
+    /// <param name="lang">
+    /// The requested language code (e.g. "fr"), or null for the default (English). Determines the
+    /// language of translated widget display names and is part of the session cache key, so each
+    /// language gets its own cached layout.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A page of <see cref="WidgetDescriptor"/> objects describing the home screen layout.</returns>
     public async Task<IReadOnlyList<WidgetDescriptor>> GetWidgetsForUser(
         Guid userId,
         int page,
+        string? lang,
         CancellationToken cancellationToken)
     {
         var ttlMinutes = _getConfiguration()?.Cache?.SessionTtlMinutes ?? 15;
         var ttl = TimeSpan.FromMinutes(ttlMinutes);
 
-        if (_sessionCache.TryGet(userId, ttl, out var cached) && cached is not null)
+        if (_sessionCache.TryGet(userId, lang, ttl, out var cached) && cached is not null)
         {
             return Paginate(cached, page);
         }
 
-        var descriptors = await BuildDescriptors(userId, cancellationToken).ConfigureAwait(false);
-        _sessionCache.Set(userId, descriptors);
+        var descriptors = await BuildDescriptors(userId, lang, cancellationToken).ConfigureAwait(false);
+        _sessionCache.Set(userId, lang, descriptors);
 
         return Paginate(descriptors, page);
     }
@@ -133,6 +144,7 @@ public sealed class WidgetService
 
     private async Task<IReadOnlyList<WidgetDescriptor>> BuildDescriptors(
         Guid userId,
+        string? lang,
         CancellationToken cancellationToken)
     {
         var globalConfig = _getConfiguration()?.Widgets ?? [];
@@ -157,7 +169,7 @@ public sealed class WidgetService
 
         // Resolve widget instances for each enabled config entry
         var tasks = effectiveConfigs
-            .Select(config => ResolveAndFetch(userId, config, cancellationToken))
+            .Select(config => ResolveAndFetch(userId, config, lang, cancellationToken))
             .ToList();
 
         var results = await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -180,6 +192,7 @@ public sealed class WidgetService
     private async Task<IReadOnlyList<WidgetDescriptor>> ResolveAndFetch(
         Guid userId,
         WidgetConfig config,
+        string? lang,
         CancellationToken cancellationToken)
     {
         var widget = _registry.GetByType(config.WidgetType);
@@ -191,7 +204,7 @@ public sealed class WidgetService
             return [];
         }
 
-        var instanceConfig = BuildInstanceConfig(config, widget);
+        var instanceConfig = BuildInstanceConfig(config, widget, lang, _localizationService);
 
         List<IWidget> instances;
         try
@@ -320,7 +333,11 @@ public sealed class WidgetService
         return candidates[0];
     }
 
-    private static WidgetInstanceConfig BuildInstanceConfig(WidgetConfig config, IWidget widget)
+    private static WidgetInstanceConfig BuildInstanceConfig(
+        WidgetConfig config,
+        IWidget widget,
+        string? lang,
+        ILocalizationService localizationService)
     {
         IReadOnlyDictionary<string, string>? extra = config.ExtraParams.Length > 0
             ? config.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
@@ -328,13 +345,14 @@ public sealed class WidgetService
         string? additionalData = extra is not null && extra.TryGetValue("value", out var v) ? v : null;
         return new WidgetInstanceConfig
         {
-            DisplayName = config.CustomDisplayName ?? widget.DefaultDisplayName,
+            DisplayName = config.CustomDisplayName ?? localizationService.Translate(widget.WidgetType, lang),
             MinItems = config.MinItems,
             MaxItems = config.MaxItems,
             ViewMode = config.ViewMode,
             Order = config.Order,
             ExtraParams = extra,
-            AdditionalData = additionalData
+            AdditionalData = additionalData,
+            Lang = lang
         };
     }
 

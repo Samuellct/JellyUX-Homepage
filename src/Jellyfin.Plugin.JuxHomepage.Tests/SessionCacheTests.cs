@@ -13,8 +13,8 @@ public sealed class SessionCacheTests : IDisposable
         var userId = Guid.NewGuid();
         var descriptors = new List<WidgetDescriptor> { new() { WidgetType = "w1" } };
 
-        _cache.Set(userId, descriptors);
-        var hit = _cache.TryGet(userId, TimeSpan.FromMinutes(15), out var result);
+        _cache.Set(userId, "en", descriptors);
+        var hit = _cache.TryGet(userId, "en", TimeSpan.FromMinutes(15), out var result);
 
         Assert.True(hit);
         Assert.NotNull(result);
@@ -25,10 +25,10 @@ public sealed class SessionCacheTests : IDisposable
     public void TryGet_ExpiredTtl_ReturnsMiss()
     {
         var userId = Guid.NewGuid();
-        _cache.Set(userId, [new WidgetDescriptor { WidgetType = "w1" }]);
+        _cache.Set(userId, "en", [new WidgetDescriptor { WidgetType = "w1" }]);
 
         // TimeSpan.Zero means any entry - no matter how fresh - is considered expired.
-        var hit = _cache.TryGet(userId, TimeSpan.Zero, out var result);
+        var hit = _cache.TryGet(userId, "en", TimeSpan.Zero, out var result);
 
         Assert.False(hit);
         Assert.Null(result);
@@ -37,7 +37,7 @@ public sealed class SessionCacheTests : IDisposable
     [Fact]
     public void TryGet_NoEntry_ReturnsMiss()
     {
-        var hit = _cache.TryGet(Guid.NewGuid(), TimeSpan.FromMinutes(15), out var result);
+        var hit = _cache.TryGet(Guid.NewGuid(), "en", TimeSpan.FromMinutes(15), out var result);
 
         Assert.False(hit);
         Assert.Null(result);
@@ -47,10 +47,10 @@ public sealed class SessionCacheTests : IDisposable
     public void Invalidate_RemovesEntry_SubsequentTryGetReturnsMiss()
     {
         var userId = Guid.NewGuid();
-        _cache.Set(userId, [new WidgetDescriptor { WidgetType = "w1" }]);
+        _cache.Set(userId, "en", [new WidgetDescriptor { WidgetType = "w1" }]);
 
         _cache.Invalidate(userId);
-        var hit = _cache.TryGet(userId, TimeSpan.FromMinutes(15), out _);
+        var hit = _cache.TryGet(userId, "en", TimeSpan.FromMinutes(15), out _);
 
         Assert.False(hit);
     }
@@ -59,13 +59,58 @@ public sealed class SessionCacheTests : IDisposable
     public void Set_OverwritesExistingEntry()
     {
         var userId = Guid.NewGuid();
-        _cache.Set(userId, [new WidgetDescriptor { WidgetType = "old" }]);
-        _cache.Set(userId, [new WidgetDescriptor { WidgetType = "new" }]);
+        _cache.Set(userId, "en", [new WidgetDescriptor { WidgetType = "old" }]);
+        _cache.Set(userId, "en", [new WidgetDescriptor { WidgetType = "new" }]);
 
-        _cache.TryGet(userId, TimeSpan.FromMinutes(15), out var result);
+        _cache.TryGet(userId, "en", TimeSpan.FromMinutes(15), out var result);
 
         Assert.NotNull(result);
         Assert.Equal("new", result![0].WidgetType);
+    }
+
+    // -------------------------------------------------------------------------
+    // Per-language isolation (regression: each language must get its own cached
+    // layout, since translated DisplayName values differ per language).
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Set_DifferentLanguage_IsolatedFromOtherLanguageEntries()
+    {
+        var userId = Guid.NewGuid();
+        _cache.Set(userId, "fr", [new WidgetDescriptor { WidgetType = "w1", DisplayName = "Bonjour" }]);
+
+        var hitEn = _cache.TryGet(userId, "en", TimeSpan.FromMinutes(15), out var resultEn);
+        var hitFr = _cache.TryGet(userId, "fr", TimeSpan.FromMinutes(15), out var resultFr);
+
+        Assert.False(hitEn);
+        Assert.Null(resultEn);
+        Assert.True(hitFr);
+        Assert.Equal("Bonjour", resultFr![0].DisplayName);
+    }
+
+    [Fact]
+    public void Set_NullLanguage_TreatedSameAsEnglish()
+    {
+        var userId = Guid.NewGuid();
+        _cache.Set(userId, null, [new WidgetDescriptor { WidgetType = "w1" }]);
+
+        var hit = _cache.TryGet(userId, "en", TimeSpan.FromMinutes(15), out var result);
+
+        Assert.True(hit);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void Invalidate_RemovesEntriesForEveryLanguage()
+    {
+        var userId = Guid.NewGuid();
+        _cache.Set(userId, "en", [new WidgetDescriptor { WidgetType = "w1" }]);
+        _cache.Set(userId, "fr", [new WidgetDescriptor { WidgetType = "w1" }]);
+
+        _cache.Invalidate(userId);
+
+        Assert.False(_cache.TryGet(userId, "en", TimeSpan.FromMinutes(15), out _));
+        Assert.False(_cache.TryGet(userId, "fr", TimeSpan.FromMinutes(15), out _));
     }
 
     public void Dispose() => _cache.Dispose();

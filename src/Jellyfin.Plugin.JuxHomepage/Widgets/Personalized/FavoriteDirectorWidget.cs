@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Library;
 
@@ -17,12 +18,14 @@ public sealed class FavoriteDirectorWidget : PersonalizedPersonWidgetBase
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
     /// <param name="scoringService">User preference scoring service.</param>
+    /// <param name="localizationService">Widget display-name translation service.</param>
     public FavoriteDirectorWidget(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ScoringService scoringService)
-        : base(userManager, libraryManager, dtoService, scoringService)
+        ScoringService scoringService,
+        ILocalizationService localizationService)
+        : base(userManager, libraryManager, dtoService, scoringService, localizationService)
     {
     }
 
@@ -40,5 +43,6 @@ public sealed class FavoriteDirectorWidget : PersonalizedPersonWidgetBase
         ScoringService.GetTopDirectors(userId, count);
 
     /// <inheritdoc/>
-    protected override string FormatDisplayName(string label) => $"Directed by {label}";
+    protected override string FormatDisplayName(string label, string? lang) =>
+        LocalizationService.Translate("jux.personalized.favorite-director.format", lang, label);
 }

@@ -150,6 +150,10 @@ public class JuxHomepageController : ControllerBase
     /// </summary>
     /// <param name="userId">The requesting user's Jellyfin identifier.</param>
     /// <param name="page">Zero-based page index (20 descriptors per page).</param>
+    /// <param name="lang">
+    /// The requested language code (e.g. "fr"), sourced client-side from
+    /// <c>document.documentElement.lang</c>. Null defaults to English.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An array of <see cref="WidgetDescriptor"/> objects.</returns>
     [HttpGet("Sections")]
@@ -158,10 +162,11 @@ public class JuxHomepageController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<WidgetDescriptor>>> GetSections(
         [FromQuery] Guid userId,
         [FromQuery] int page = 0,
+        [FromQuery] string? lang = null,
         CancellationToken cancellationToken = default)
     {
         var descriptors = await _widgetService
-            .GetWidgetsForUser(userId, page, cancellationToken)
+            .GetWidgetsForUser(userId, page, lang, cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(descriptors);

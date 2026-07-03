@@ -103,6 +103,8 @@
   "admin.tmdbregion.default": "Défaut (toutes régions)",
   "admin.tmdbstatus.empty": "Aucun statut disponible.",
   "admin.tmdbstatus.cached": "{label} ({count} en cache)",
+  "admin.tmdbstatus.never": "Jamais",
+  "admin.tmdbstatus.pages": "Pages",
   "admin.tmdbrefresh.inprogress": "Rafraîchissement démarré, cela peut prendre quelques secondes...",
   "admin.tmdbrefresh.failed": "Échec du déclenchement du rafraîchissement. Voir la console du navigateur pour plus de détails."
 }

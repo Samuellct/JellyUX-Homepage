@@ -1,4 +1,5 @@
 using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -18,12 +19,14 @@ public sealed class FavoriteGenreWidget : PersonalizedWidgetBase
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
     /// <param name="scoringService">User preference scoring service.</param>
+    /// <param name="localizationService">Widget display-name translation service.</param>
     public FavoriteGenreWidget(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ScoringService scoringService)
-        : base(userManager, libraryManager, dtoService, scoringService)
+        ScoringService scoringService,
+        ILocalizationService localizationService)
+        : base(userManager, libraryManager, dtoService, scoringService, localizationService)
     {
     }
 
@@ -41,7 +44,8 @@ public sealed class FavoriteGenreWidget : PersonalizedWidgetBase
         ScoringService.GetTopGenres(userId, count);
 
     /// <inheritdoc/>
-    protected override string FormatDisplayName(string label) => $"More {label}";
+    protected override string FormatDisplayName(string label, string? lang) =>
+        LocalizationService.Translate("jux.personalized.favorite-genre.format", lang, label);
 
     /// <inheritdoc/>
     protected override void ApplyFilter(InternalItemsQuery query, string value, User user)

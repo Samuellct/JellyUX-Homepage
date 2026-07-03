@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Library;
 
@@ -16,12 +17,14 @@ public sealed class FavoriteActorWidget : PersonalizedPersonWidgetBase
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
     /// <param name="scoringService">User preference scoring service.</param>
+    /// <param name="localizationService">Widget display-name translation service.</param>
     public FavoriteActorWidget(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ScoringService scoringService)
-        : base(userManager, libraryManager, dtoService, scoringService)
+        ScoringService scoringService,
+        ILocalizationService localizationService)
+        : base(userManager, libraryManager, dtoService, scoringService, localizationService)
     {
     }
 
@@ -39,5 +42,6 @@ public sealed class FavoriteActorWidget : PersonalizedPersonWidgetBase
         ScoringService.GetTopActors(userId, count);
 
     /// <inheritdoc/>
-    protected override string FormatDisplayName(string label) => $"Movies with {label}";
+    protected override string FormatDisplayName(string label, string? lang) =>
+        LocalizationService.Translate("jux.personalized.favorite-actor.format", lang, label);
 }
