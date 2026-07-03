@@ -23,6 +23,8 @@
     <EmbeddedResource Include="Web\jux-homepage.css" />
     <EmbeddedResource Include="Web\jux-loadsections-inject.js" />
     <EmbeddedResource Include="Web\config.html" />
+    <EmbeddedResource Include="Localization\fr.json" />
+    <EmbeddedResource Include="Localization\en.json" />
   </ItemGroup>
 
   <ItemGroup>

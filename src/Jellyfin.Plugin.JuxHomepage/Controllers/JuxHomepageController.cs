@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
@@ -28,6 +29,7 @@ public class JuxHomepageController : ControllerBase
     private readonly IUserManager _userManager;
     private readonly ITMDbCacheService _tmdbCacheService;
     private readonly ITMDbApiClient _tmdbApiClient;
+    private readonly ILocalizationService _localizationService;
     private readonly ILogger<JuxHomepageController> _logger;
 
     /// <summary>
@@ -38,6 +40,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="userManager">Jellyfin user manager.</param>
     /// <param name="tmdbCacheService">TMDb disk cache service.</param>
     /// <param name="tmdbApiClient">TMDb HTTP API client.</param>
+    /// <param name="localizationService">Widget/admin-UI translation service.</param>
     /// <param name="logger">Logger.</param>
     public JuxHomepageController(
         IWidgetRegistry registry,
@@ -45,6 +48,7 @@ public class JuxHomepageController : ControllerBase
         IUserManager userManager,
         ITMDbCacheService tmdbCacheService,
         ITMDbApiClient tmdbApiClient,
+        ILocalizationService localizationService,
         ILogger<JuxHomepageController> logger)
     {
         _registry = registry;
@@ -52,6 +56,7 @@ public class JuxHomepageController : ControllerBase
         _userManager = userManager;
         _tmdbCacheService = tmdbCacheService;
         _tmdbApiClient = tmdbApiClient;
+        _localizationService = localizationService;
         _logger = logger;
     }
 
@@ -101,6 +106,21 @@ public class JuxHomepageController : ControllerBase
 
         SetCacheHeaders(Response);
         return File(stream, "text/css");
+    }
+
+    /// <summary>
+    /// Returns the flat translation dictionary for a language, for the admin config page and the
+    /// home screen script to translate their own UI/section titles client- or server-side.
+    /// Anonymous - translation strings are not sensitive, same as the JS/CSS resources above.
+    /// </summary>
+    /// <param name="lang">The requested language code (e.g. "fr"), or null to use English.</param>
+    /// <returns>The merged key-to-string dictionary for the requested language.</returns>
+    [HttpGet("Localizations")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<IReadOnlyDictionary<string, string>> GetLocalizations([FromQuery] string? lang = null)
+    {
+        return Ok(_localizationService.GetDictionary(lang));
     }
 
     // -------------------------------------------------------------------------

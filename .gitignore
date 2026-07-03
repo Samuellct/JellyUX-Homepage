@@ -49,5 +49,6 @@ src/**
 !src/**/*.css
 !src/**/*.html
 !src/**/appsettings*.json
+!src/**/Localization/*.json
 src/**/bin/
 src/**/obj/

@@ -1,10 +1,62 @@
 using Jellyfin.Plugin.JuxHomepage.Localization;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Jellyfin.Plugin.JuxHomepage.Tests.Localization;
 
 public sealed class LocalizationServiceTests
 {
+    // Every WidgetType currently registered in the plugin (kept in sync manually; a new widget
+    // must add its translation key to fr.json/en.json AND to this list, so a forgotten key fails
+    // this test rather than silently showing raw keys in production).
+    private static readonly string[] KnownWidgetTypes =
+    [
+        "jux.native.continue-watching",
+        "jux.native.next-up",
+        "jux.native.recently-added-movies",
+        "jux.native.recently-added-shows",
+        "jux.native.my-media",
+        "jux.connected.trending-movies",
+        "jux.connected.trending-shows",
+        "jux.connected.top-rated-movies",
+        "jux.connected.top-rated-shows",
+        "jux.connected.airing-today",
+        "jux.connected.now-playing-movies",
+        "jux.connected.discover-movies",
+        "jux.admin.genre",
+        "jux.admin.actor",
+        "jux.admin.director",
+        "jux.admin.studio",
+        "jux.admin.collection",
+        "jux.admin.tag",
+        "jux.admin.year",
+        "jux.personalized.favorite-genre",
+        "jux.personalized.favorite-genre.format",
+        "jux.personalized.favorite-actor",
+        "jux.personalized.favorite-actor.format",
+        "jux.personalized.favorite-director",
+        "jux.personalized.favorite-director.format",
+        "jux.personalized.because-you-watched",
+        "jux.personalized.because-you-watched.format"
+    ];
+
+    [Theory]
+    [InlineData("fr")]
+    [InlineData("en")]
+    public void RealEmbeddedLanguageFiles_ContainEveryKnownWidgetTypeKey(string lang)
+    {
+        var service = new LocalizationService(NullLogger<LocalizationService>.Instance);
+        var dictionary = service.GetDictionary(lang);
+
+        foreach (var widgetType in KnownWidgetTypes)
+        {
+            Assert.True(
+                dictionary.ContainsKey(widgetType),
+                $"Missing '{lang}' translation for widget type '{widgetType}'.");
+        }
+    }
+
+
     private static LocalizationService BuildService() => new(
         new Dictionary<string, IReadOnlyDictionary<string, string>>
         {
