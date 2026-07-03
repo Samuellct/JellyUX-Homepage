@@ -1,3 +1,11 @@
+## [0.12.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.11.2...v0.12.0) (2026-07-03)
+
+### Features
+
+* add French and English language files ([3b114b2](https://github.com/Samuellct/JellyUX-Homepage/commit/3b114b20d3bc6b9889e7ce849add3a0ffaec2b24))
+* add localization service with JSON language files ([c7494b2](https://github.com/Samuellct/JellyUX-Homepage/commit/c7494b226bdb94ce23d8f467beba1cb6aac7e234))
+* apply i18n to all widgets and admin UI ([b4ffec1](https://github.com/Samuellct/JellyUX-Homepage/commit/b4ffec175a30a8a7970bcba87439fa503fb1670f))
+
 ## [0.11.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.11.1...v0.11.2) (2026-07-03)
 
 ### Bug Fixes
