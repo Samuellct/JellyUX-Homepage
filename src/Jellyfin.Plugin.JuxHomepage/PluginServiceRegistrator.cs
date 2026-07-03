@@ -1,6 +1,7 @@
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
+using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
@@ -29,6 +30,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<SessionCache>();
         serviceCollection.AddHostedService<ConfigurationChangeListener>();
         serviceCollection.AddSingleton<IUserConfigurationStore, UserConfigurationStore>();
+        serviceCollection.AddSingleton<ILocalizationService, LocalizationService>();
         serviceCollection.AddHttpClient("TMDb", client =>
         {
             client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
