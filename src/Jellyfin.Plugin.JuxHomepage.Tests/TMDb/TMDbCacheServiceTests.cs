@@ -197,6 +197,43 @@ public sealed class TMDbCacheServiceTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Duplicate TMDb ids across pages must be collapsed (regression test: TMDb's list endpoints are
+    // backed by a live, frequently reshuffled ranking, so the same movie can legitimately appear on
+    // more than one fetched page -- without deduplication this made the same library item appear
+    // twice in the widget).
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RefreshTrendingMoviesAsync_SameIdOnMultiplePages_CollapsesToSingleEntry()
+    {
+        var libraryItem = new Movie { Id = Guid.NewGuid(), Name = "Shelter" };
+
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[
+                new TMDbMovie { Id = 555, Title = "Shelter" },
+                new TMDbMovie { Id = 555, Title = "Shelter" }
+            ]);
+        apiClientMock.Setup(c => c.GetMovieExternalIdsAsync(555, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("tt32357218");
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.HasAnyProviderId != null && q.HasAnyProviderId.ContainsKey("Imdb"))))
+            .Returns([libraryItem]);
+
+        var service = BuildService(apiClientMock.Object, libraryManagerMock.Object);
+
+        await service.RefreshTrendingMoviesAsync(CancellationToken.None);
+        var result = service.GetTrendingMovies();
+
+        Assert.Single(result);
+        Assert.Equal(libraryItem.Id, result[0].LibraryItemId);
+        apiClientMock.Verify(c => c.GetMovieExternalIdsAsync(555, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // -------------------------------------------------------------------------
     // Empty refresh must not clobber a previously-populated cache (regression test: a fetch
     // failure, e.g. an invalid API key producing HTTP 401s, previously overwrote a good cache with
     // an empty one, silently destroying real cross-referenced data).

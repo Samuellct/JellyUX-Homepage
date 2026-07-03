@@ -169,7 +169,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
 
         try
         {
-            var items = await _apiClient.DiscoverMoviesAsync(filter, cancellationToken).ConfigureAwait(false);
+            var items = DeduplicateById(await _apiClient.DiscoverMoviesAsync(filter, cancellationToken).ConfigureAwait(false));
             var matched = await CrossReferenceAsync(
                 items,
                 _apiClient.GetMovieExternalIdsAsync,
@@ -265,7 +265,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     {
         try
         {
-            var items = await fetch(cancellationToken).ConfigureAwait(false);
+            var items = DeduplicateById(await fetch(cancellationToken).ConfigureAwait(false));
             var matched = await CrossReferenceAsync(
                 items,
                 _apiClient.GetMovieExternalIdsAsync,
@@ -287,7 +287,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     {
         try
         {
-            var items = await fetch(cancellationToken).ConfigureAwait(false);
+            var items = DeduplicateById(await fetch(cancellationToken).ConfigureAwait(false));
             var matched = await CrossReferenceAsync(
                 items,
                 _apiClient.GetShowExternalIdsAsync,
@@ -300,6 +300,30 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         {
             _logger.LogError(ex, "Failed to refresh TMDb cache '{Type}'.", type);
         }
+    }
+
+    /// <summary>
+    /// Removes duplicate entries (same TMDb id) from a freshly fetched page set, keeping the first
+    /// occurrence. TMDb's list endpoints are backed by a live, frequently reshuffled ranking, so the
+    /// same item can legitimately appear on more than one page when multiple pages are fetched back
+    /// to back (e.g. a movie shifts from page 2 to page 1 between requests) -- without this, the
+    /// duplicate would be cross-referenced and cached twice, making the same local library item
+    /// appear twice in the widget.
+    /// </summary>
+    private static IReadOnlyList<T> DeduplicateById<T>(IReadOnlyList<T> items)
+        where T : ITMDbCacheItem
+    {
+        var seenIds = new HashSet<int>();
+        var deduplicated = new List<T>(items.Count);
+        foreach (var item in items)
+        {
+            if (seenIds.Add(item.Id))
+            {
+                deduplicated.Add(item);
+            }
+        }
+
+        return deduplicated;
     }
 
     /// <summary>
