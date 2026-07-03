@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.11.2.0",
+                "changelog": "### Bug Fixes\n\n* deduplicate TMDb list items by id before caching ([28ce003](https://github.com/Samuellct/JellyUX-Homepage/commit/28ce00367ca00002765357f74ff8380d51a72b19))\n* remove Upcoming Movies widget (unusable in the Connected model, never matches local library) ([a492557](https://github.com/Samuellct/JellyUX-Homepage/commit/a492557f9c2813bccf5af9f9373d764024608b9a))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.11.2/jellyux-homepage_0.11.2.0.zip",
+                "checksum": "00b4dd51ef2a688c3a6948c8810459e4",
+                "timestamp": "2026-07-03T17:01:47Z"
+            },
+            {
                 "version": "0.11.1.0",
                 "changelog": "### Bug Fixes\n\n* broaden On TV widget results using tv/on_the_air instead of tv/airing_today ([74543a3](https://github.com/Samuellct/JellyUX-Homepage/commit/74543a34a3746fb6c89c8b9474db27bca7962945))\n* stop background TMDb status poll from wiping unsaved Pages/Region edits ([5dd8c0a](https://github.com/Samuellct/JellyUX-Homepage/commit/5dd8c0a83e67903790e4a27d2fcebb7f2d5b997b))",
                 "targetAbi": "10.11.0.0",

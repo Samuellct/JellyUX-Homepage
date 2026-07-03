@@ -1,3 +1,10 @@
+## [0.11.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.11.1...v0.11.2) (2026-07-03)
+
+### Bug Fixes
+
+* deduplicate TMDb list items by id before caching ([28ce003](https://github.com/Samuellct/JellyUX-Homepage/commit/28ce00367ca00002765357f74ff8380d51a72b19))
+* remove Upcoming Movies widget (unusable in the Connected model, never matches local library) ([a492557](https://github.com/Samuellct/JellyUX-Homepage/commit/a492557f9c2813bccf5af9f9373d764024608b9a))
+
 ## [0.11.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.11.0...v0.11.1) (2026-07-02)
 
 ### Bug Fixes
