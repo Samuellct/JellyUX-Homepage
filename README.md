@@ -1,7 +1,7 @@
 # JellyUX Homepage
 
 <p align="center">
-  <img src="docs/banner.png" alt="JellyUX Homepage banner">
+  <img src="docs/banner.png" alt="JellyUX Homepage banner" width="80%">
 </p>
 
 <p align="center">
