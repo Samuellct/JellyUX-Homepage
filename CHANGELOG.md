@@ -1,3 +1,9 @@
+## [0.12.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.12.0...v0.12.1) (2026-07-04)
+
+### Bug Fixes
+
+* improve error handling and logging robustness ([4e2d3c2](https://github.com/Samuellct/JellyUX-Homepage/commit/4e2d3c220a6781e81821858a8fdc589e190ed3d6))
+
 ## [0.12.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.11.2...v0.12.0) (2026-07-03)
 
 ### Features

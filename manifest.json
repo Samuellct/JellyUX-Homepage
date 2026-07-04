@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.12.1.0",
+                "changelog": "### Bug Fixes\n\n* improve error handling and logging robustness ([4e2d3c2](https://github.com/Samuellct/JellyUX-Homepage/commit/4e2d3c220a6781e81821858a8fdc589e190ed3d6))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.12.1/jellyux-homepage_0.12.1.0.zip",
+                "checksum": "fd73d08f26867b2da80b015ad118c95b",
+                "timestamp": "2026-07-04T14:35:33Z"
+            },
+            {
                 "version": "0.12.0.0",
                 "changelog": "### Features\n\n* add French and English language files ([3b114b2](https://github.com/Samuellct/JellyUX-Homepage/commit/3b114b20d3bc6b9889e7ce849add3a0ffaec2b24))\n* add localization service with JSON language files ([c7494b2](https://github.com/Samuellct/JellyUX-Homepage/commit/c7494b226bdb94ce23d8f467beba1cb6aac7e234))\n* apply i18n to all widgets and admin UI ([b4ffec1](https://github.com/Samuellct/JellyUX-Homepage/commit/b4ffec175a30a8a7970bcba87439fa503fb1670f))",
                 "targetAbi": "10.11.0.0",
