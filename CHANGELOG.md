@@ -1,3 +1,9 @@
+## [0.13.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.13.0...v0.13.1) (2026-07-04)
+
+### Bug Fixes
+
+* ensure BREAKING CHANGE commits trigger a major release ([7a28bf0](https://github.com/Samuellct/JellyUX-Homepage/commit/7a28bf092868ae28ec0020035220f7245ca84330))
+
 ## [0.13.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.12.1...v0.13.0) (2026-07-04)
 
 ### Features
