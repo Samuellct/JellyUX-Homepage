@@ -95,6 +95,18 @@ dotnet test
 
 ---
 
+## Jellyfin Update Test Procedure
+
+1. Bump the `jellyfin/jellyfin` image in `docker/docker-compose.yml`, then run `docker compose -f
+   docker/docker-compose.yml up -d`.
+2. Follow the "Jellyfin Update Procedure" in `CLAUDE.md` to confirm the `loadSections` chunk is still
+   detected and patched.
+3. Reload the home page: if the JellyUX sections do not render, check the browser console (prefix
+   `[JellyUX]`) before suspecting the minified hook constants.
+4. Re-run at least the Phase 12 manual tests (multi-client compatibility + robustness).
+
+---
+
 ## Submitting a Contribution
 
 1. Fork the repository and create a branch from `main`.
