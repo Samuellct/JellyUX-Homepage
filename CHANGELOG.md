@@ -1,3 +1,13 @@
+## [1.0.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.13.1...v1.0.0) (2026-07-04)
+
+### ⚠ BREAKING CHANGES
+
+* initial stable release, API surface is now stable
+
+### Features
+
+* complete V1 feature set ([27222c2](https://github.com/Samuellct/JellyUX-Homepage/commit/27222c247f4d4c25c5712445248ab233beae25c3))
+
 ## [0.13.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.13.0...v0.13.1) (2026-07-04)
 
 ### Bug Fixes
