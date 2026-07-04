@@ -216,7 +216,7 @@
                     .then(function (dict) {
                         self._i18n = dict || {};
                     }).catch(function (err) {
-                        console.error('[JUX Config] Localizations load failed:', err);
+                        console.error('[JellyUX Config] Localizations load failed:', err);
                         self._i18n = {};
                     });
             },
@@ -943,7 +943,7 @@
                 return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Countries')).then(function (countries) {
                     self._tmdbCountries = countries || [];
                 }).catch(function (err) {
-                    console.error('[JUX Config] TMDb countries load failed:', err);
+                    console.error('[JellyUX Config] TMDb countries load failed:', err);
                 });
             },
 
@@ -954,7 +954,7 @@
                 return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Genres')).then(function (genres) {
                     self._tmdbGenres = genres || [];
                 }).catch(function (err) {
-                    console.error('[JUX Config] TMDb genres load failed:', err);
+                    console.error('[JellyUX Config] TMDb genres load failed:', err);
                 });
             },
 
@@ -966,7 +966,7 @@
                 return ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/TMDb/Status')).then(function (statuses) {
                     self.updateTmdbStatusText(statuses);
                 }).catch(function (err) {
-                    console.error('[JUX Config] TMDb status load failed:', err);
+                    console.error('[JellyUX Config] TMDb status load failed:', err);
                 });
             },
 
@@ -1008,7 +1008,7 @@
                     self.renderWidgets();
                     Dashboard.hideLoadingMsg();
                 }).catch(function (err) {
-                    console.error('[JUX Config] Load failed:', err);
+                    console.error('[JellyUX Config] Load failed:', err);
                     Dashboard.hideLoadingMsg();
                 });
             },
@@ -1097,7 +1097,7 @@
                     Dashboard.hideLoadingMsg();
                     Dashboard.processPluginConfigurationUpdateResult(result);
                 }).catch(function (err) {
-                    console.error('[JUX Config] Save failed:', err);
+                    console.error('[JellyUX Config] Save failed:', err);
                     Dashboard.hideLoadingMsg();
                 });
             },
@@ -1180,7 +1180,7 @@
                                     });
                                 }, 5000);
                             }).catch(function (err) {
-                                console.error('[JUX Config] TMDb refresh trigger failed:', err);
+                                console.error('[JellyUX Config] TMDb refresh trigger failed:', err);
                                 refreshBtn.disabled = false;
                                 if (refreshMsg) {
                                     refreshMsg.textContent = self.t('admin.tmdbrefresh.failed');

@@ -113,5 +113,40 @@ public sealed class SessionCacheTests : IDisposable
         Assert.False(_cache.TryGet(userId, "fr", TimeSpan.FromMinutes(15), out _));
     }
 
+    // -------------------------------------------------------------------------
+    // Background garbage collection (Cleanup(), normally driven by the internal Timer every
+    // CleanupIntervalMinutes -- these tests drive it synchronously via the internal test seams so
+    // the 60-minute eviction threshold doesn't have to actually elapse).
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void RunCleanupForTesting_EntryOlderThanGcThreshold_IsEvicted()
+    {
+        var userId = Guid.NewGuid();
+        _cache.Set(userId, "en", [new WidgetDescriptor { WidgetType = "w1" }]);
+        _cache.SetLastAccessedForTesting(userId, "en", DateTime.UtcNow.AddMinutes(-61));
+
+        _cache.RunCleanupForTesting();
+
+        // A large TTL here proves the entry was physically removed by Cleanup(), not merely
+        // considered stale by TryGet's own (much shorter) TTL check.
+        var hit = _cache.TryGet(userId, "en", TimeSpan.FromHours(2), out _);
+        Assert.False(hit);
+    }
+
+    [Fact]
+    public void RunCleanupForTesting_EntryWithinGcThreshold_IsNotEvicted()
+    {
+        var userId = Guid.NewGuid();
+        _cache.Set(userId, "en", [new WidgetDescriptor { WidgetType = "w1" }]);
+        _cache.SetLastAccessedForTesting(userId, "en", DateTime.UtcNow.AddMinutes(-30));
+
+        _cache.RunCleanupForTesting();
+
+        var hit = _cache.TryGet(userId, "en", TimeSpan.FromHours(2), out var result);
+        Assert.True(hit);
+        Assert.NotNull(result);
+    }
+
     public void Dispose() => _cache.Dispose();
 }

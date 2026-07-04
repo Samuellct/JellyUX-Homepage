@@ -32,7 +32,7 @@
                 }
                 return _renderHome(self, elem, apiClient, user, userSettings);
             }).catch(function (err) {
-                console.error('[JUX] meta fetch failed, falling back:', err);
+                console.error('[JellyUX] meta fetch failed, falling back:', err);
                 return _fallback(self, elem, apiClient, user, userSettings);
             });
         }
@@ -88,17 +88,25 @@
 
     function _renderHome(self, elem, apiClient, user, userSettings) {
         var userId = apiClient.getCurrentUserId();
+        var isFirstActivation = !elem.classList.contains('jux-homepage-active');
 
-        if (!elem.classList.contains('jux-homepage-active')) {
+        if (isFirstActivation) {
             elem.innerHTML = '';
             elem.classList.add('homeSectionsContainer', 'jux-homepage-active');
             _setupLazyLoader(elem, apiClient, userId, userSettings);
         }
 
-        return _loadPage(elem, apiClient, userId, userSettings, 0);
+        // Only the very first page load falls back to native rendering on failure: at that point
+        // nothing has been rendered yet, so a permanently blank home screen would otherwise result.
+        // Later lazy-loaded pages (see _setupLazyLoader) intentionally do NOT fall back -- by then
+        // JUX has already rendered a working layout, and swapping to native mid-page would break it.
+        return _loadPage(elem, apiClient, userId, userSettings, 0, isFirstActivation ? function () {
+            elem.classList.remove('jux-homepage-active', 'homeSectionsContainer');
+            return _fallback(self, elem, apiClient, user, userSettings);
+        } : undefined);
     }
 
-    function _loadPage(elem, apiClient, userId, userSettings, page) {
+    function _loadPage(elem, apiClient, userId, userSettings, page, onFirstPageFailure) {
         return apiClient.getJSON(
             apiClient.getUrl('JuxHomepage/Sections', {
                 userId: userId,
@@ -125,7 +133,10 @@
                 });
             });
         }).catch(function (err) {
-            console.error('[JUX] Sections fetch failed (page ' + page + '):', err);
+            console.error('[JellyUX] Sections fetch failed (page ' + page + '):', err);
+            if (typeof onFirstPageFailure === 'function') {
+                return onFirstPageFailure();
+            }
         });
     }
 

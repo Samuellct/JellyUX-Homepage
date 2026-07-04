@@ -118,4 +118,26 @@ public sealed class SessionCache : IDisposable
             }
         }
     }
+
+    /// <summary>
+    /// Test-only seam: backdates an existing entry's <see cref="SessionData.LastAccessed"/> so a
+    /// unit test can simulate an entry old enough for <see cref="RunCleanupForTesting"/> to evict,
+    /// without waiting for <see cref="GarbageCollectAfterMinutes"/> minutes to actually elapse.
+    /// </summary>
+    /// <param name="userId">The user whose entry to backdate.</param>
+    /// <param name="lang">The language of the entry to backdate.</param>
+    /// <param name="lastAccessed">The simulated last-accessed timestamp.</param>
+    internal void SetLastAccessedForTesting(Guid userId, string? lang, DateTime lastAccessed)
+    {
+        if (_cache.TryGetValue((userId, NormalizeKey(lang)), out var data))
+        {
+            data.LastAccessed = lastAccessed;
+        }
+    }
+
+    /// <summary>
+    /// Test-only seam: runs the same garbage-collection pass the background <see cref="Timer"/>
+    /// triggers every <see cref="CleanupIntervalMinutes"/> minutes, synchronously and on demand.
+    /// </summary>
+    internal void RunCleanupForTesting() => Cleanup();
 }
