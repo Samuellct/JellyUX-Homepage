@@ -20,6 +20,15 @@
 !.releaserc.json
 !package.json
 
+# Documentation assets
+!docs/
+docs/*
+!docs/icon.png
+!docs/screenshots/
+docs/screenshots/*
+!docs/screenshots/home.png
+!docs/screenshots/admin.png
+
 # Docker dev environment
 !docker/
 docker/*

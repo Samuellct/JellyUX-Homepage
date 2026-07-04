@@ -1,9 +1,11 @@
 # JellyUX Homepage
 
+<img src="docs/icon.png" alt="JellyUX Homepage icon" width="96" height="96">
+
 A modular home screen engine for Jellyfin that replaces the default home page with a fully configurable widget system.
 
-![Build](https://github.com/Samuellct/JellyUX-Homepage/actions/workflows/build.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Build](https://github.com/Samuellct/JellyUX-Homepage/actions/workflows/ci.yml/badge.svg)
+![Version](https://img.shields.io/github/v/release/Samuellct/JellyUX-Homepage)
 ![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.10%2B-orange)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
@@ -39,6 +41,14 @@ After installation, the plugin configuration page lets you:
 
 ---
 
+## Screenshots
+
+![Home screen with JellyUX widget sections](docs/screenshots/home.png)
+
+![Admin configuration page](docs/screenshots/admin.png)
+
+---
+
 ## Compatibility
 
 | Component | Status |
@@ -53,28 +63,55 @@ After installation, the plugin configuration page lets you:
 
 ## Widgets
 
-| Widget | Category | Status |
+23 widgets across 4 categories, each independently enabled, reordered, and configured from the admin panel.
+
+| Widget | Category | Description |
 |---|---|---|
-| Continue Watching | Native | Planned |
-| Next Up | Native | Planned |
-| Recently Added Movies | Native | Planned |
-| Recently Added Shows | Native | Planned |
-| My Media | Native | Planned |
-| By Genre | Administrative | Planned |
-| By Actor | Administrative | Planned |
-| By Director | Administrative | Planned |
-| By Studio | Administrative | Planned |
-| By Collection | Administrative | Planned |
-| By Tag | Administrative | Planned |
-| By Year | Administrative | Planned |
-| Because You Watched | Personalized | Planned |
-| Favorite Genre Picks | Personalized | Planned |
-| Favorite Actor Picks | Personalized | Planned |
-| Favorite Director Picks | Personalized | Planned |
-| Trending Movies (TMDb) | Connected | Planned |
-| Trending Shows (TMDb) | Connected | Planned |
-| Airing Today (TMDb) | Connected | Planned |
-| Upcoming Movies (TMDb) | Connected | Planned |
+| Continue Watching | Native | Items you started watching but haven't finished |
+| Next Up | Native | Next unwatched episode for shows you're following |
+| Recently Added Movies | Native | Latest movies added to your library |
+| Recently Added Shows | Native | Latest shows added to your library |
+| My Media | Native | Quick links to your library sections |
+| Genre | Admin | Items from a genre chosen by the admin |
+| Actor | Admin | Items featuring an actor chosen by the admin |
+| Director | Admin | Items directed by a person chosen by the admin |
+| Studio | Admin | Items from a studio chosen by the admin |
+| Collection | Admin | Items from a collection chosen by the admin |
+| Tag | Admin | Items matching a tag chosen by the admin |
+| Year | Admin | Items released in a year chosen by the admin |
+| Because You Watched | Personalized | Recommendations based on a recently watched item |
+| Favorite Genre | Personalized | Recommendations from the user's most-watched genre |
+| Favorite Actor | Personalized | Recommendations from the user's most-watched actor |
+| Favorite Director | Personalized | Recommendations from the user's most-watched director |
+| Trending Movies | Connected (TMDb) | Movies currently trending on TMDb |
+| Trending Shows | Connected (TMDb) | Shows currently trending on TMDb |
+| On TV | Connected (TMDb) | Shows airing today, per TMDb |
+| Top Rated Movies | Connected (TMDb) | TMDb's top-rated movies |
+| Top Rated Shows | Connected (TMDb) | TMDb's top-rated shows |
+| Now Playing | Connected (TMDb) | Movies currently in theaters, per TMDb |
+| Discover Movies | Connected (TMDb) | Movie discovery filtered by admin-configured criteria |
+
+---
+
+## Troubleshooting
+
+**Plugin becomes unreachable (HTTP 500) after an update**
+
+A simple Jellyfin restart may not be enough after updating the plugin - do a full restart of the
+Jellyfin process itself (e.g. `docker restart <container>`) to clear the File Transformation plugin's
+static state.
+
+**JellyUX sections don't appear on Jellyfin Media Player (Windows)**
+
+Jellyfin Media Player keeps an internal auto-connect cache (`userWebClient` in
+`%LOCALAPPDATA%\JellyfinMediaPlayer\jellyfinmediaplayer.conf`, `main` section) that isn't invalidated
+when you switch servers in the app - it keeps loading the web client (so every plugin, not just
+JellyUX) from the previously connected server, regardless of which server is currently selected.
+**Recommended fix**: in the app's settings, use the **"Reset Saved Server"** button (shown
+automatically whenever a server is cached). Fallback: edit `jellyfinmediaplayer.conf` and reset
+`userWebClient` to an empty string. Don't confuse this with the
+`%LOCALAPPDATA%\Jellyfin Media Player` cache folder (with spaces) - clearing that one does not fix
+this specific issue, since it's an auto-connect cache, not a browser cache.
 
 ---
 

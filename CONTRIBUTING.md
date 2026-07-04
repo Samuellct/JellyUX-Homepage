@@ -73,10 +73,28 @@ Inter, Poppins, Manrope, Outfit, Plus Jakarta Sans, Space Grotesk
 
 ## Adding a Widget
 
-1. Create a class implementing `IWidget` in `src/Jellyfin.Plugin.JuxHomepage/Widgets/`.
-2. Register it in `PluginServiceRegistrator.RegisterServices()`.
-3. Add localization keys for both `fr.json` and `en.json` under `src/.../Localization/`.
-4. Document the widget in the README widget table.
+1. Extend the base class matching your widget's category rather than implementing `IWidget`
+   directly:
+   - `NativeWidgetBase` for `Widgets/Native/`
+   - `AdminWidgetBase` (or `PersonWidgetBase` for actor/director widgets) for `Widgets/Admin/`
+   - `PersonalizedWidgetBase` (or `PersonalizedPersonWidgetBase`) for `Widgets/Personalized/`
+   - `ConnectedWidgetBase<T>` for `Widgets/Connected/` (TMDb-backed widgets)
+2. Name the `WidgetType` following the `jux.<category>.<kebab-case-name>` convention (e.g.
+   `jux.connected.discover-movies`).
+3. Register it in `PluginServiceRegistrator.RegisterServices()` via the `RegisterNativeWidget<TWidget>()`
+   helper - used for every category despite its name - in the position matching the desired display
+   order.
+4. Add a localization key for both `fr.json` and `en.json` under `src/.../Localization/`, using the
+   `WidgetType` string itself as the key. Personalized widgets also need a `.format` key (e.g.
+   `jux.personalized.favorite-genre.format` = "More {value}").
+5. For Connected/TMDb widgets: don't call the TMDb API directly from the widget. Read from
+   `ITMDbCacheService`, which is refreshed separately by a scheduled task, and requires a TMDb API key
+   configured in the plugin settings.
+6. Document the widget in the README widget table.
+
+Third-party widget packs (separate DLLs implementing `IWidget`, dropped into the plugin's config
+directory) are auto-discovered by the registrar - useful if you're building an external extension
+rather than contributing to this repository directly.
 
 ---
 
