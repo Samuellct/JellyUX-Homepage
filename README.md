@@ -1,13 +1,17 @@
 # JellyUX Homepage
 
-<img src="docs/icon.png" alt="JellyUX Homepage icon" width="96" height="96">
+<p align="center">
+  <img src="docs/banner.png" alt="JellyUX Homepage banner">
+</p>
+
+<p align="center">
+  <img src="https://github.com/Samuellct/JellyUX-Homepage/actions/workflows/ci.yml/badge.svg" alt="Build">
+  <img src="https://img.shields.io/github/v/release/Samuellct/JellyUX-Homepage" alt="Version">
+  <img src="https://img.shields.io/badge/Jellyfin-10.11.10%2B-orange" alt="Jellyfin">
+  <img src="https://img.shields.io/badge/license-GPL--3.0-green" alt="License">
+</p>
 
 A modular home screen engine for Jellyfin that replaces the default home page with a fully configurable widget system.
-
-![Build](https://github.com/Samuellct/JellyUX-Homepage/actions/workflows/ci.yml/badge.svg)
-![Version](https://img.shields.io/github/v/release/Samuellct/JellyUX-Homepage)
-![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.10%2B-orange)
-![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
 ---
 
@@ -15,7 +19,6 @@ A modular home screen engine for Jellyfin that replaces the default home page wi
 
 - **Jellyfin** 10.11.10 or later
 - **[File Transformation plugin](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation)** (required - JellyUX uses it to inject its scripts into the Jellyfin web client)
-- **.NET 9 SDK** (contributors only, not required for end users)
 
 ---
 
@@ -51,13 +54,21 @@ After installation, the plugin configuration page lets you:
 
 ## Compatibility
 
-| Component | Status |
+| Client | Status |
 |---|---|
-| Jellyfin Web client | Supported (all major browsers) |
-| Media Bar plugin | Compatible |
-| ZestyTheme CSS | Compatible |
-| Native TV clients (Android TV, Apple TV, Roku) | Auto-disabled - native home screen is preserved |
-| Jellyfin mobile apps | Not supported (native clients) |
+| Web browsers (Chrome, Firefox, etc.) | Supported |
+| Jellyfin Media Player (Windows) | Supported |
+| Jellyfin app (Android) | Supported |
+| TV clients (Android TV, Apple TV, Roku) | Auto-disabled - native home screen is preserved |
+
+---
+
+## Synergies
+
+JellyUX Homepage is built to coexist cleanly with other popular Jellyfin customization projects:
+
+- **[Media Bar](https://github.com/IAmParadox27/jellyfin-plugin-media-bar)** by IAmParadox27 - adds a cinematic slideshow banner above the home screen. Both plugins patch the web client independently and render side by side without conflict.
+- **[ZestyTheme](https://github.com/stpnwf/ZestyTheme)** and other CSS themes - JellyUX widgets reuse native Jellyfin CSS classes and variables instead of redefining them, so they automatically inherit whichever theme is active.
 
 ---
 
@@ -112,12 +123,6 @@ automatically whenever a server is cached). Fallback: edit `jellyfinmediaplayer.
 `userWebClient` to an empty string. Don't confuse this with the
 `%LOCALAPPDATA%\Jellyfin Media Player` cache folder (with spaces) - clearing that one does not fix
 this specific issue, since it's an auto-connect cache, not a browser cache.
-
----
-
-## Roadmap
-
-See [TODO_V1.md](TODO_V1.md) for the full development roadmap (local planning document, not tracked in the repository).
 
 ---
 

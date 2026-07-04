@@ -24,6 +24,7 @@
 !docs/
 docs/*
 !docs/icon.png
+!docs/banner.png
 !docs/screenshots/
 docs/screenshots/*
 !docs/screenshots/home.png
