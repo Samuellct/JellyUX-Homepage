@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.13.0.0",
+                "changelog": "### Features\n\n* enable JellyUX home rendering inside native shell clients ([9c0ac77](https://github.com/Samuellct/JellyUX-Homepage/commit/9c0ac7728e447bafa247fefa28ac0cac0072bbb3))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v0.13.0/jellyux-homepage_0.13.0.0.zip",
+                "checksum": "51692a7872502a6fdcfaafea743ba404",
+                "timestamp": "2026-07-04T15:21:00Z"
+            },
+            {
                 "version": "0.12.1.0",
                 "changelog": "### Bug Fixes\n\n* improve error handling and logging robustness ([4e2d3c2](https://github.com/Samuellct/JellyUX-Homepage/commit/4e2d3c220a6781e81821858a8fdc589e190ed3d6))",
                 "targetAbi": "10.11.0.0",

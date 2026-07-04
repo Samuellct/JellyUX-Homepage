@@ -1,3 +1,9 @@
+## [0.13.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.12.1...v0.13.0) (2026-07-04)
+
+### Features
+
+* enable JellyUX home rendering inside native shell clients ([9c0ac77](https://github.com/Samuellct/JellyUX-Homepage/commit/9c0ac7728e447bafa247fefa28ac0cac0072bbb3))
+
 ## [0.12.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.12.0...v0.12.1) (2026-07-04)
 
 ### Bug Fixes
