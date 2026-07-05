@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.0.0...v1.0.1) (2026-07-05)
+
+### Bug Fixes
+
+* replace plugin icon ([b0b8c56](https://github.com/Samuellct/JellyUX-Homepage/commit/b0b8c56ff865e380dbb71e0b8815e42f0dfde7e0))
+
 ## [1.0.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v0.13.1...v1.0.0) (2026-07-04)
 
 ### ⚠ BREAKING CHANGES

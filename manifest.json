@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "1.0.1.0",
+                "changelog": "### Bug Fixes\n\n* replace plugin icon ([b0b8c56](https://github.com/Samuellct/JellyUX-Homepage/commit/b0b8c56ff865e380dbb71e0b8815e42f0dfde7e0))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v1.0.1/jellyux-homepage_1.0.1.0.zip",
+                "checksum": "525516339c479df46a56cd118fb52b16",
+                "timestamp": "2026-07-05T20:52:05Z"
+            },
+            {
                 "version": "1.0.0.0",
                 "changelog": "### ⚠ BREAKING CHANGES\n\n* initial stable release, API surface is now stable\n\n### Features\n\n* complete V1 feature set ([27222c2](https://github.com/Samuellct/JellyUX-Homepage/commit/27222c247f4d4c25c5712445248ab233beae25c3))",
                 "targetAbi": "10.11.0.0",
