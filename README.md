@@ -7,7 +7,7 @@
 <p align="center">
   <img src="https://github.com/Samuellct/JellyUX-Homepage/actions/workflows/ci.yml/badge.svg" alt="Build">
   <img src="https://img.shields.io/github/v/release/Samuellct/JellyUX-Homepage" alt="Version">
-  <img src="https://img.shields.io/badge/Jellyfin-10.11.10%2B-orange" alt="Jellyfin">
+  <img src="https://img.shields.io/badge/Jellyfin-10.11.10-orange" alt="Jellyfin">
   <img src="https://img.shields.io/badge/license-GPL--3.0-green" alt="License">
 </p>
 
@@ -17,7 +17,7 @@ A modular home screen engine for Jellyfin that replaces the default home page wi
 
 ## Prerequisites
 
-- **Jellyfin** 10.11.10 or later
+- **Jellyfin** 10.11.10 (not tested against other versions)
 - **[File Transformation plugin](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation)** (required - JellyUX uses it to inject its scripts into the Jellyfin web client)
 
 ---
