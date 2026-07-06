@@ -76,16 +76,24 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
     public void SaveUserConfiguration(UserConfiguration config)
     {
         var path = GetPath(config.UserId);
+        var tmpPath = path + ".tmp";
 
         _lock.EnterWriteLock();
         try
         {
             var json = JsonSerializer.Serialize(config, SerializerOptions);
-            File.WriteAllText(path, json);
+
+            // Write to a temp file first, then rename into place. File.Move with overwrite is
+            // atomic on the same volume (rename() on Linux, MoveFileEx/MOVEFILE_REPLACE_EXISTING on
+            // Windows), so a crash or restart mid-write can never leave a partially-written config
+            // file on disk -- readers always see either the old file or the fully-written new one.
+            File.WriteAllText(tmpPath, json);
+            File.Move(tmpPath, path, overwrite: true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save user configuration for {UserId}.", config.UserId);
+            TryDeleteStrayTempFile(tmpPath);
         }
         finally
         {
@@ -105,4 +113,19 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
 
     private string GetPath(Guid userId) =>
         Path.Combine(_usersDir, $"{userId}.json");
+
+    private void TryDeleteStrayTempFile(string tmpPath)
+    {
+        try
+        {
+            if (File.Exists(tmpPath))
+            {
+                File.Delete(tmpPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to clean up stray temp file {TmpPath}.", tmpPath);
+        }
+    }
 }
