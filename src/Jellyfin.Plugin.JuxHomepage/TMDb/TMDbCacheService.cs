@@ -335,10 +335,18 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
             matchedCount);
     }
 
+    /// <summary>Maximum number of items cross-referenced concurrently.</summary>
+    private const int MaxCrossReferenceConcurrency = 5;
+
     /// <summary>
     /// Sets <see cref="ITMDbCacheItem.LibraryItemId"/> on each item by looking it up in the local
     /// library, primarily by IMDb ID (fetched via <paramref name="getExternalImdbId"/>), falling
-    /// back to a direct TMDb ID match when no IMDb ID is available or no match is found.
+    /// back to a direct TMDb ID match when no IMDb ID is available or no match is found. Items are
+    /// processed with bounded concurrency (both the external IMDb ID HTTP lookup and the local
+    /// library query per item) -- <see cref="ILibraryManager"/> does not support matching against a
+    /// list of provider id values in a single query (<c>InternalItemsQuery.HasAnyProviderId</c> is a
+    /// dictionary, one exact value per provider key), so <see cref="FindLibraryMatch"/> itself cannot
+    /// be batched across items; parallelizing the per-item pipeline is the available alternative.
     /// </summary>
     /// <returns>The number of items that were matched to a local library item.</returns>
     private async Task<int> CrossReferenceAsync<T>(
@@ -348,37 +356,45 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         CancellationToken cancellationToken)
         where T : ITMDbCacheItem
     {
-        var matched = 0;
+        using var semaphore = new SemaphoreSlim(MaxCrossReferenceConcurrency);
 
-        foreach (var item in items)
+        var tasks = items.Select(async item =>
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            string? imdbId = null;
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                imdbId = await getExternalImdbId(item.Id, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string? imdbId = null;
+                try
+                {
+                    imdbId = await getExternalImdbId(item.Id, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch external IDs for TMDb id {TmdbId}.", item.Id);
+                }
+
+                BaseItem? match = string.IsNullOrEmpty(imdbId)
+                    ? null
+                    : FindLibraryMatch(MetadataProvider.Imdb, imdbId, includeItemTypes);
+
+                match ??= FindLibraryMatch(
+                    MetadataProvider.Tmdb,
+                    item.Id.ToString(CultureInfo.InvariantCulture),
+                    includeItemTypes);
+
+                item.LibraryItemId = match?.Id;
+                return match is not null;
             }
-            catch (Exception ex)
+            finally
             {
-                _logger.LogWarning(ex, "Failed to fetch external IDs for TMDb id {TmdbId}.", item.Id);
+                semaphore.Release();
             }
+        });
 
-            BaseItem? match = string.IsNullOrEmpty(imdbId)
-                ? null
-                : FindLibraryMatch(MetadataProvider.Imdb, imdbId, includeItemTypes);
-
-            match ??= FindLibraryMatch(
-                MetadataProvider.Tmdb,
-                item.Id.ToString(CultureInfo.InvariantCulture),
-                includeItemTypes);
-
-            item.LibraryItemId = match?.Id;
-            if (match is not null)
-            {
-                matched++;
-            }
-        }
+        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+        var matched = results.Count(wasMatched => wasMatched);
 
         return matched;
     }

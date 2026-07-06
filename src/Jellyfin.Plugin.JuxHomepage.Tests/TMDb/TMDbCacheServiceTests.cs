@@ -1,3 +1,4 @@
+using System.Globalization;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
@@ -272,6 +273,74 @@ public sealed class TMDbCacheServiceTests : IDisposable
         var result = service.GetTrendingMovies();
         Assert.Single(result);
         Assert.Equal("Inception", result[0].Title);
+    }
+
+    // -------------------------------------------------------------------------
+    // CrossReferenceAsync: bounded parallelism (Phase 3.1 of TODO_V2.md)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RefreshTrendingMoviesAsync_ManyItems_CrossReferencesInParallelWithCorrectResults()
+    {
+        const int ItemCount = 30;
+        var perCallDelay = TimeSpan.FromMilliseconds(50);
+
+        var movies = Enumerable.Range(1, ItemCount)
+            .Select(i => new TMDbMovie { Id = i, Title = "Movie " + i })
+            .ToList();
+
+        // Even-id movies have an IMDb id and a matching library item; odd-id movies match nothing --
+        // a mix, so the test also confirms correctness survives running out of order/concurrently.
+        var libraryItemsByTmdbId = movies
+            .Where(m => m.Id % 2 == 0)
+            .ToDictionary(m => m.Id, _ => new Movie { Id = Guid.NewGuid(), Name = "Owned" });
+
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock.Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)movies);
+        apiClientMock
+            .Setup(c => c.GetMovieExternalIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(async (int tmdbId, CancellationToken ct) =>
+            {
+                await Task.Delay(perCallDelay, ct).ConfigureAwait(false);
+                return libraryItemsByTmdbId.ContainsKey(tmdbId) ? "tt" + tmdbId : null;
+            });
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.HasAnyProviderId!.ContainsKey("Imdb"))))
+            .Returns((InternalItemsQuery q) =>
+            {
+                var imdbId = q.HasAnyProviderId!["Imdb"];
+                var tmdbId = int.Parse(imdbId.Substring(2), CultureInfo.InvariantCulture);
+                return libraryItemsByTmdbId.TryGetValue(tmdbId, out var item) ? [item] : [];
+            });
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.HasAnyProviderId!.ContainsKey("Tmdb"))))
+            .Returns([]);
+
+        var service = BuildService(apiClientMock.Object, libraryManagerMock.Object);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        await service.RefreshTrendingMoviesAsync(CancellationToken.None);
+        stopwatch.Stop();
+
+        var result = service.GetTrendingMovies();
+        Assert.Equal(ItemCount, result.Count);
+        foreach (var movie in result)
+        {
+            var expectedMatched = libraryItemsByTmdbId.ContainsKey(movie.Id);
+            Assert.Equal(expectedMatched, movie.LibraryItemId.HasValue);
+        }
+
+        // A fully sequential run would take at least ItemCount * perCallDelay (~1.5s here). Bounded
+        // concurrency (5 at a time) should take roughly ItemCount / 5 * perCallDelay (~300ms) plus
+        // overhead -- well under half the sequential time, proving items are genuinely processed
+        // concurrently rather than merely producing the same correct result one at a time.
+        var sequentialWorstCase = perCallDelay * ItemCount;
+        Assert.True(
+            stopwatch.Elapsed < sequentialWorstCase / 2,
+            $"Expected parallel cross-referencing to complete well under {sequentialWorstCase}, took {stopwatch.Elapsed}.");
     }
 
     // -------------------------------------------------------------------------
