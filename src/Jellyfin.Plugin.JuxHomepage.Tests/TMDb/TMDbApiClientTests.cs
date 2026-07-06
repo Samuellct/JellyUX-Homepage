@@ -109,6 +109,98 @@ public sealed class TMDbApiClientTests
     }
 
     // -------------------------------------------------------------------------
+    // Circuit breaker (Phase 3.2 of TODO_V2.md)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTrendingMoviesAsync_SustainedFailures_OpensCircuitAfterThreshold()
+    {
+        // 3 logical failed calls, each retried once internally = 6 failing HTTP attempts.
+        var handler = new StubHttpMessageHandler(
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"));
+
+        var client = BuildClient(handler, V3Key);
+
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+        Assert.Equal(6, handler.CallCount);
+
+        // The circuit should now be open: a further call makes no new HTTP request at all.
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+
+        Assert.Empty(result);
+        Assert.Equal(6, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task GetTrendingMoviesAsync_CircuitOpen_AllowsProbeRequestAfterWindowElapses()
+    {
+        var handler = new StubHttpMessageHandler(
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => JsonResponse(new TMDbTrending<TMDbMovie>
+            {
+                Results = [new TMDbMovie { Id = 1, Title = "Recovered" }]
+            }));
+
+        var timeProvider = new ManualTimeProvider();
+        var client = BuildClient(handler, V3Key, timeProvider);
+
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+        Assert.Equal(6, handler.CallCount);
+
+        // Confirm the circuit is genuinely open before advancing time.
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+        Assert.Equal(6, handler.CallCount);
+
+        timeProvider.UtcNowValue = timeProvider.UtcNowValue.AddMinutes(6);
+
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+
+        Assert.Single(result);
+        Assert.Equal("Recovered", result[0].Title);
+        Assert.Equal(7, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task GetTrendingMoviesAsync_SuccessBetweenFailures_ResetsConsecutiveFailureCount()
+    {
+        var handler = new StubHttpMessageHandler(
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => JsonResponse(new TMDbTrending<TMDbMovie> { Results = [] }),
+            () => throw new HttpRequestException("down"),
+            () => throw new HttpRequestException("down"),
+            () => JsonResponse(new TMDbTrending<TMDbMovie>
+            {
+                Results = [new TMDbMovie { Id = 9, Title = "Still works" }]
+            }));
+
+        var client = BuildClient(handler, V3Key);
+
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None); // fails twice
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None); // succeeds, resets counter
+        await client.GetTrendingMoviesAsync(1, CancellationToken.None); // fails twice again
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None); // circuit still closed
+
+        Assert.Single(result);
+        Assert.Equal("Still works", result[0].Title);
+        Assert.Equal(6, handler.CallCount);
+    }
+
+    // -------------------------------------------------------------------------
     // Multi-page fetching
     // -------------------------------------------------------------------------
 
@@ -233,7 +325,7 @@ public sealed class TMDbApiClientTests
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static TMDbApiClient BuildClient(StubHttpMessageHandler handler, string? apiKey)
+    private static TMDbApiClient BuildClient(StubHttpMessageHandler handler, string? apiKey, TimeProvider? timeProvider = null)
     {
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://api.themoviedb.org/3/") };
 
@@ -243,7 +335,17 @@ public sealed class TMDbApiClientTests
         return new TMDbApiClient(
             factoryMock.Object,
             () => new PluginConfiguration { ApiKeys = new ApiKeysConfig { TMDb = apiKey } },
-            NullLogger<TMDbApiClient>.Instance);
+            NullLogger<TMDbApiClient>.Instance,
+            timeProvider);
+    }
+
+    // Minimal TimeProvider test double: TimeProvider.GetUtcNow() is virtual precisely so it can be
+    // overridden like this for deterministic tests, without a real delay or an external package.
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        public DateTimeOffset UtcNowValue { get; set; } = DateTimeOffset.UtcNow;
+
+        public override DateTimeOffset GetUtcNow() => UtcNowValue;
     }
 
     private static HttpResponseMessage JsonResponse<T>(T payload) =>

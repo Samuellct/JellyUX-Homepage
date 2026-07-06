@@ -30,9 +30,19 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
     /// <summary>Hard ceiling on pages fetched per call, regardless of the requested count.</summary>
     private const int MaxPagesPerFetch = 5;
 
+    /// <summary>Consecutive sustained-outage failures before the circuit breaker opens.</summary>
+    private const int FailureThreshold = 3;
+
+    /// <summary>How long the circuit breaker stays open before allowing a single probe request.</summary>
+    private static readonly TimeSpan OpenDuration = TimeSpan.FromMinutes(5);
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<TMDbApiClient> _logger;
+    private readonly TimeProvider _timeProvider;
+    private readonly object _circuitLock = new();
+    private int _consecutiveFailures;
+    private DateTimeOffset? _circuitOpenedAt;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TMDbApiClient"/> class.
@@ -43,14 +53,19 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
     /// Defaults to <c>Plugin.Instance?.Configuration</c> in production.
     /// </param>
     /// <param name="logger">Logger.</param>
+    /// <param name="timeProvider">
+    /// Time source for the circuit breaker, for testability. Defaults to <see cref="TimeProvider.System"/>.
+    /// </param>
     public TMDbApiClient(
         IHttpClientFactory httpClientFactory,
         Func<PluginConfiguration?> getConfiguration,
-        ILogger<TMDbApiClient> logger)
+        ILogger<TMDbApiClient> logger,
+        TimeProvider? timeProvider = null)
     {
         _httpClientFactory = httpClientFactory;
         _getConfiguration = getConfiguration;
         _logger = logger;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc/>
@@ -218,6 +233,11 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
     private async Task<T?> GetAsync<T>(string path, CancellationToken cancellationToken)
         where T : class
     {
+        if (IsCircuitOpen(path))
+        {
+            return null;
+        }
+
         var apiKey = _getConfiguration()?.ApiKeys?.TMDb;
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -253,7 +273,13 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
                 }
 
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+                var result = await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+                lock (_circuitLock)
+                {
+                    _consecutiveFailures = 0;
+                }
+
+                return result;
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
             {
@@ -264,11 +290,57 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
                 }
 
                 _logger.LogError(ex, "TMDb request to '{Path}' failed after retry.", path);
+                RecordSustainedFailure();
                 return null;
             }
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Checks whether the circuit breaker is currently open (skipping requests after sustained
+    /// network-level failures). Only <see cref="HttpRequestException"/>/<see cref="TaskCanceledException"/>
+    /// count toward opening the circuit -- an invalid API key (HTTP 401) is a distinct, non-transient
+    /// problem that waiting will not fix, so it is logged separately and never trips this breaker.
+    /// </summary>
+    private bool IsCircuitOpen(string path)
+    {
+        lock (_circuitLock)
+        {
+            if (_circuitOpenedAt is not { } openedAt)
+            {
+                return false;
+            }
+
+            if (_timeProvider.GetUtcNow() - openedAt < OpenDuration)
+            {
+                _logger.LogWarning("TMDb circuit breaker open; skipping request to '{Path}'.", path);
+                return true;
+            }
+
+            // The open window has elapsed: allow one probe request through. If it also fails,
+            // RecordSustainedFailure will reopen the circuit from a clean count.
+            _circuitOpenedAt = null;
+            _consecutiveFailures = 0;
+            return false;
+        }
+    }
+
+    private void RecordSustainedFailure()
+    {
+        lock (_circuitLock)
+        {
+            _consecutiveFailures++;
+            if (_consecutiveFailures >= FailureThreshold)
+            {
+                _circuitOpenedAt = _timeProvider.GetUtcNow();
+                _logger.LogWarning(
+                    "TMDb circuit breaker opened after {Count} consecutive failures; TMDb requests will be skipped for {Minutes} minute(s).",
+                    _consecutiveFailures,
+                    OpenDuration.TotalMinutes);
+            }
+        }
     }
 
     [GeneratedRegex(@"^ey[\w-]+\.[\w-]+\.[\w-]+$")]
