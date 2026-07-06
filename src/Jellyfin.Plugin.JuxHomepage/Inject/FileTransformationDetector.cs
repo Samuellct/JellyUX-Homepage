@@ -87,6 +87,13 @@ public class FileTransformationDetector
             return;
         }
 
-        _registerMethod.Invoke(null, new object?[] { payload });
+        try
+        {
+            _registerMethod.Invoke(null, new object?[] { payload });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "FileTransformation RegisterTransformation invocation failed.");
+        }
     }
 }
