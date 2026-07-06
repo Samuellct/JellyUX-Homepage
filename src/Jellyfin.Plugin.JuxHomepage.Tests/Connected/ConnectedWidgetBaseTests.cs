@@ -12,7 +12,14 @@ using Xunit;
 
 namespace Jellyfin.Plugin.JuxHomepage.Tests.Connected;
 
-public sealed class ConnectedWidgetTests
+/// <summary>
+/// Tests the generic mechanics shared by every <see cref="Widgets.Connected.ConnectedWidgetBase{T}"/>
+/// subclass (descriptor shape, pagination, filtering of unmatched/deleted library items, unknown
+/// user) -- not Trending-specific behavior. <see cref="TrendingMoviesWidget"/> is used only as a
+/// concrete stand-in to exercise the shared base class; per-widget cache wiring is covered in
+/// <c>ConnectedWidgetsTests.cs</c> instead.
+/// </summary>
+public sealed class ConnectedWidgetBaseTests
 {
     private static TrendingMoviesWidget BuildWidget(
         IReadOnlyList<TMDbMovie> cachedMovies,
