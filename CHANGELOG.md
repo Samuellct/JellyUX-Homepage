@@ -1,3 +1,13 @@
+## [1.4.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.3.1...v1.4.0) (2026-07-06)
+
+### Features
+
+* log unresolved cached library items in ConnectedWidgetBase ([e0ac15c](https://github.com/Samuellct/JellyUX-Homepage/commit/e0ac15cf68d248d1eb847309896409068a0c480d))
+
+### Bug Fixes
+
+* improve logging context and minor code quality cleanups ([77f3328](https://github.com/Samuellct/JellyUX-Homepage/commit/77f332851feca5a63212248a35c8de4a982509fc))
+
 ## [1.3.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.3.0...v1.3.1) (2026-07-06)
 
 ### Bug Fixes
