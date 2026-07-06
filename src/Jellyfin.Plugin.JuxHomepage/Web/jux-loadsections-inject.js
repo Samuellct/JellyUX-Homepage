@@ -16,20 +16,25 @@
 //   ,loadSections:<fragment>,originalLoadSections:
 // so this.originalLoadSections is the native implementation.
 function(e, t, r, o, page) {
-    if (!window.JellyfinAPI) {
-        window.JellyfinAPI = {
-            cardBuilder: {{cardbuilder}}.default,
-            layoutManager: {{layoutmanager}}.A,
-            getBackdropShape: {{shapes}}.UI,
-            getPortraitShape: {{shapes}}.xK,
-            getSquareShape: {{shapes}}.zP,
-            appRouter: {{approuter}}.appRouter,
-            globalize: {{globalize}}.Ay
-        };
+    try {
+        if (!window.JellyfinAPI) {
+            window.JellyfinAPI = {
+                cardBuilder: {{cardbuilder}}.default,
+                layoutManager: {{layoutmanager}}.A,
+                getBackdropShape: {{shapes}}.UI,
+                getPortraitShape: {{shapes}}.xK,
+                getSquareShape: {{shapes}}.zP,
+                appRouter: {{approuter}}.appRouter,
+                globalize: {{globalize}}.Ay
+            };
+        }
+        if (window.JUXHomepage) {
+            window.JUXHomepage.originalLoadSections = {{this_hook}}.originalLoadSections;
+            return window.JUXHomepage.loadSections.call(this, e, t, r, o, page);
+        }
+        return {{this_hook}}.originalLoadSections.call(this, e, t, r, o);
+    } catch (err) {
+        console.error('[JellyUX] loadSections override failed, falling back to native rendering.', err);
+        return {{this_hook}}.originalLoadSections.call(this, e, t, r, o);
     }
-    if (window.JUXHomepage) {
-        window.JUXHomepage.originalLoadSections = {{this_hook}}.originalLoadSections;
-        return window.JUXHomepage.loadSections.call(this, e, t, r, o, page);
-    }
-    return {{this_hook}}.originalLoadSections.call(this, e, t, r, o);
 }
