@@ -35,4 +35,11 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>Gets or sets the per-list TMDb pagination and region settings.</summary>
     public TMDbListsConfig TMDbLists { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the configuration schema version. Used to gate one-time migrations applied at
+    /// load time when the on-disk schema changes between plugin versions. See the "Configuration
+    /// Schema Versioning" section in CLAUDE.md for the migration policy.
+    /// </summary>
+    public int SchemaVersion { get; set; } = 1;
 }

@@ -23,4 +23,11 @@ public sealed class UserConfiguration
     /// When null, the global <see cref="PluginConfiguration.Enabled"/> setting applies.
     /// </summary>
     public bool? Enabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configuration schema version. See
+    /// <see cref="PluginConfiguration.SchemaVersion"/> and the "Configuration Schema Versioning"
+    /// section in CLAUDE.md for the migration policy.
+    /// </summary>
+    public int SchemaVersion { get; set; } = 1;
 }

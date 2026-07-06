@@ -12,6 +12,12 @@ namespace Jellyfin.Plugin.JuxHomepage;
 public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, IHasWebPages
 {
     /// <summary>
+    /// The current configuration schema version. See the "Configuration Schema Versioning" section
+    /// in CLAUDE.md for the migration policy.
+    /// </summary>
+    private const int CurrentSchemaVersion = 1;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
     /// </summary>
     /// <param name="applicationPaths">Application paths.</param>
@@ -20,6 +26,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         : base(applicationPaths, xmlSerializer)
     {
         Instance = this;
+
+        // Configuration is lazy-loaded by BasePlugin<T>; accessing it here forces the load (or
+        // default-instance creation) immediately, so migrations apply as soon as the plugin starts.
+        MigrateConfiguration(Configuration);
     }
 
     /// <summary>
@@ -103,5 +113,18 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
 
         // Call base last so ConfigurationChanged fires with the clamped values.
         base.UpdateConfiguration(configuration);
+    }
+
+    /// <summary>
+    /// Applies version-gated migrations to a loaded or newly-created configuration. Currently a
+    /// no-op: no schema change has shipped yet. Future phases (e.g. Phase 8's Personalized widget
+    /// rework) will add transformations here, keyed off <see cref="PluginConfiguration.SchemaVersion"/>,
+    /// then bump it to <see cref="CurrentSchemaVersion"/> once applied. See the "Configuration Schema
+    /// Versioning" section in CLAUDE.md.
+    /// </summary>
+    /// <param name="config">The configuration to migrate in place.</param>
+    internal static void MigrateConfiguration(PluginConfiguration config)
+    {
+        // No migration steps yet.
     }
 }
