@@ -1,3 +1,14 @@
+## [1.1.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.0.2...v1.1.0) (2026-07-06)
+
+### Features
+
+* add SchemaVersion field and migration hook to configuration models ([18b72bd](https://github.com/Samuellct/JellyUX-Homepage/commit/18b72bd354af70d7ff9c96d9b33fc9e8f9ccef04))
+
+### Bug Fixes
+
+* validate configuration on load, not only on admin save ([383a8ef](https://github.com/Samuellct/JellyUX-Homepage/commit/383a8ef6c97596cadfedfda84fd8722996aa9a09))
+* write user configuration atomically to avoid partial writes on crash ([62959c9](https://github.com/Samuellct/JellyUX-Homepage/commit/62959c9c88728613e51b7cf87dcbb313888f18fe))
+
 ## [1.0.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.0.1...v1.0.2) (2026-07-06)
 
 ### Bug Fixes
