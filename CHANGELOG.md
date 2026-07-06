@@ -1,3 +1,11 @@
+## [1.0.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.0.1...v1.0.2) (2026-07-06)
+
+### Bug Fixes
+
+* fall back to native rendering on any error inside the spliced loadSections fragment ([ecf2b8c](https://github.com/Samuellct/JellyUX-Homepage/commit/ecf2b8c5e5a49916cf7b2c9071fe36d53e46e9d1))
+* guard reflective FileTransformation invocation with explicit error handling ([1aec924](https://github.com/Samuellct/JellyUX-Homepage/commit/1aec92472c8e58f126fcd34d5fbdb2b9c635f530))
+* prevent IDOR by validating userId against the authenticated identity ([ca4ca4e](https://github.com/Samuellct/JellyUX-Homepage/commit/ca4ca4ec806cba6fbe44176f8da3f09d65b77724))
+
 ## [1.0.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.0.0...v1.0.1) (2026-07-05)
 
 ### Bug Fixes
