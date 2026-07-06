@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.IO;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -14,13 +15,7 @@ public sealed class UserConfigurationStoreTests : IDisposable
     public UserConfigurationStoreTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), "jux-user-config-tests-" + Guid.NewGuid());
-
-        var applicationPathsMock = new Mock<IApplicationPaths>();
-        applicationPathsMock.Setup(p => p.PluginConfigurationsPath).Returns(_tempDir);
-
-        _store = new UserConfigurationStore(
-            applicationPathsMock.Object,
-            NullLogger<UserConfigurationStore>.Instance);
+        _store = BuildStore(new FileSystem());
     }
 
     [Fact]
@@ -65,6 +60,52 @@ public sealed class UserConfigurationStoreTests : IDisposable
         Assert.Empty(tmpFiles);
     }
 
+    // Proves that the ReaderWriterLockSlim correctly serializes a concurrent reader against a
+    // writer: the reader started while the writer is mid-save must wait for the writer to finish
+    // (never interleave), and must then see the newly-written value. A reader observing a
+    // half-written file is not the right thing to test here -- the lock already makes that
+    // structurally impossible to hit via the public API (GetUserConfiguration blocks on
+    // EnterReadLock for as long as the writer holds the write lock). BlockingFileSystem pauses the
+    // writer right before the atomic rename so the test can deterministically control the
+    // interleaving instead of relying on real-world race timing.
+    [Fact]
+    public async Task SaveUserConfiguration_ConcurrentWithGetUserConfiguration_ReaderWaitsForWriterThenSeesNewValue()
+    {
+        var userId = Guid.NewGuid();
+        var blockingFileSystem = new BlockingFileSystem();
+        var store = BuildStore(blockingFileSystem);
+
+        // Seed an initial value so the "new value" assertion below is unambiguous. Release the
+        // pause for this seed write only -- it must complete normally, not block.
+        blockingFileSystem.ReleaseWrite.Set();
+        store.SaveUserConfiguration(new UserConfiguration { UserId = userId, Enabled = false });
+        blockingFileSystem.WriteStarted.Reset();
+        blockingFileSystem.ReleaseWrite.Reset();
+
+        var writeTask = Task.Run(() =>
+            store.SaveUserConfiguration(new UserConfiguration { UserId = userId, Enabled = true }));
+
+        // Wait until the writer has entered the write lock and is paused right before the rename,
+        // so the interleaving below is deterministic rather than a guessed delay.
+        var writerReachedPause = blockingFileSystem.WriteStarted.Wait(TimeSpan.FromSeconds(5));
+        Assert.True(writerReachedPause, "Writer did not reach the pause point in time.");
+
+        var readTask = Task.Run(() => store.GetUserConfiguration(userId));
+
+        // The reader must still be blocked on EnterReadLock while the writer holds the write lock.
+        var readCompletedTooEarly = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromMilliseconds(200))) == readTask;
+        Assert.False(readCompletedTooEarly, "Reader should block until the writer releases the lock.");
+
+        blockingFileSystem.ReleaseWrite.Set();
+        await writeTask;
+        var result = await readTask;
+
+        Assert.NotNull(result);
+        Assert.True(result.Enabled);
+
+        store.Dispose();
+    }
+
     public void Dispose()
     {
         _store.Dispose();
@@ -80,5 +121,54 @@ public sealed class UserConfigurationStoreTests : IDisposable
         {
             // Best-effort cleanup; leftover temp dirs under %TEMP% are harmless.
         }
+    }
+
+    private UserConfigurationStore BuildStore(IFileSystem fileSystem)
+    {
+        var applicationPathsMock = new Mock<IApplicationPaths>();
+        applicationPathsMock.Setup(p => p.PluginConfigurationsPath).Returns(_tempDir);
+
+        return new UserConfigurationStore(
+            applicationPathsMock.Object,
+            fileSystem,
+            NullLogger<UserConfigurationStore>.Instance);
+    }
+
+    /// <summary>
+    /// Wraps a real <see cref="FileSystem"/>, pausing right before <see cref="Move"/> (the atomic
+    /// rename) until the test explicitly releases it -- lets a test deterministically control when
+    /// a writer is "mid-save" without relying on real-world race timing.
+    /// </summary>
+    private sealed class BlockingFileSystem : IFileSystem
+    {
+        private readonly FileSystem _inner = new();
+
+        /// <summary>Signaled by <see cref="Move"/> right before it pauses.</summary>
+        public ManualResetEventSlim WriteStarted { get; } = new(initialState: false);
+
+        /// <summary>The test sets this to let a paused <see cref="Move"/> proceed.</summary>
+        public ManualResetEventSlim ReleaseWrite { get; } = new(initialState: false);
+
+        public bool FileExists(string path) => _inner.FileExists(path);
+
+        public string ReadAllText(string path) => _inner.ReadAllText(path);
+
+        public void WriteAllText(string path, string contents) => _inner.WriteAllText(path, contents);
+
+        public void Move(string sourceFileName, string destFileName, bool overwrite)
+        {
+            WriteStarted.Set();
+            ReleaseWrite.Wait(TimeSpan.FromSeconds(5));
+            _inner.Move(sourceFileName, destFileName, overwrite);
+        }
+
+        public void Delete(string path) => _inner.Delete(path);
+
+        public void CreateDirectory(string path) => _inner.CreateDirectory(path);
+
+        public bool DirectoryExists(string path) => _inner.DirectoryExists(path);
+
+        public IReadOnlyList<string> GetFiles(string path, string searchPattern, SearchOption searchOption) =>
+            _inner.GetFiles(path, searchPattern, searchOption);
     }
 }

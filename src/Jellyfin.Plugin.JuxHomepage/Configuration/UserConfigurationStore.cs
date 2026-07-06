@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Jellyfin.Plugin.JuxHomepage.IO;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +19,7 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
     };
 
     private readonly string _usersDir;
+    private readonly IFileSystem _fileSystem;
     private readonly ILogger<UserConfigurationStore> _logger;
     private readonly ReaderWriterLockSlim _lock = new();
     private bool _disposed;
@@ -26,16 +28,21 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
     /// Initializes a new instance of the <see cref="UserConfigurationStore"/> class.
     /// </summary>
     /// <param name="applicationPaths">Provides the plugin configurations directory path.</param>
+    /// <param name="fileSystem">File system abstraction, for testability.</param>
     /// <param name="logger">Logger.</param>
-    public UserConfigurationStore(IApplicationPaths applicationPaths, ILogger<UserConfigurationStore> logger)
+    public UserConfigurationStore(
+        IApplicationPaths applicationPaths,
+        IFileSystem fileSystem,
+        ILogger<UserConfigurationStore> logger)
     {
+        _fileSystem = fileSystem;
         _logger = logger;
         _usersDir = Path.Combine(
             applicationPaths.PluginConfigurationsPath,
             "Jellyfin.Plugin.JuxHomepage",
             "users");
 
-        Directory.CreateDirectory(_usersDir);
+        _fileSystem.CreateDirectory(_usersDir);
     }
 
     /// <summary>
@@ -50,12 +57,12 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
         _lock.EnterReadLock();
         try
         {
-            if (!File.Exists(path))
+            if (!_fileSystem.FileExists(path))
             {
                 return null;
             }
 
-            var json = File.ReadAllText(path);
+            var json = _fileSystem.ReadAllText(path);
             return JsonSerializer.Deserialize<UserConfiguration>(json);
         }
         catch (Exception ex)
@@ -87,8 +94,8 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
             // atomic on the same volume (rename() on Linux, MoveFileEx/MOVEFILE_REPLACE_EXISTING on
             // Windows), so a crash or restart mid-write can never leave a partially-written config
             // file on disk -- readers always see either the old file or the fully-written new one.
-            File.WriteAllText(tmpPath, json);
-            File.Move(tmpPath, path, overwrite: true);
+            _fileSystem.WriteAllText(tmpPath, json);
+            _fileSystem.Move(tmpPath, path, overwrite: true);
         }
         catch (Exception ex)
         {
@@ -118,9 +125,9 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
     {
         try
         {
-            if (File.Exists(tmpPath))
+            if (_fileSystem.FileExists(tmpPath))
             {
-                File.Delete(tmpPath);
+                _fileSystem.Delete(tmpPath);
             }
         }
         catch (Exception ex)
