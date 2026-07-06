@@ -319,6 +319,7 @@ public class JuxHomepageController : ControllerBase
     {
         if (!_tmdbCacheService.TryAcquireRefreshLock())
         {
+            _logger.LogInformation("TMDb refresh already in progress; rejecting this manual request.");
             return Conflict(new { message = "A TMDb refresh is already in progress." });
         }
 
