@@ -123,9 +123,11 @@ public sealed class ConnectedWidgetBaseTests
         var userManagerMock = new Mock<IUserManager>();
         userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(user);
 
+        var libraryItemsById = new Dictionary<Guid, BaseItem> { [matchedId1] = libraryItem1, [matchedId2] = libraryItem2 };
         var libraryManagerMock = new Mock<ILibraryManager>();
-        libraryManagerMock.Setup(m => m.GetItemById(matchedId1)).Returns(libraryItem1);
-        libraryManagerMock.Setup(m => m.GetItemById(matchedId2)).Returns(libraryItem2);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns<InternalItemsQuery>(q => q.ItemIds.Where(libraryItemsById.ContainsKey).Select(id => libraryItemsById[id]).ToList());
 
         IReadOnlyList<BaseItem>? capturedItems = null;
         var dtoServiceMock = new Mock<IDtoService>();
@@ -167,7 +169,9 @@ public sealed class ConnectedWidgetBaseTests
         userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(user);
 
         var libraryManagerMock = new Mock<ILibraryManager>();
-        libraryManagerMock.Setup(m => m.GetItemById(deletedId)).Returns((BaseItem?)null);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns([]);
 
         IReadOnlyList<BaseItem>? capturedItems = null;
         var dtoServiceMock = new Mock<IDtoService>();
@@ -206,11 +210,18 @@ public sealed class ConnectedWidgetBaseTests
         var userManagerMock = new Mock<IUserManager>();
         userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(user);
 
+        // GetItemList does not preserve the order of ItemIds passed in (it defaults to sorting
+        // alphabetically absent an explicit sort, per Jellyfin's own query builder) -- deliberately
+        // return the matched items in REVERSE order here, so this test only passes if
+        // ConnectedWidgetBase re-sorts the batched result back into the original ranking order
+        // itself, rather than trusting whatever order the query happens to return.
         var libraryManagerMock = new Mock<ILibraryManager>();
-        foreach (var id in ids)
-        {
-            libraryManagerMock.Setup(m => m.GetItemById(id)).Returns(new Movie { Id = id, Name = id.ToString() });
-        }
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns<InternalItemsQuery>(q => q.ItemIds
+                .Select(id => (BaseItem)new Movie { Id = id, Name = id.ToString() })
+                .Reverse()
+                .ToList());
 
         IReadOnlyList<BaseItem>? capturedItems = null;
         var dtoServiceMock = new Mock<IDtoService>();

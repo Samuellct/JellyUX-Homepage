@@ -121,11 +121,22 @@ public abstract class ConnectedWidgetBase<T> : IWidget
         // This is an in-memory id list (already resolved by the cache's cross-referencing), not a
         // live InternalItemsQuery, so pagination is a plain Skip/Take -- the same pattern
         // MyMediaWidget uses over its in-memory library folder list.
-        var items = new List<BaseItem>();
-        foreach (var id in libraryIds.Skip(payload.StartIndex).Take(payload.Limit))
+        var pageIds = libraryIds.Skip(payload.StartIndex).Take(payload.Limit).ToList();
+
+        // Resolve the page's items in a single batched query rather than one GetItemById call per
+        // id. Note: ILibraryManager.GetItemList with InternalItemsQuery.ItemIds does NOT preserve
+        // the order of the ids passed in -- absent an explicit sort it falls back to alphabetical
+        // (BaseItemRepository.ApplyOrder defaults to OrderBy(SortName)) -- so the result is
+        // re-sorted into a dictionary and re-read back out in pageIds' original order (the TMDb
+        // ranking order), rather than used as-is.
+        var itemsById = LibraryManager
+            .GetItemList(new InternalItemsQuery { ItemIds = pageIds.ToArray() })
+            .ToDictionary(i => i.Id);
+
+        var items = new List<BaseItem>(pageIds.Count);
+        foreach (var id in pageIds)
         {
-            var item = LibraryManager.GetItemById(id);
-            if (item is not null)
+            if (itemsById.TryGetValue(id, out var item))
             {
                 items.Add(item);
             }
