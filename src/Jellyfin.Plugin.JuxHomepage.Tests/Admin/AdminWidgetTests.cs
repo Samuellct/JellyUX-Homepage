@@ -141,6 +141,10 @@ public sealed class AdminWidgetTests
     // Early-out tests: null user and empty value
     // -------------------------------------------------------------------------
 
+    // GenreWidget does not override GetItemsAsync -- this exercises the null-user check shared,
+    // unmodified, by every AdminWidgetBase subclass (Actor/Director/Studio/Collection/Tag/Year).
+    // Do not add a per-widget duplicate of this test; it would exercise the exact same code path
+    // (see Phase 2 test triage, TODO_V2.md).
     [Fact]
     public async Task Genre_UserNotFound_ReturnsEmpty()
     {
@@ -157,6 +161,8 @@ public sealed class AdminWidgetTests
         Assert.Empty(result.Items);
     }
 
+    // Same rationale as above: the empty-AdditionalData early-out lives in the shared
+    // AdminWidgetBase.GetItemsAsync, not in GenreWidget itself.
     [Fact]
     public async Task Genre_EmptyAdditionalData_ReturnsEmpty()
     {
@@ -171,51 +177,6 @@ public sealed class AdminWidgetTests
 
         Assert.Equal(0, result.TotalRecordCount);
         Assert.Empty(result.Items);
-    }
-
-    [Fact]
-    public async Task Actor_UserNotFound_ReturnsEmpty()
-    {
-        var widget = new ActorWidget(
-            TestMocks.UserManagerReturningNull().Object,
-            new Mock<ILibraryManager>().Object,
-            new Mock<IDtoService>().Object);
-
-        var result = await widget.GetItemsAsync(
-            new WidgetPayload { UserId = Guid.NewGuid(), AdditionalData = "Tom Hanks" },
-            CancellationToken.None);
-
-        Assert.Equal(0, result.TotalRecordCount);
-    }
-
-    [Fact]
-    public async Task Studio_EmptyAdditionalData_ReturnsEmpty()
-    {
-        var widget = new StudioWidget(
-            new Mock<IUserManager>().Object,
-            new Mock<ILibraryManager>().Object,
-            new Mock<IDtoService>().Object);
-
-        var result = await widget.GetItemsAsync(
-            new WidgetPayload { UserId = Guid.NewGuid(), AdditionalData = string.Empty },
-            CancellationToken.None);
-
-        Assert.Equal(0, result.TotalRecordCount);
-    }
-
-    [Fact]
-    public async Task Year_EmptyAdditionalData_ReturnsEmpty()
-    {
-        var widget = new YearWidget(
-            new Mock<IUserManager>().Object,
-            new Mock<ILibraryManager>().Object,
-            new Mock<IDtoService>().Object);
-
-        var result = await widget.GetItemsAsync(
-            new WidgetPayload { UserId = Guid.NewGuid() },
-            CancellationToken.None);
-
-        Assert.Equal(0, result.TotalRecordCount);
     }
 
     // -------------------------------------------------------------------------

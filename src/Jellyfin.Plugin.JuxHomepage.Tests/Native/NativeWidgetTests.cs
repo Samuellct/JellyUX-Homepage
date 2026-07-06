@@ -156,26 +156,14 @@ public sealed class NativeWidgetTests
         Assert.Empty(result.Items);
     }
 
+    // RecentlyAddedMoviesWidget and RecentlyAddedShowsWidget both inherit GetItemsAsync unmodified
+    // from RecentlyAddedWidgetBase (neither overrides it), so this also covers
+    // RecentlyAddedShowsWidget's null-user check. Do not add a duplicate test for it -- it would
+    // exercise the exact same code path (see Phase 2 test triage, TODO_V2.md).
     [Fact]
     public async Task RecentlyAddedMovies_UserNotFound_ReturnsEmpty()
     {
         var widget = new RecentlyAddedMoviesWidget(
-            TestMocks.UserManagerReturningNull().Object,
-            new Mock<ILibraryManager>().Object,
-            new Mock<IDtoService>().Object);
-
-        var result = await widget.GetItemsAsync(
-            new WidgetPayload { UserId = Guid.NewGuid() },
-            CancellationToken.None);
-
-        Assert.Equal(0, result.TotalRecordCount);
-        Assert.Empty(result.Items);
-    }
-
-    [Fact]
-    public async Task RecentlyAddedShows_UserNotFound_ReturnsEmpty()
-    {
-        var widget = new RecentlyAddedShowsWidget(
             TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
