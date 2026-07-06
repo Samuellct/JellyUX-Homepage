@@ -89,11 +89,37 @@ public interface ITMDbCacheService
     /// widget instance. Each individual refresh is already fault-tolerant (a failure is logged and
     /// does not abort the others). Shared by the daily scheduled task and the admin "Refresh now"
     /// action so neither duplicates the sequence.
+    /// <para>
+    /// Atomically reserves the refresh slot (see <see cref="TryAcquireRefreshLock"/>) for the
+    /// duration of the call, so a concurrent call (whether the daily scheduled task or a manual
+    /// admin trigger) that arrives while one is already running does nothing and returns false,
+    /// rather than running a second refresh concurrently.
+    /// </para>
     /// </summary>
     /// <param name="progress">
     /// Optional progress reporter, updated as each refresh completes. Pass null when progress
     /// reporting is not needed (e.g. a fire-and-forget trigger).
     /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken);
+    /// <returns>True if this call actually performed the refresh; false if one was already running.</returns>
+    Task<bool> RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Non-blocking attempt to reserve the refresh slot, for callers (like the admin "Refresh now"
+    /// endpoint) that need a synchronous accept/reject decision before starting a long-running
+    /// refresh in the background. Must be paired with a call to
+    /// <see cref="RunRefreshLockedAsync"/> to release the slot -- <see cref="RefreshAllAsync"/>
+    /// already does this internally and is the safer choice for callers that don't need to
+    /// straddle the reservation across a fire-and-forget boundary.
+    /// </summary>
+    /// <returns>True if the slot was reserved; false if a refresh is already in progress.</returns>
+    bool TryAcquireRefreshLock();
+
+    /// <summary>
+    /// Runs the refresh, assuming the slot was already reserved via <see cref="TryAcquireRefreshLock"/>.
+    /// Always releases the slot afterward, even on failure.
+    /// </summary>
+    /// <param name="progress">Optional progress reporter, updated as each refresh completes.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RunRefreshLockedAsync(IProgress<double>? progress, CancellationToken cancellationToken);
 }

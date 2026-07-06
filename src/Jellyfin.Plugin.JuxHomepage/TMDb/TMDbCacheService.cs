@@ -28,6 +28,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<TMDbCacheService> _logger;
     private readonly ReaderWriterLockSlim _lock = new();
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private bool _disposed;
 
     /// <summary>
@@ -197,41 +198,64 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     }
 
     /// <inheritdoc/>
-    public async Task RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken)
+    public bool TryAcquireRefreshLock() => _refreshGate.Wait(0);
+
+    /// <inheritdoc/>
+    public async Task RunRefreshLockedAsync(IProgress<double>? progress, CancellationToken cancellationToken)
     {
-        // Six fixed refreshes, evenly spaced across 0-100.
-        Func<CancellationToken, Task>[] steps =
-        [
-            RefreshTrendingMoviesAsync,
-            RefreshTrendingShowsAsync,
-            RefreshAiringTodayAsync,
-            RefreshTopRatedMoviesAsync,
-            RefreshTopRatedShowsAsync,
-            RefreshNowPlayingMoviesAsync
-        ];
-
-        progress?.Report(0);
-        for (var i = 0; i < steps.Length; i++)
+        try
         {
-            await steps[i](cancellationToken).ConfigureAwait(false);
-            progress?.Report((i + 1) * 100.0 / steps.Length);
-        }
+            // Six fixed refreshes, evenly spaced across 0-100.
+            Func<CancellationToken, Task>[] steps =
+            [
+                RefreshTrendingMoviesAsync,
+                RefreshTrendingShowsAsync,
+                RefreshAiringTodayAsync,
+                RefreshTopRatedMoviesAsync,
+                RefreshTopRatedShowsAsync,
+                RefreshNowPlayingMoviesAsync
+            ];
 
-        var discoverRows = _getConfiguration()?.Widgets?
-            .Where(c => c.WidgetType == TMDbWidgetTypes.DiscoverMovies)
-            .ToList() ?? [];
-
-        foreach (var row in discoverRows)
-        {
-            var extra = row.ExtraParams.ToDictionary(p => p.Key, p => p.Value);
-            if (!extra.TryGetValue("value", out var instanceId) || string.IsNullOrEmpty(instanceId))
+            progress?.Report(0);
+            for (var i = 0; i < steps.Length; i++)
             {
-                continue;
+                await steps[i](cancellationToken).ConfigureAwait(false);
+                progress?.Report((i + 1) * 100.0 / steps.Length);
             }
 
-            var filter = TMDbDiscoverFilter.FromExtraParams(extra);
-            await RefreshDiscoverMoviesAsync(instanceId, filter, cancellationToken).ConfigureAwait(false);
+            var discoverRows = _getConfiguration()?.Widgets?
+                .Where(c => c.WidgetType == TMDbWidgetTypes.DiscoverMovies)
+                .ToList() ?? [];
+
+            foreach (var row in discoverRows)
+            {
+                var extra = row.ExtraParams.ToDictionary(p => p.Key, p => p.Value);
+                if (!extra.TryGetValue("value", out var instanceId) || string.IsNullOrEmpty(instanceId))
+                {
+                    continue;
+                }
+
+                var filter = TMDbDiscoverFilter.FromExtraParams(extra);
+                await RefreshDiscoverMoviesAsync(instanceId, filter, cancellationToken).ConfigureAwait(false);
+            }
         }
+        finally
+        {
+            _refreshGate.Release();
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> RefreshAllAsync(IProgress<double>? progress, CancellationToken cancellationToken)
+    {
+        if (!TryAcquireRefreshLock())
+        {
+            _logger.LogInformation("TMDb refresh already in progress; skipping this request.");
+            return false;
+        }
+
+        await RunRefreshLockedAsync(progress, cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     /// <inheritdoc/>
@@ -240,6 +264,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         if (!_disposed)
         {
             _lock.Dispose();
+            _refreshGate.Dispose();
             _disposed = true;
         }
     }

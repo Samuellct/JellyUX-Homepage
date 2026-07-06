@@ -438,6 +438,58 @@ public sealed class TMDbCacheServiceTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // RefreshAllAsync: concurrency guard (Phase 3.3 of TODO_V2.md)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RefreshAllAsync_ConcurrentCalls_OnlyOneActuallyRuns()
+    {
+        var started = new ManualResetEventSlim(false);
+        var release = new ManualResetEventSlim(false);
+        var callCount = 0;
+
+        var apiClientMock = new Mock<ITMDbApiClient>();
+        apiClientMock
+            .Setup(c => c.GetTrendingMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                Interlocked.Increment(ref callCount);
+                started.Set();
+                await Task.Run(() => release.Wait(TimeSpan.FromSeconds(5)));
+                return (IReadOnlyList<TMDbMovie>)[];
+            });
+        apiClientMock.Setup(c => c.GetTrendingShowsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetAiringTodayAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetTopRatedMoviesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+        apiClientMock.Setup(c => c.GetTopRatedShowsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbShow>)[]);
+        apiClientMock.Setup(c => c.GetNowPlayingMoviesAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<TMDbMovie>)[]);
+
+        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object);
+
+        var firstCallTask = service.RefreshAllAsync(null, CancellationToken.None);
+
+        var reachedFetch = started.Wait(TimeSpan.FromSeconds(5));
+        Assert.True(reachedFetch, "First refresh did not reach the fetch step in time.");
+
+        // A second concurrent attempt must not be able to reserve the slot while the first is
+        // still in progress -- this must be true regardless of the caller (a second manual click,
+        // or the daily scheduled task firing at the same moment).
+        var secondAcquired = service.TryAcquireRefreshLock();
+        Assert.False(secondAcquired, "A second concurrent refresh should not acquire the lock.");
+
+        release.Set();
+        var firstRan = await firstCallTask;
+
+        Assert.True(firstRan);
+        Assert.Equal(1, callCount);
+    }
+
+    // -------------------------------------------------------------------------
     // RefreshAllAsync: configured Discover instances
     // -------------------------------------------------------------------------
 

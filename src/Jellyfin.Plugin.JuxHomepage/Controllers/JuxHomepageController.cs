@@ -307,19 +307,26 @@ public class JuxHomepageController : ControllerBase
 
     /// <summary>
     /// Triggers an immediate refresh of all four TMDb cache types. Runs in the background; the
-    /// response does not wait for the refresh to complete.
+    /// response does not wait for the refresh to complete. Rejects the request with 409 Conflict if
+    /// a refresh (manual or the daily scheduled task) is already in progress.
     /// </summary>
-    /// <returns>202 Accepted, immediately.</returns>
+    /// <returns>202 Accepted if a refresh was started; 409 Conflict if one was already running.</returns>
     [HttpPost("TMDb/Refresh")]
     [Authorize(Roles = "Administrator")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public IActionResult RefreshTMDbCache()
     {
+        if (!_tmdbCacheService.TryAcquireRefreshLock())
+        {
+            return Conflict(new { message = "A TMDb refresh is already in progress." });
+        }
+
         _ = Task.Run(async () =>
         {
             try
             {
-                await _tmdbCacheService.RefreshAllAsync(null, CancellationToken.None).ConfigureAwait(false);
+                await _tmdbCacheService.RunRefreshLockedAsync(null, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
