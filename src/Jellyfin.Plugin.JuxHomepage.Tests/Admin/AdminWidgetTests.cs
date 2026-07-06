@@ -1,4 +1,3 @@
-using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Controller.Dto;
@@ -10,15 +9,6 @@ namespace Jellyfin.Plugin.JuxHomepage.Tests.Admin;
 
 public sealed class AdminWidgetTests
 {
-    // Returns a mock IUserManager whose GetUserById always returns null.
-    private static Mock<IUserManager> UserManagerReturningNull()
-    {
-        var mock = new Mock<IUserManager>();
-        mock.Setup(m => m.GetUserById(It.IsAny<Guid>()))
-            .Returns((User?)null);
-        return mock;
-    }
-
     // -------------------------------------------------------------------------
     // Descriptor tests
     // -------------------------------------------------------------------------
@@ -155,7 +145,7 @@ public sealed class AdminWidgetTests
     public async Task Genre_UserNotFound_ReturnsEmpty()
     {
         var widget = new GenreWidget(
-            UserManagerReturningNull().Object,
+            TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
 
@@ -187,7 +177,7 @@ public sealed class AdminWidgetTests
     public async Task Actor_UserNotFound_ReturnsEmpty()
     {
         var widget = new ActorWidget(
-            UserManagerReturningNull().Object,
+            TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
 

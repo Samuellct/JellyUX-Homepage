@@ -1,4 +1,3 @@
-using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Controller.Dto;
@@ -11,15 +10,6 @@ namespace Jellyfin.Plugin.JuxHomepage.Tests.Native;
 
 public sealed class NativeWidgetTests
 {
-    // Returns a mock IUserManager whose GetUserById always returns null.
-    private static Mock<IUserManager> UserManagerReturningNull()
-    {
-        var mock = new Mock<IUserManager>();
-        mock.Setup(m => m.GetUserById(It.IsAny<Guid>()))
-            .Returns((User?)null);
-        return mock;
-    }
-
     // -------------------------------------------------------------------------
     // Descriptor tests
     // -------------------------------------------------------------------------
@@ -137,7 +127,7 @@ public sealed class NativeWidgetTests
     public async Task ContinueWatching_UserNotFound_ReturnsEmpty()
     {
         var widget = new ContinueWatchingWidget(
-            UserManagerReturningNull().Object,
+            TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
 
@@ -153,7 +143,7 @@ public sealed class NativeWidgetTests
     public async Task NextUp_UserNotFound_ReturnsEmpty()
     {
         var widget = new NextUpWidget(
-            UserManagerReturningNull().Object,
+            TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
             new Mock<ITVSeriesManager>().Object);
@@ -170,7 +160,7 @@ public sealed class NativeWidgetTests
     public async Task RecentlyAddedMovies_UserNotFound_ReturnsEmpty()
     {
         var widget = new RecentlyAddedMoviesWidget(
-            UserManagerReturningNull().Object,
+            TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
 
@@ -186,7 +176,7 @@ public sealed class NativeWidgetTests
     public async Task RecentlyAddedShows_UserNotFound_ReturnsEmpty()
     {
         var widget = new RecentlyAddedShowsWidget(
-            UserManagerReturningNull().Object,
+            TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
 
@@ -202,7 +192,7 @@ public sealed class NativeWidgetTests
     public async Task MyMedia_UserNotFound_ReturnsEmpty()
     {
         var widget = new MyMediaWidget(
-            UserManagerReturningNull().Object,
+            TestMocks.UserManagerReturningNull().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
             new Mock<IUserViewManager>().Object);

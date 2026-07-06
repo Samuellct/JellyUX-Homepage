@@ -36,17 +36,7 @@ public sealed class ConnectedWidgetBaseTests
         // Only apply the default "return empty" setup when the caller didn't supply their own
         // mock -- re-applying it here would shadow a caller-configured Callback (Moq resolves
         // multiple matching setups by "last configured wins").
-        if (dtoServiceMock is null)
-        {
-            dtoServiceMock = new Mock<IDtoService>();
-            dtoServiceMock
-                .Setup(m => m.GetBaseItemDtos(
-                    It.IsAny<IReadOnlyList<BaseItem>>(),
-                    It.IsAny<DtoOptions>(),
-                    It.IsAny<User>(),
-                    It.IsAny<BaseItem>()))
-                .Returns([]);
-        }
+        dtoServiceMock ??= TestMocks.DtoServiceReturningEmpty();
 
         return new TrendingMoviesWidget(
             userManagerMock.Object,
@@ -92,7 +82,7 @@ public sealed class ConnectedWidgetBaseTests
     public async Task GetItemsAsync_EmptyCache_ReturnsEmpty()
     {
         var userManagerMock = new Mock<IUserManager>();
-        userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(new User("test", "Default", "Default"));
+        userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(TestMocks.DefaultUser());
 
         var widget = BuildWidget([], userManagerMock);
 
@@ -124,7 +114,7 @@ public sealed class ConnectedWidgetBaseTests
     [Fact]
     public async Task GetItemsAsync_UnmatchedItemsAreExcluded_TotalRecordCountReflectsOnlyMatched()
     {
-        var user = new User("test", "Default", "Default");
+        var user = TestMocks.DefaultUser();
         var matchedId1 = Guid.NewGuid();
         var matchedId2 = Guid.NewGuid();
         var libraryItem1 = new Movie { Id = matchedId1, Name = "Owned 1" };
@@ -170,7 +160,7 @@ public sealed class ConnectedWidgetBaseTests
     [Fact]
     public async Task GetItemsAsync_DeletedLibraryItem_IsSkippedNotAnError()
     {
-        var user = new User("test", "Default", "Default");
+        var user = TestMocks.DefaultUser();
         var deletedId = Guid.NewGuid();
 
         var userManagerMock = new Mock<IUserManager>();
@@ -210,7 +200,7 @@ public sealed class ConnectedWidgetBaseTests
     [Fact]
     public async Task GetItemsAsync_Pagination_RespectsStartIndexAndLimit()
     {
-        var user = new User("test", "Default", "Default");
+        var user = TestMocks.DefaultUser();
         var ids = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToList();
 
         var userManagerMock = new Mock<IUserManager>();
