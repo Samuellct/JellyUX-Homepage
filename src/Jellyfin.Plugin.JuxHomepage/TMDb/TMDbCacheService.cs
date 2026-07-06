@@ -117,20 +117,24 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// <inheritdoc/>
     public Task RefreshTopRatedMoviesAsync(CancellationToken cancellationToken)
     {
-        var pages = _getConfiguration()?.TMDbLists?.TopRatedMoviesPages ?? 1;
+        var tmdbLists = _getConfiguration()?.TMDbLists;
+        var pages = tmdbLists?.TopRatedMoviesPages ?? 1;
+        var voteCountMin = tmdbLists?.TopRatedVoteCountMin ?? 200;
         return RefreshMoviesAsync(
             TMDbCacheType.TopRatedMovies,
-            ct => _apiClient.GetTopRatedMoviesAsync(pages, ct),
+            ct => _apiClient.GetTopRatedMoviesAsync(pages, voteCountMin, ct),
             cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task RefreshTopRatedShowsAsync(CancellationToken cancellationToken)
     {
-        var pages = _getConfiguration()?.TMDbLists?.TopRatedShowsPages ?? 1;
+        var tmdbLists = _getConfiguration()?.TMDbLists;
+        var pages = tmdbLists?.TopRatedShowsPages ?? 1;
+        var voteCountMin = tmdbLists?.TopRatedVoteCountMin ?? 200;
         return RefreshShowsAsync(
             TMDbCacheType.TopRatedShows,
-            ct => _apiClient.GetTopRatedShowsAsync(pages, ct),
+            ct => _apiClient.GetTopRatedShowsAsync(pages, voteCountMin, ct),
             cancellationToken);
     }
 

@@ -84,12 +84,18 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
         GetPagedAsync<TMDbShow>("tv/on_the_air", pages, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<TMDbMovie>> GetTopRatedMoviesAsync(int pages, CancellationToken cancellationToken) =>
-        GetPagedAsync<TMDbMovie>("movie/top_rated", pages, cancellationToken);
+    public Task<IReadOnlyList<TMDbMovie>> GetTopRatedMoviesAsync(int pages, int voteCountMin, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbMovie>(
+            $"discover/movie?sort_by=vote_average.desc&vote_count.gte={voteCountMin}",
+            pages,
+            cancellationToken);
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<TMDbShow>> GetTopRatedShowsAsync(int pages, CancellationToken cancellationToken) =>
-        GetPagedAsync<TMDbShow>("tv/top_rated", pages, cancellationToken);
+    public Task<IReadOnlyList<TMDbShow>> GetTopRatedShowsAsync(int pages, int voteCountMin, CancellationToken cancellationToken) =>
+        GetPagedAsync<TMDbShow>(
+            $"discover/tv?sort_by=vote_average.desc&vote_count.gte={voteCountMin}",
+            pages,
+            cancellationToken);
 
     /// <inheritdoc/>
     public Task<IReadOnlyList<TMDbMovie>> GetNowPlayingMoviesAsync(

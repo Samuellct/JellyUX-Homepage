@@ -105,6 +105,7 @@
   "admin.tmdbstatus.cached": "{label} ({count} en cache)",
   "admin.tmdbstatus.never": "Jamais",
   "admin.tmdbstatus.pages": "Pages",
+  "admin.tmdbstatus.minvotes": "Votes minimum",
   "admin.tmdbrefresh.inprogress": "Rafraîchissement démarré, cela peut prendre quelques secondes...",
   "admin.tmdbrefresh.failed": "Échec du déclenchement du rafraîchissement. Voir la console du navigateur pour plus de détails."
 }

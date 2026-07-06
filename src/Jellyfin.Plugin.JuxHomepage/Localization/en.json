@@ -105,6 +105,7 @@
   "admin.tmdbstatus.cached": "{label} ({count} cached)",
   "admin.tmdbstatus.never": "Never",
   "admin.tmdbstatus.pages": "Pages",
+  "admin.tmdbstatus.minvotes": "Min votes",
   "admin.tmdbrefresh.inprogress": "Refresh started, this may take a few seconds...",
   "admin.tmdbrefresh.failed": "Failed to trigger refresh. See browser console for details."
 }

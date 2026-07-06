@@ -139,6 +139,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
             config.TMDbLists.NowPlayingRegion = string.IsNullOrWhiteSpace(config.TMDbLists.NowPlayingRegion)
                 ? null
                 : config.TMDbLists.NowPlayingRegion.Trim().ToUpperInvariant();
+            config.TMDbLists.TopRatedVoteCountMin = Math.Max(0, config.TMDbLists.TopRatedVoteCountMin);
         }
     }
 }

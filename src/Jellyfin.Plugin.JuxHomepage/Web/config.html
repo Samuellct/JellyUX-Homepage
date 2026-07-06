@@ -875,6 +875,7 @@
                 var labels = self._tmdbStatusLabels;
                 var tmdbLists = (self.state.config && self.state.config.TMDbLists) || {};
                 var currentRegion = tmdbLists.NowPlayingRegion || '';
+                var currentVoteCountMin = tmdbLists.TopRatedVoteCountMin || 200;
                 var html = '';
                 (statuses || []).forEach(function (s) {
                     var labelKey = labels[s.Type];
@@ -902,6 +903,15 @@
                             html += '<option value="' + self.escHtml(c.Value) + '"' + selected + '>' + self.escHtml(c.Label) + '</option>';
                         });
                         html += '</select>';
+                        html += '</span>';
+                    }
+                    if (s.Type === 'TopRatedMovies') {
+                        // Shared by Top Rated Movies and Top Rated Shows -- one field, attached to
+                        // this row only, not duplicated on the Top Rated Shows row.
+                        html += '<span class="jux-admin-tmdb-pages">';
+                        html += '<label for="numTopRatedVoteCountMin">' + self.escHtml(self.t('admin.tmdbstatus.minvotes')) + '</label>';
+                        html += '<input type="number" min="0" id="numTopRatedVoteCountMin"';
+                        html += ' class="emby-input jux-admin-tmdb-pages-input" value="' + currentVoteCountMin + '" />';
                         html += '</span>';
                     }
                     html += '</div>';
@@ -1066,6 +1076,10 @@
                     var regionEl = document.getElementById('selNowPlayingRegion');
                     if (regionEl) {
                         config.TMDbLists.NowPlayingRegion = regionEl.value || null;
+                    }
+                    var voteCountMinEl = document.getElementById('numTopRatedVoteCountMin');
+                    if (voteCountMinEl) {
+                        config.TMDbLists.TopRatedVoteCountMin = Math.max(0, parseInt(voteCountMinEl.value, 10) || 200);
                     }
 
                     config.Widgets = self.state.sortedWidgets.map(function (w, i) {

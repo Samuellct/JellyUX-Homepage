@@ -322,6 +322,40 @@ public sealed class TMDbApiClientTests
     }
 
     // -------------------------------------------------------------------------
+    // Top Rated via discover (Phase 3.4 of TODO_V2.md)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTopRatedMoviesAsync_UsesDiscoverEndpointWithConfiguredVoteCountThreshold()
+    {
+        var handler = new StubHttpMessageHandler(() => JsonResponse(new TMDbTrending<TMDbMovie> { Results = [] }));
+        var client = BuildClient(handler, V3Key);
+
+        await client.GetTopRatedMoviesAsync(1, 500, CancellationToken.None);
+
+        Assert.NotNull(handler.LastRequestUri);
+        var uri = handler.LastRequestUri!.ToString();
+        Assert.Contains("discover/movie", uri, StringComparison.Ordinal);
+        Assert.Contains("sort_by=vote_average.desc", uri, StringComparison.Ordinal);
+        Assert.Contains("vote_count.gte=500", uri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetTopRatedShowsAsync_UsesDiscoverEndpointWithConfiguredVoteCountThreshold()
+    {
+        var handler = new StubHttpMessageHandler(() => JsonResponse(new TMDbTrending<TMDbShow> { Results = [] }));
+        var client = BuildClient(handler, V3Key);
+
+        await client.GetTopRatedShowsAsync(1, 500, CancellationToken.None);
+
+        Assert.NotNull(handler.LastRequestUri);
+        var uri = handler.LastRequestUri!.ToString();
+        Assert.Contains("discover/tv", uri, StringComparison.Ordinal);
+        Assert.Contains("sort_by=vote_average.desc", uri, StringComparison.Ordinal);
+        Assert.Contains("vote_count.gte=500", uri, StringComparison.Ordinal);
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
@@ -365,11 +399,15 @@ public sealed class TMDbApiClientTests
 
         public int CallCount { get; private set; }
 
+        /// <summary>The URI of the most recent request, for tests asserting on query parameters.</summary>
+        public Uri? LastRequestUri { get; private set; }
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             CallCount++;
+            LastRequestUri = request.RequestUri;
             await Task.Yield();
             var responder = _responses.Dequeue();
             return responder();

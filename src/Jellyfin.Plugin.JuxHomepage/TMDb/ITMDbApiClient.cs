@@ -33,17 +33,27 @@ public interface ITMDbApiClient
     /// <returns>The on-the-air shows, or an empty list if the key is missing/invalid or the request failed.</returns>
     Task<IReadOnlyList<TMDbShow>> GetAiringTodayAsync(int pages, CancellationToken cancellationToken);
 
-    /// <summary>Fetches all-time top rated movies.</summary>
+    /// <summary>
+    /// Fetches top rated movies via <c>discover/movie</c> (sorted by <c>vote_average.desc</c>,
+    /// filtered by <paramref name="voteCountMin"/>) rather than the fixed <c>movie/top_rated</c>
+    /// endpoint, so the vote count threshold is admin-configurable (see TODO_V2.md Phase 3.4).
+    /// </summary>
     /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
+    /// <param name="voteCountMin">Minimum vote count (TMDb's <c>vote_count.gte</c>).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The top rated movies, or an empty list if the key is missing/invalid or the request failed.</returns>
-    Task<IReadOnlyList<TMDbMovie>> GetTopRatedMoviesAsync(int pages, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TMDbMovie>> GetTopRatedMoviesAsync(int pages, int voteCountMin, CancellationToken cancellationToken);
 
-    /// <summary>Fetches all-time top rated TV shows.</summary>
+    /// <summary>
+    /// Fetches top rated TV shows via <c>discover/tv</c> (sorted by <c>vote_average.desc</c>,
+    /// filtered by <paramref name="voteCountMin"/>) rather than the fixed <c>tv/top_rated</c>
+    /// endpoint, so the vote count threshold is admin-configurable (see TODO_V2.md Phase 3.4).
+    /// </summary>
     /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
+    /// <param name="voteCountMin">Minimum vote count (TMDb's <c>vote_count.gte</c>).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The top rated shows, or an empty list if the key is missing/invalid or the request failed.</returns>
-    Task<IReadOnlyList<TMDbShow>> GetTopRatedShowsAsync(int pages, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TMDbShow>> GetTopRatedShowsAsync(int pages, int voteCountMin, CancellationToken cancellationToken);
 
     /// <summary>Fetches movies currently in theatres.</summary>
     /// <param name="pages">Number of TMDb result pages to fetch and concatenate (1 page = up to 20 items).</param>
