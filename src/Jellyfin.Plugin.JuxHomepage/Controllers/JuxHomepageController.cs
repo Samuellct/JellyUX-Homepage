@@ -7,6 +7,7 @@ using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +31,7 @@ public class JuxHomepageController : ControllerBase
     private readonly ITMDbCacheService _tmdbCacheService;
     private readonly ITMDbApiClient _tmdbApiClient;
     private readonly ILocalizationService _localizationService;
+    private readonly IAuthorizationContext _authContext;
     private readonly ILogger<JuxHomepageController> _logger;
 
     /// <summary>
@@ -41,6 +43,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="tmdbCacheService">TMDb disk cache service.</param>
     /// <param name="tmdbApiClient">TMDb HTTP API client.</param>
     /// <param name="localizationService">Widget/admin-UI translation service.</param>
+    /// <param name="authContext">Jellyfin request authorization context.</param>
     /// <param name="logger">Logger.</param>
     public JuxHomepageController(
         IWidgetRegistry registry,
@@ -49,6 +52,7 @@ public class JuxHomepageController : ControllerBase
         ITMDbCacheService tmdbCacheService,
         ITMDbApiClient tmdbApiClient,
         ILocalizationService localizationService,
+        IAuthorizationContext authContext,
         ILogger<JuxHomepageController> logger)
     {
         _registry = registry;
@@ -57,6 +61,7 @@ public class JuxHomepageController : ControllerBase
         _tmdbCacheService = tmdbCacheService;
         _tmdbApiClient = tmdbApiClient;
         _localizationService = localizationService;
+        _authContext = authContext;
         _logger = logger;
     }
 
@@ -159,12 +164,18 @@ public class JuxHomepageController : ControllerBase
     [HttpGet("Sections")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<WidgetDescriptor>>> GetSections(
         [FromQuery] Guid userId,
         [FromQuery] int page = 0,
         [FromQuery] string? lang = null,
         CancellationToken cancellationToken = default)
     {
+        if (!await IsRequestAuthorizedForUserAsync(userId).ConfigureAwait(false))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
         var descriptors = await _widgetService
             .GetWidgetsForUser(userId, page, lang, cancellationToken)
             .ConfigureAwait(false);
@@ -186,6 +197,7 @@ public class JuxHomepageController : ControllerBase
     [HttpGet("Section/{widgetType}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WidgetResult>> GetSection(
         [FromRoute] string widgetType,
@@ -195,6 +207,11 @@ public class JuxHomepageController : ControllerBase
         [FromQuery] int limit = 20,
         CancellationToken cancellationToken = default)
     {
+        if (!await IsRequestAuthorizedForUserAsync(userId).ConfigureAwait(false))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
         var result = await _widgetService
             .GetWidgetItems(userId, widgetType, additionalData, startIndex, limit, cancellationToken)
             .ConfigureAwait(false);
@@ -404,6 +421,21 @@ public class JuxHomepageController : ControllerBase
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the caller is allowed to act on behalf of <paramref name="requestedUserId"/>,
+    /// preventing an authenticated user from reading another user's data by supplying an arbitrary
+    /// userId in the query string (IDOR). Administrators and server API key requests are exempt.
+    /// </summary>
+    private async Task<bool> IsRequestAuthorizedForUserAsync(Guid requestedUserId)
+    {
+        var authInfo = await _authContext.GetAuthorizationInfo(HttpContext).ConfigureAwait(false);
+        return UserAccessGuard.IsAuthorizedForUser(
+            requestedUserId,
+            authInfo.UserId,
+            authInfo.IsApiKey,
+            User.IsInRole("Administrator"));
+    }
 
     private static Stream? GetEmbeddedResource(string suffix)
     {
