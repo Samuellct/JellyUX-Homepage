@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.3.0...v1.3.1) (2026-07-06)
+
+### Bug Fixes
+
+* log when a manual TMDb refresh request is rejected as already in progress ([3413211](https://github.com/Samuellct/JellyUX-Homepage/commit/3413211dee7f5d21736bc553ade41390ee38cf46))
+
 ## [1.3.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.2.0...v1.3.0) (2026-07-06)
 
 ### Features
