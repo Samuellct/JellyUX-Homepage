@@ -1,3 +1,14 @@
+## [1.3.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.2.0...v1.3.0) (2026-07-06)
+
+### Features
+
+* add circuit breaker to TMDb HTTP client for sustained outages ([f0f39ce](https://github.com/Samuellct/JellyUX-Homepage/commit/f0f39cee08ff609373a7dd92bcb020e539f0a805))
+
+### Bug Fixes
+
+* make Top Rated vote count threshold configurable via discover ([7007a3c](https://github.com/Samuellct/JellyUX-Homepage/commit/7007a3c66dafb041712e8f6a5ab2000bbd34e481))
+* reject concurrent manual TMDb refresh requests ([8a18671](https://github.com/Samuellct/JellyUX-Homepage/commit/8a18671f9364873c17906ebc0288065e8f058b41))
+
 ## [1.2.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.1.0...v1.2.0) (2026-07-06)
 
 ### Features
