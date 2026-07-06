@@ -28,8 +28,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         Instance = this;
 
         // Configuration is lazy-loaded by BasePlugin<T>; accessing it here forces the load (or
-        // default-instance creation) immediately, so migrations apply as soon as the plugin starts.
+        // default-instance creation) immediately, so migration and validation apply on load, not
+        // only when an admin saves from the dashboard (which previously left a hand-edited XML
+        // file's invalid values in effect until the next save).
         MigrateConfiguration(Configuration);
+        ValidateConfiguration(Configuration);
     }
 
     /// <summary>
@@ -62,53 +65,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     {
         if (configuration is PluginConfiguration config)
         {
-            // Clamp cache values to valid ranges.
-            if (config.Cache is not null)
-            {
-                config.Cache.SessionTtlMinutes = Math.Max(1, config.Cache.SessionTtlMinutes);
-                config.Cache.TMDbRefreshIntervalHours = Math.Max(1, config.Cache.TMDbRefreshIntervalHours);
-            }
-
-            // Clamp per-widget values and ensure MinItems does not exceed MaxItems.
-            foreach (var widget in config.Widgets)
-            {
-                widget.MinItems = Math.Max(0, widget.MinItems);
-                widget.MaxItems = Math.Max(1, widget.MaxItems);
-                if (widget.MinItems > widget.MaxItems)
-                {
-                    widget.MinItems = widget.MaxItems;
-                }
-
-                widget.MinInstances = Math.Max(1, widget.MinInstances);
-                widget.MaxInstances = Math.Max(1, widget.MaxInstances);
-                if (widget.MinInstances > widget.MaxInstances)
-                {
-                    widget.MinInstances = widget.MaxInstances;
-                }
-            }
-
-            // Trim API keys; empty string becomes null.
-            if (config.ApiKeys is not null)
-            {
-                config.ApiKeys.TMDb = string.IsNullOrWhiteSpace(config.ApiKeys.TMDb)
-                    ? null
-                    : config.ApiKeys.TMDb.Trim();
-            }
-
-            // Clamp TMDb list page counts to a sane range (1 page = up to 20 items; more pages
-            // means more cross-referencing API calls per refresh).
-            if (config.TMDbLists is not null)
-            {
-                config.TMDbLists.TrendingMoviesPages = Math.Clamp(config.TMDbLists.TrendingMoviesPages, 1, 5);
-                config.TMDbLists.TrendingShowsPages = Math.Clamp(config.TMDbLists.TrendingShowsPages, 1, 5);
-                config.TMDbLists.AiringTodayPages = Math.Clamp(config.TMDbLists.AiringTodayPages, 1, 5);
-                config.TMDbLists.TopRatedMoviesPages = Math.Clamp(config.TMDbLists.TopRatedMoviesPages, 1, 5);
-                config.TMDbLists.TopRatedShowsPages = Math.Clamp(config.TMDbLists.TopRatedShowsPages, 1, 5);
-                config.TMDbLists.NowPlayingMoviesPages = Math.Clamp(config.TMDbLists.NowPlayingMoviesPages, 1, 5);
-                config.TMDbLists.NowPlayingRegion = string.IsNullOrWhiteSpace(config.TMDbLists.NowPlayingRegion)
-                    ? null
-                    : config.TMDbLists.NowPlayingRegion.Trim().ToUpperInvariant();
-            }
+            ValidateConfiguration(config);
         }
 
         // Call base last so ConfigurationChanged fires with the clamped values.
@@ -126,5 +83,62 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     internal static void MigrateConfiguration(PluginConfiguration config)
     {
         // No migration steps yet.
+    }
+
+    /// <summary>
+    /// Clamps all configuration values to valid ranges in place. Called both when the configuration
+    /// is loaded (so a hand-edited XML file cannot bypass validation until the next admin save) and
+    /// when an admin saves from the dashboard.
+    /// </summary>
+    /// <param name="config">The configuration to validate in place.</param>
+    internal static void ValidateConfiguration(PluginConfiguration config)
+    {
+        // Clamp cache values to valid ranges.
+        if (config.Cache is not null)
+        {
+            config.Cache.SessionTtlMinutes = Math.Max(1, config.Cache.SessionTtlMinutes);
+            config.Cache.TMDbRefreshIntervalHours = Math.Max(1, config.Cache.TMDbRefreshIntervalHours);
+        }
+
+        // Clamp per-widget values and ensure MinItems does not exceed MaxItems.
+        foreach (var widget in config.Widgets)
+        {
+            widget.MinItems = Math.Max(0, widget.MinItems);
+            widget.MaxItems = Math.Max(1, widget.MaxItems);
+            if (widget.MinItems > widget.MaxItems)
+            {
+                widget.MinItems = widget.MaxItems;
+            }
+
+            widget.MinInstances = Math.Max(1, widget.MinInstances);
+            widget.MaxInstances = Math.Max(1, widget.MaxInstances);
+            if (widget.MinInstances > widget.MaxInstances)
+            {
+                widget.MinInstances = widget.MaxInstances;
+            }
+        }
+
+        // Trim API keys; empty string becomes null.
+        if (config.ApiKeys is not null)
+        {
+            config.ApiKeys.TMDb = string.IsNullOrWhiteSpace(config.ApiKeys.TMDb)
+                ? null
+                : config.ApiKeys.TMDb.Trim();
+        }
+
+        // Clamp TMDb list page counts to a sane range (1 page = up to 20 items; more pages
+        // means more cross-referencing API calls per refresh).
+        if (config.TMDbLists is not null)
+        {
+            config.TMDbLists.TrendingMoviesPages = Math.Clamp(config.TMDbLists.TrendingMoviesPages, 1, 5);
+            config.TMDbLists.TrendingShowsPages = Math.Clamp(config.TMDbLists.TrendingShowsPages, 1, 5);
+            config.TMDbLists.AiringTodayPages = Math.Clamp(config.TMDbLists.AiringTodayPages, 1, 5);
+            config.TMDbLists.TopRatedMoviesPages = Math.Clamp(config.TMDbLists.TopRatedMoviesPages, 1, 5);
+            config.TMDbLists.TopRatedShowsPages = Math.Clamp(config.TMDbLists.TopRatedShowsPages, 1, 5);
+            config.TMDbLists.NowPlayingMoviesPages = Math.Clamp(config.TMDbLists.NowPlayingMoviesPages, 1, 5);
+            config.TMDbLists.NowPlayingRegion = string.IsNullOrWhiteSpace(config.TMDbLists.NowPlayingRegion)
+                ? null
+                : config.TMDbLists.NowPlayingRegion.Trim().ToUpperInvariant();
+        }
     }
 }
