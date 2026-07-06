@@ -124,6 +124,13 @@ automatically whenever a server is cached). Fallback: edit `jellyfinmediaplayer.
 `%LOCALAPPDATA%\Jellyfin Media Player` cache folder (with spaces) - clearing that one does not fix
 this specific issue, since it's an auto-connect cache, not a browser cache.
 
+**"Forgot password?" button missing on the login page with ZestyTheme**
+
+This is unrelated to JellyUX - ZestyTheme's `theme.css` intentionally hides
+`.btnForgotPassword` on the login page. To use password recovery, temporarily disable the
+ZestyTheme custom CSS (or remove the button's `display: none` override locally), recover the
+password, then re-enable the theme.
+
 ---
 
 ## Contributing
