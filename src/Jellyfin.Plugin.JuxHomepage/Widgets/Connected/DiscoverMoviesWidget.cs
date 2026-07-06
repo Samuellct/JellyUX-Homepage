@@ -2,6 +2,7 @@ using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Library;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 
@@ -21,12 +22,14 @@ public sealed class DiscoverMoviesWidget : ConnectedWidgetBase<TMDbMovie>
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
     /// <param name="cacheService">TMDb disk cache service.</param>
+    /// <param name="logger">Logger.</param>
     public DiscoverMoviesWidget(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ITMDbCacheService cacheService)
-        : base(userManager, libraryManager, dtoService, cacheService)
+        ITMDbCacheService cacheService,
+        ILogger<DiscoverMoviesWidget> logger)
+        : base(userManager, libraryManager, dtoService, cacheService, logger)
     {
     }
 

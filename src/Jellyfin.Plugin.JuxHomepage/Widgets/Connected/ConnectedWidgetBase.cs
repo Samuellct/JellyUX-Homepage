@@ -6,6 +6,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Querying;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 
@@ -28,6 +29,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 public abstract class ConnectedWidgetBase<T> : IWidget
     where T : ITMDbCacheItem
 {
+    private readonly ILogger _logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ConnectedWidgetBase{T}"/> class.
     /// </summary>
@@ -35,16 +38,19 @@ public abstract class ConnectedWidgetBase<T> : IWidget
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
     /// <param name="cacheService">TMDb disk cache service.</param>
+    /// <param name="logger">Logger.</param>
     protected ConnectedWidgetBase(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ITMDbCacheService cacheService)
+        ITMDbCacheService cacheService,
+        ILogger logger)
     {
         UserManager = userManager;
         LibraryManager = libraryManager;
         DtoService = dtoService;
         CacheService = cacheService;
+        _logger = logger;
     }
 
     /// <summary>Gets the Jellyfin user manager.</summary>
@@ -134,12 +140,25 @@ public abstract class ConnectedWidgetBase<T> : IWidget
             .ToDictionary(i => i.Id);
 
         var items = new List<BaseItem>(pageIds.Count);
+        var unresolvedCount = 0;
         foreach (var id in pageIds)
         {
             if (itemsById.TryGetValue(id, out var item))
             {
                 items.Add(item);
             }
+            else
+            {
+                unresolvedCount++;
+            }
+        }
+
+        if (unresolvedCount > 0)
+        {
+            _logger.LogDebug(
+                "{Count} cached TMDb item(s) for widget '{WidgetType}' no longer resolve to a local library item (likely removed since the last refresh).",
+                unresolvedCount,
+                WidgetType);
         }
 
         var dtos = DtoService.GetBaseItemDtos(items, dtoOptions, user);

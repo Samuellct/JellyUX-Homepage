@@ -5,6 +5,7 @@ using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -21,7 +22,8 @@ public sealed class DiscoverMoviesWidgetTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object);
+            new Mock<ITMDbCacheService>().Object,
+            NullLogger<DiscoverMoviesWidget>.Instance);
 
         var d = widget.GetDescriptor();
 
@@ -36,7 +38,8 @@ public sealed class DiscoverMoviesWidgetTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object);
+            new Mock<ITMDbCacheService>().Object,
+            NullLogger<DiscoverMoviesWidget>.Instance);
 
         Assert.Equal(5, widget.MaxInstances);
     }
@@ -57,7 +60,8 @@ public sealed class DiscoverMoviesWidgetTests
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            NullLogger<DiscoverMoviesWidget>.Instance);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20, AdditionalData = instanceId },
@@ -80,7 +84,8 @@ public sealed class DiscoverMoviesWidgetTests
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            NullLogger<DiscoverMoviesWidget>.Instance);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20, AdditionalData = null },

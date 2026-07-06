@@ -7,6 +7,8 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -25,7 +27,8 @@ public sealed class ConnectedWidgetBaseTests
         IReadOnlyList<TMDbMovie> cachedMovies,
         Mock<IUserManager>? userManagerMock = null,
         Mock<ILibraryManager>? libraryManagerMock = null,
-        Mock<IDtoService>? dtoServiceMock = null)
+        Mock<IDtoService>? dtoServiceMock = null,
+        ILogger<TrendingMoviesWidget>? logger = null)
     {
         var cacheServiceMock = new Mock<ITMDbCacheService>();
         cacheServiceMock.Setup(c => c.GetTrendingMovies()).Returns(cachedMovies);
@@ -42,7 +45,8 @@ public sealed class ConnectedWidgetBaseTests
             userManagerMock.Object,
             libraryManagerMock.Object,
             dtoServiceMock.Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            logger ?? NullLogger<TrendingMoviesWidget>.Instance);
     }
 
     // -------------------------------------------------------------------------
@@ -184,11 +188,13 @@ public sealed class ConnectedWidgetBaseTests
             .Callback<IReadOnlyList<BaseItem>, DtoOptions, User, BaseItem>((items, _, _, _) => capturedItems = items)
             .Returns([]);
 
+        var loggerMock = new Mock<ILogger<TrendingMoviesWidget>>();
         var widget = BuildWidget(
             [new TMDbMovie { Id = 1, Title = "Gone", LibraryItemId = deletedId }],
             userManagerMock,
             libraryManagerMock,
-            dtoServiceMock);
+            dtoServiceMock,
+            loggerMock.Object);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20 },
@@ -199,6 +205,17 @@ public sealed class ConnectedWidgetBaseTests
         Assert.Equal(1, result.TotalRecordCount);
         Assert.NotNull(capturedItems);
         Assert.Empty(capturedItems!);
+
+        // The unresolved cached item (Phase 4.2 of TODO_V2.md) must surface as an aggregated debug
+        // log, not silently vanish.
+        loggerMock.Verify(
+            l => l.Log(
+                LogLevel.Debug,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Fact]

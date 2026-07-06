@@ -2,6 +2,7 @@ using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Library;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 
@@ -18,12 +19,14 @@ public sealed class AiringTodayShowsWidget : ConnectedWidgetBase<TMDbShow>
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
     /// <param name="cacheService">TMDb disk cache service.</param>
+    /// <param name="logger">Logger.</param>
     public AiringTodayShowsWidget(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ITMDbCacheService cacheService)
-        : base(userManager, libraryManager, dtoService, cacheService)
+        ITMDbCacheService cacheService,
+        ILogger<AiringTodayShowsWidget> logger)
+        : base(userManager, libraryManager, dtoService, cacheService, logger)
     {
     }
 

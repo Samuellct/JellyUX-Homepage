@@ -4,6 +4,7 @@ using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Library;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -33,7 +34,8 @@ public sealed class ConnectedWidgetsTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object);
+            new Mock<ITMDbCacheService>().Object,
+            NullLogger<TrendingShowsWidget>.Instance);
 
         var d = widget.GetDescriptor();
 
@@ -56,7 +58,8 @@ public sealed class ConnectedWidgetsTests
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            NullLogger<TrendingShowsWidget>.Instance);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20 },
@@ -78,7 +81,8 @@ public sealed class ConnectedWidgetsTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object);
+            new Mock<ITMDbCacheService>().Object,
+            NullLogger<TopRatedMoviesWidget>.Instance);
 
         var d = widget.GetDescriptor();
 
@@ -100,7 +104,8 @@ public sealed class ConnectedWidgetsTests
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            NullLogger<TopRatedMoviesWidget>.Instance);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20 },
@@ -122,7 +127,8 @@ public sealed class ConnectedWidgetsTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object);
+            new Mock<ITMDbCacheService>().Object,
+            NullLogger<TopRatedShowsWidget>.Instance);
 
         var d = widget.GetDescriptor();
 
@@ -143,7 +149,8 @@ public sealed class ConnectedWidgetsTests
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            NullLogger<TopRatedShowsWidget>.Instance);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20 },
@@ -165,7 +172,8 @@ public sealed class ConnectedWidgetsTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object);
+            new Mock<ITMDbCacheService>().Object,
+            NullLogger<NowPlayingMoviesWidget>.Instance);
 
         var d = widget.GetDescriptor();
 
@@ -186,7 +194,8 @@ public sealed class ConnectedWidgetsTests
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            NullLogger<NowPlayingMoviesWidget>.Instance);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20 },
@@ -208,7 +217,8 @@ public sealed class ConnectedWidgetsTests
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object);
+            new Mock<ITMDbCacheService>().Object,
+            NullLogger<AiringTodayShowsWidget>.Instance);
 
         var d = widget.GetDescriptor();
 
@@ -230,7 +240,8 @@ public sealed class ConnectedWidgetsTests
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object,
-            cacheServiceMock.Object);
+            cacheServiceMock.Object,
+            NullLogger<AiringTodayShowsWidget>.Instance);
 
         var result = await widget.GetItemsAsync(
             new WidgetPayload { UserId = Guid.NewGuid(), Limit = 20 },
