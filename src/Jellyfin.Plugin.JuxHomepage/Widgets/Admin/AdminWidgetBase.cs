@@ -72,7 +72,12 @@ public abstract class AdminWidgetBase : IWidget
 
     /// <summary>
     /// Gets the item types to include in the query.
-    /// Override and return <see langword="null"/> to include all item types (e.g. for collections).
+    /// Override and return <see langword="null"/> to include all item types (e.g. for collections,
+    /// see <see cref="CollectionWidget"/>, whose items are filtered by ancestor/BoxSet linkage
+    /// instead). Nullable here because an admin-chosen filter value (a specific genre, actor, etc.)
+    /// can meaningfully apply across every item type; contrast with
+    /// <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.Personalized.PersonalizedWidgetBase.IncludeItemTypes"/>,
+    /// which is never null since a personalized recommendation always needs a concrete type constraint.
     /// </summary>
     protected virtual BaseItemKind[]? IncludeItemTypes => [BaseItemKind.Movie, BaseItemKind.Series];
 

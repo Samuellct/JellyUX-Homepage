@@ -8,8 +8,11 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets;
 /// Orchestrates widget execution for the JellyUX home screen.
 /// <para>
 /// <see cref="GetWidgetsForUser"/> resolves the widget layout for a user (merging global config
-/// with per-user overrides), runs all widgets in parallel, applies MinItems filtering, and caches
-/// the resulting descriptor list in <see cref="SessionCache"/>.
+/// with per-user overrides), applies MinItems filtering, and caches the resulting descriptor list
+/// in <see cref="SessionCache"/>. Parallelism is at the granularity of one configured widget row at
+/// a time (<c>BuildDescriptors</c> runs one task per row via <c>Task.WhenAll</c>) -- instances
+/// produced by a single row's fan-out (e.g. a personalized widget's several scored-value sections)
+/// are resolved sequentially within that row's task, not in parallel with each other.
 /// </para>
 /// <para>
 /// <see cref="GetWidgetItems"/> fetches items for a specific widget on demand (called per section
@@ -137,7 +140,7 @@ public sealed class WidgetService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Widget '{WidgetType}' threw an exception during GetWidgetItems.", widgetType);
+            _logger.LogError(ex, "Widget '{WidgetType}' threw an exception during GetWidgetItems for user {UserId}.", widgetType, userId);
             return WidgetResult.Empty;
         }
     }
@@ -199,8 +202,9 @@ public sealed class WidgetService
         if (widget is null)
         {
             _logger.LogDebug(
-                "Widget type '{WidgetType}' is configured but not registered — skipping.",
-                config.WidgetType);
+                "Widget type '{WidgetType}' is configured but not registered - skipping (user {UserId}).",
+                config.WidgetType,
+                userId);
             return [];
         }
 
@@ -215,8 +219,9 @@ public sealed class WidgetService
         {
             _logger.LogError(
                 ex,
-                "Widget '{WidgetType}' threw an exception during layout build — skipping.",
-                config.WidgetType);
+                "Widget '{WidgetType}' threw an exception during layout build for user {UserId} - skipping.",
+                config.WidgetType,
+                userId);
             return [];
         }
 
@@ -277,18 +282,20 @@ public sealed class WidgetService
         {
             _logger.LogError(
                 ex,
-                "Widget '{WidgetType}' threw an exception during layout build — skipping.",
-                config.WidgetType);
+                "Widget '{WidgetType}' threw an exception during layout build for user {UserId} - skipping.",
+                config.WidgetType,
+                userId);
             return null;
         }
 
         if (result.TotalRecordCount < config.MinItems)
         {
             _logger.LogDebug(
-                "Widget '{WidgetType}' has {Count} items (MinItems={Min}) — excluded from layout.",
+                "Widget '{WidgetType}' has {Count} items (MinItems={Min}) for user {UserId} - excluded from layout.",
                 config.WidgetType,
                 result.TotalRecordCount,
-                config.MinItems);
+                config.MinItems,
+                userId);
             return null;
         }
 

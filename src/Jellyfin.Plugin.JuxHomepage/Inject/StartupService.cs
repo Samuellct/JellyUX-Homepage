@@ -10,7 +10,7 @@ namespace Jellyfin.Plugin.JuxHomepage.Inject;
 /// <summary>
 /// Scheduled task that runs at server startup to register web transformations
 /// and detect required Jellyfin assets.
-/// Auto-discovered by Jellyfin — not registered in DI.
+/// Auto-discovered by Jellyfin - not registered in DI.
 /// </summary>
 public class StartupService : IScheduledTask
 {

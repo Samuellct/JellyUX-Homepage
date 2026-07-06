@@ -68,41 +68,41 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
                 .CreateLogger<WidgetRegistry>();
 
             // Register native widgets in display order before loading external DLL widgets.
-            RegisterNativeWidget<ContinueWatchingWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<NextUpWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<RecentlyAddedMoviesWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<RecentlyAddedShowsWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<MyMediaWidget>(registry, serviceProvider, logger);
+            RegisterWidget<ContinueWatchingWidget>(registry, serviceProvider, logger);
+            RegisterWidget<NextUpWidget>(registry, serviceProvider, logger);
+            RegisterWidget<RecentlyAddedMoviesWidget>(registry, serviceProvider, logger);
+            RegisterWidget<RecentlyAddedShowsWidget>(registry, serviceProvider, logger);
+            RegisterWidget<MyMediaWidget>(registry, serviceProvider, logger);
 
             // Register admin widgets. These have no default WidgetConfig rows; the admin
             // adds instances explicitly via the configuration page.
-            RegisterNativeWidget<GenreWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<ActorWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<DirectorWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<StudioWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<CollectionWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<TagWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<YearWidget>(registry, serviceProvider, logger);
+            RegisterWidget<GenreWidget>(registry, serviceProvider, logger);
+            RegisterWidget<ActorWidget>(registry, serviceProvider, logger);
+            RegisterWidget<DirectorWidget>(registry, serviceProvider, logger);
+            RegisterWidget<StudioWidget>(registry, serviceProvider, logger);
+            RegisterWidget<CollectionWidget>(registry, serviceProvider, logger);
+            RegisterWidget<TagWidget>(registry, serviceProvider, logger);
+            RegisterWidget<YearWidget>(registry, serviceProvider, logger);
 
             // Register personalized widgets. Like admin widgets, these have no default
             // WidgetConfig rows; the admin adds instances explicitly via the configuration page.
             // Unlike admin widgets, the section's value is computed per user from ScoringService
             // rather than chosen by the admin.
-            RegisterNativeWidget<FavoriteGenreWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<FavoriteActorWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<FavoriteDirectorWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<BecauseYouWatchedWidget>(registry, serviceProvider, logger);
+            RegisterWidget<FavoriteGenreWidget>(registry, serviceProvider, logger);
+            RegisterWidget<FavoriteActorWidget>(registry, serviceProvider, logger);
+            RegisterWidget<FavoriteDirectorWidget>(registry, serviceProvider, logger);
+            RegisterWidget<BecauseYouWatchedWidget>(registry, serviceProvider, logger);
 
             // Register connected widgets. Like admin/personalized widgets, these have no default
             // WidgetConfig rows; the admin adds instances explicitly via the configuration page.
             // Each displays TMDb data cross-referenced against the local library by ITMDbCacheService.
-            RegisterNativeWidget<TrendingMoviesWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<TrendingShowsWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<AiringTodayShowsWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<TopRatedMoviesWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<TopRatedShowsWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<NowPlayingMoviesWidget>(registry, serviceProvider, logger);
-            RegisterNativeWidget<DiscoverMoviesWidget>(registry, serviceProvider, logger);
+            RegisterWidget<TrendingMoviesWidget>(registry, serviceProvider, logger);
+            RegisterWidget<TrendingShowsWidget>(registry, serviceProvider, logger);
+            RegisterWidget<AiringTodayShowsWidget>(registry, serviceProvider, logger);
+            RegisterWidget<TopRatedMoviesWidget>(registry, serviceProvider, logger);
+            RegisterWidget<TopRatedShowsWidget>(registry, serviceProvider, logger);
+            RegisterWidget<NowPlayingMoviesWidget>(registry, serviceProvider, logger);
+            RegisterWidget<DiscoverMoviesWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
             var pluginDir = Path.Combine(
@@ -151,7 +151,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         });
     }
 
-    private static void RegisterNativeWidget<TWidget>(
+    private static void RegisterWidget<TWidget>(
         WidgetRegistry registry,
         IServiceProvider serviceProvider,
         ILogger logger)
@@ -161,11 +161,11 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         {
             var widget = (IWidget)ActivatorUtilities.CreateInstance(serviceProvider, typeof(TWidget));
             registry.Register(widget);
-            logger.LogInformation("Registered native widget '{WidgetType}'.", widget.WidgetType);
+            logger.LogInformation("Registered widget '{WidgetType}'.", widget.WidgetType);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to register native widget {Type}.", typeof(TWidget).Name);
+            logger.LogError(ex, "Failed to register widget {Type}.", typeof(TWidget).Name);
         }
     }
 }

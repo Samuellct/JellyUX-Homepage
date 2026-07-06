@@ -89,7 +89,10 @@ public abstract class PersonalizedWidgetBase : IWidget
     public virtual int MaxInstances => 3;
 
     /// <summary>
-    /// Gets the item types to include in the recommendation query.
+    /// Gets the item types to include in the recommendation query. Never null, unlike
+    /// <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.Admin.AdminWidgetBase.IncludeItemTypes"/> --
+    /// a personalized recommendation always needs a concrete type constraint (there is no
+    /// "recommend across every type" case here, as there is for an admin-chosen filter value).
     /// </summary>
     protected virtual BaseItemKind[] IncludeItemTypes => [BaseItemKind.Movie, BaseItemKind.Series];
 

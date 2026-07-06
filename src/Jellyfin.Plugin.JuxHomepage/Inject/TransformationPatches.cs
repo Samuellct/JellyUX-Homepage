@@ -28,7 +28,7 @@ public static class TransformationPatches
 
     /// <summary>
     /// Injects the JellyUX CSS link and JS script tags into Jellyfin's index.html.
-    /// Called by FileTransformation via reflection — must remain public and static.
+    /// Called by FileTransformation via reflection - must remain public and static.
     /// </summary>
     /// <param name="content">Payload containing the raw index.html contents.</param>
     /// <returns>Transformed HTML with JUX resources injected.</returns>
@@ -49,7 +49,7 @@ public static class TransformationPatches
     /// Patches the Jellyfin home chunk.js to override loadSections with JUX rendering.
     /// Splices the embedded inject fragment at the ",loadSections:" site, capturing the
     /// minified in-scope modules into window.JellyfinAPI and delegating to window.JUXHomepage.
-    /// Called by FileTransformation via reflection — must remain public and static.
+    /// Called by FileTransformation via reflection - must remain public and static.
     /// </summary>
     /// <param name="content">Payload containing the raw chunk.js contents.</param>
     /// <returns>Transformed JS with loadSections overridden.</returns>
