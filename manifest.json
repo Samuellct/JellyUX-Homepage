@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "1.2.0.0",
+                "changelog": "### Features\n\n* introduce IFileSystem abstraction for testable file access ([7e9fca9](https://github.com/Samuellct/JellyUX-Homepage/commit/7e9fca920319f7325727a8bd33de0b553e9f4a8f))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v1.2.0/jellyux-homepage_1.2.0.0.zip",
+                "checksum": "1fe8047847fa932687ac4bc4b63a56f2",
+                "timestamp": "2026-07-06T13:40:14Z"
+            },
+            {
                 "version": "1.1.0.0",
                 "changelog": "### Features\n\n* add SchemaVersion field and migration hook to configuration models ([18b72bd](https://github.com/Samuellct/JellyUX-Homepage/commit/18b72bd354af70d7ff9c96d9b33fc9e8f9ccef04))\n\n### Bug Fixes\n\n* validate configuration on load, not only on admin save ([383a8ef](https://github.com/Samuellct/JellyUX-Homepage/commit/383a8ef6c97596cadfedfda84fd8722996aa9a09))\n* write user configuration atomically to avoid partial writes on crash ([62959c9](https://github.com/Samuellct/JellyUX-Homepage/commit/62959c9c88728613e51b7cf87dcbb313888f18fe))",
                 "targetAbi": "10.11.0.0",

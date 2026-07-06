@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.1.0...v1.2.0) (2026-07-06)
+
+### Features
+
+* introduce IFileSystem abstraction for testable file access ([7e9fca9](https://github.com/Samuellct/JellyUX-Homepage/commit/7e9fca920319f7325727a8bd33de0b553e9f4a8f))
+
 ## [1.1.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.0.2...v1.1.0) (2026-07-06)
 
 ### Features
