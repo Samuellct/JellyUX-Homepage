@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "1.5.1.0",
+                "changelog": "### Bug Fixes\n\n* move plugin data directories out of Jellyfin's scanned plugins tree ([96f0a76](https://github.com/Samuellct/JellyUX-Homepage/commit/96f0a761d777d9e95c382605c4269e78eb0bb4ff))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v1.5.1/jellyux-homepage_1.5.1.0.zip",
+                "checksum": "1ba666d6c767040e118053338edcc7d0",
+                "timestamp": "2026-07-07T23:10:55Z"
+            },
+            {
                 "version": "1.5.0.0",
                 "changelog": "### Features\n\n* surface external widget-pack load failures in the admin config page ([0a1548a](https://github.com/Samuellct/JellyUX-Homepage/commit/0a1548a631dd30d4da101083f9821fa8c044f7bc))\n\n### Bug Fixes\n\n* scope external widget-pack loading to a dedicated folder with actionable errors ([479f748](https://github.com/Samuellct/JellyUX-Homepage/commit/479f74824227ee14e5ffd525ebb19a5d47d2146c))",
                 "targetAbi": "10.11.0.0",

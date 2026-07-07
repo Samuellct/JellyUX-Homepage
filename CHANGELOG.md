@@ -1,3 +1,9 @@
+## [1.5.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.5.0...v1.5.1) (2026-07-07)
+
+### Bug Fixes
+
+* move plugin data directories out of Jellyfin's scanned plugins tree ([96f0a76](https://github.com/Samuellct/JellyUX-Homepage/commit/96f0a761d777d9e95c382605c4269e78eb0bb4ff))
+
 ## [1.5.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.4.0...v1.5.0) (2026-07-07)
 
 ### Features
