@@ -1,3 +1,13 @@
+## [1.5.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.4.0...v1.5.0) (2026-07-07)
+
+### Features
+
+* surface external widget-pack load failures in the admin config page ([0a1548a](https://github.com/Samuellct/JellyUX-Homepage/commit/0a1548a631dd30d4da101083f9821fa8c044f7bc))
+
+### Bug Fixes
+
+* scope external widget-pack loading to a dedicated folder with actionable errors ([479f748](https://github.com/Samuellct/JellyUX-Homepage/commit/479f74824227ee14e5ffd525ebb19a5d47d2146c))
+
 ## [1.4.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.3.1...v1.4.0) (2026-07-06)
 
 ### Features

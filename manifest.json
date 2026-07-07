@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "1.5.0.0",
+                "changelog": "### Features\n\n* surface external widget-pack load failures in the admin config page ([0a1548a](https://github.com/Samuellct/JellyUX-Homepage/commit/0a1548a631dd30d4da101083f9821fa8c044f7bc))\n\n### Bug Fixes\n\n* scope external widget-pack loading to a dedicated folder with actionable errors ([479f748](https://github.com/Samuellct/JellyUX-Homepage/commit/479f74824227ee14e5ffd525ebb19a5d47d2146c))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v1.5.0/jellyux-homepage_1.5.0.0.zip",
+                "checksum": "7ff90d08ea9960c9cd2718a69b5fe718",
+                "timestamp": "2026-07-07T22:31:57Z"
+            },
+            {
                 "version": "1.4.0.0",
                 "changelog": "### Features\n\n* log unresolved cached library items in ConnectedWidgetBase ([e0ac15c](https://github.com/Samuellct/JellyUX-Homepage/commit/e0ac15cf68d248d1eb847309896409068a0c480d))\n\n### Bug Fixes\n\n* improve logging context and minor code quality cleanups ([77f3328](https://github.com/Samuellct/JellyUX-Homepage/commit/77f332851feca5a63212248a35c8de4a982509fc))",
                 "targetAbi": "10.11.0.0",
