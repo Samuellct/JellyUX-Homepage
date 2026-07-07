@@ -121,9 +121,7 @@ public sealed class WidgetService
         // Discover instance's filter parameters) so on-demand section fetches honor the same
         // settings as the layout probe.
         var configRow = ResolveConfigRow(widgetType, additionalData);
-        IReadOnlyDictionary<string, string>? extra = configRow is not null && configRow.ExtraParams.Length > 0
-            ? configRow.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
-            : null;
+        var extra = configRow?.GetExtraParamsDictionary();
 
         var payload = new WidgetPayload
         {
@@ -346,10 +344,8 @@ public sealed class WidgetService
         string? lang,
         ILocalizationService localizationService)
     {
-        IReadOnlyDictionary<string, string>? extra = config.ExtraParams.Length > 0
-            ? config.ExtraParams.ToDictionary(p => p.Key, p => p.Value)
-            : null;
-        string? additionalData = extra is not null && extra.TryGetValue("value", out var v) ? v : null;
+        var extra = config.GetExtraParamsDictionary();
+        extra.TryGetValue("value", out var additionalData);
         return new WidgetInstanceConfig
         {
             DisplayName = config.CustomDisplayName ?? localizationService.Translate(widget.WidgetType, lang),

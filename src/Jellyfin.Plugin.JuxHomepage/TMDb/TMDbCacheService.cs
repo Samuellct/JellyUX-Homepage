@@ -233,7 +233,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
 
             foreach (var row in discoverRows)
             {
-                var extra = row.ExtraParams.ToDictionary(p => p.Key, p => p.Value);
+                var extra = row.GetExtraParamsDictionary();
                 if (!extra.TryGetValue("value", out var instanceId) || string.IsNullOrEmpty(instanceId))
                 {
                     continue;
