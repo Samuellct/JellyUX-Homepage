@@ -1,4 +1,3 @@
-using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.IO;
@@ -105,47 +104,18 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterWidget<DiscoverMoviesWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
-            var pluginDir = Path.Combine(
+
+            // Discover and register IWidget implementations from external DLLs placed in a dedicated
+            // widget-pack directory (not recursive: this must not descend into unrelated
+            // subdirectories such as cache/tmdb/, which lives under the same plugin configuration
+            // root). This allows third-party widget packs without modifying the core plugin. See
+            // WidgetPackLoader for the security posture of this mechanism.
+            var packDir = Path.Combine(
                 applicationPaths.PluginConfigurationsPath,
-                "Jellyfin.Plugin.JuxHomepage");
-
-            Directory.CreateDirectory(pluginDir);
-
-            // Discover and register IWidget implementations from external DLLs placed in the
-            // plugin configuration directory. This allows third-party widget packs without
-            // modifying the core plugin.
-            foreach (var dllPath in Directory.GetFiles(pluginDir, "*.dll", SearchOption.AllDirectories))
-            {
-                try
-                {
-                    var assembly = Assembly.LoadFile(dllPath);
-                    foreach (var type in assembly.GetTypes()
-                        .Where(t => !t.IsAbstract && !t.IsInterface && t.IsAssignableTo(typeof(IWidget))))
-                    {
-                        try
-                        {
-                            var widget = (IWidget)ActivatorUtilities.CreateInstance(serviceProvider, type);
-                            registry.Register(widget);
-                            logger.LogInformation(
-                                "Registered external widget '{WidgetType}' from {Dll}.",
-                                widget.WidgetType,
-                                Path.GetFileName(dllPath));
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogError(
-                                ex,
-                                "Failed to register widget type {Type} from {Dll}.",
-                                type.FullName,
-                                Path.GetFileName(dllPath));
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to load external widget DLL: {Dll}.", dllPath);
-                }
-            }
+                "Jellyfin.Plugin.JuxHomepage",
+                "widget-packs");
+            var loadErrors = WidgetPackLoader.LoadInto(registry, serviceProvider, packDir, logger);
+            registry.SetLoadErrors(loadErrors);
 
             return registry;
         });
