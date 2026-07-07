@@ -74,16 +74,6 @@ public sealed class TagWidget : AdminWidgetBase
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
-        if (!string.IsNullOrEmpty(search))
-        {
-            allTags = allTags.Where(t => t.Contains(search, StringComparison.OrdinalIgnoreCase));
-        }
-
-        return allTags
-            .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
-            .Take(MaxReturnedTags)
-            .Select(t => new AdminWidgetValue(t, t))
-            .ToList()
-            .AsReadOnly();
+        return FilterAndProject(allTags, search, MaxReturnedTags);
     }
 }

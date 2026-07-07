@@ -104,6 +104,38 @@ public abstract class AdminWidgetBase : IWidget
     /// <returns>A list of <see cref="AdminWidgetValue"/> options.</returns>
     public abstract IReadOnlyList<AdminWidgetValue> GetAvailableValues(User user, string? search);
 
+    /// <summary>
+    /// Filters a list of candidate value names by an optional case-insensitive substring search,
+    /// sorts them alphabetically (case-insensitive), optionally truncates to <paramref name="take"/>
+    /// results, and projects each into an <see cref="AdminWidgetValue"/>. Shared by
+    /// <see cref="GetAvailableValues"/> implementations whose values are plain, already-distinct
+    /// names (<see cref="GenreWidget"/>, <see cref="StudioWidget"/>,
+    /// <see cref="TagWidget"/>). <see cref="YearWidget"/> does not use this helper: its
+    /// filter (prefix match, case-sensitive) and sort (numeric, descending) are intentionally
+    /// different, not a copy-paste duplicate of this pattern.
+    /// </summary>
+    /// <param name="names">The candidate value names.</param>
+    /// <param name="search">Optional case-insensitive substring filter.</param>
+    /// <param name="take">Optional maximum number of results to return, applied after filtering/sorting.</param>
+    /// <returns>The filtered, sorted, and projected list of values.</returns>
+    protected static IReadOnlyList<AdminWidgetValue> FilterAndProject(
+        IEnumerable<string> names,
+        string? search,
+        int? take = null)
+    {
+        var filtered = names
+            .Where(name => string.IsNullOrEmpty(search)
+                || name.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase);
+
+        var limited = take.HasValue ? filtered.Take(take.Value) : filtered;
+
+        return limited
+            .Select(name => new AdminWidgetValue(name, name))
+            .ToList()
+            .AsReadOnly();
+    }
+
     /// <inheritdoc/>
     public Task<WidgetResult> GetItemsAsync(WidgetPayload payload, CancellationToken cancellationToken)
     {

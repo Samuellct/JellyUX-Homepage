@@ -51,6 +51,12 @@ public sealed class YearWidget : AdminWidgetBase
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Deliberately not built on <see cref="AdminWidgetBase.FilterAndProject"/>: years are matched by
+    /// case-sensitive ordinal prefix (not substring, case-insensitive) and sorted numerically
+    /// descending (not alphabetically ascending), so folding this into the shared helper would change
+    /// real behavior, not just remove duplication.
+    /// </remarks>
     public override IReadOnlyList<AdminWidgetValue> GetAvailableValues(User user, string? search)
     {
         // Aggregate distinct production years from a bounded item query.

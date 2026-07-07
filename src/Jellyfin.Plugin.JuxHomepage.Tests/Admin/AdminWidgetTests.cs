@@ -1,7 +1,12 @@
+using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Querying;
 using Moq;
 using Xunit;
 
@@ -195,5 +200,58 @@ public sealed class AdminWidgetTests
 
         var single = Assert.Single(instances);
         Assert.Same(widget, single);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetAvailableValues tests (AdminWidgetBase.FilterAndProject, Phase 5.3)
+    // -------------------------------------------------------------------------
+
+    // StudioWidget is not covered by a separate test: it shares the exact same
+    // FilterAndProject code path as GenreWidget (see Phase 2 test triage, TODO_V2.md).
+    [Fact]
+    public void Genre_GetAvailableValues_FiltersAndSortsCaseInsensitively()
+    {
+        var libraryManager = new Mock<ILibraryManager>();
+        libraryManager
+            .Setup(m => m.GetGenres(It.IsAny<InternalItemsQuery>()))
+            .Returns(new QueryResult<(BaseItem Item, ItemCounts ItemCounts)>(
+            [
+                (new Genre { Name = "Comedy" }, new ItemCounts()),
+                (new Genre { Name = "Action" }, new ItemCounts()),
+                (new Genre { Name = "Sci-Fi Comedy" }, new ItemCounts())
+            ]));
+
+        var widget = new GenreWidget(
+            new Mock<IUserManager>().Object,
+            libraryManager.Object,
+            new Mock<IDtoService>().Object);
+
+        var values = widget.GetAvailableValues(new User("test", "Default", "Default"), "COM");
+
+        Assert.Equal(2, values.Count);
+        Assert.Equal("Comedy", values[0].Value);
+        Assert.Equal("Sci-Fi Comedy", values[1].Value);
+    }
+
+    [Fact]
+    public void Tag_GetAvailableValues_RespectsMaxReturnedTags()
+    {
+        var libraryManager = new Mock<ILibraryManager>();
+        var items = Enumerable.Range(0, 250)
+            .Select(i => (BaseItem)new Movie { Tags = [$"tag{i:000}"] })
+            .ToList();
+
+        libraryManager
+            .Setup(m => m.GetItemsResult(It.IsAny<InternalItemsQuery>()))
+            .Returns(new QueryResult<BaseItem>(items));
+
+        var widget = new TagWidget(
+            new Mock<IUserManager>().Object,
+            libraryManager.Object,
+            new Mock<IDtoService>().Object);
+
+        var values = widget.GetAvailableValues(new User("test", "Default", "Default"), null);
+
+        Assert.Equal(200, values.Count);
     }
 }

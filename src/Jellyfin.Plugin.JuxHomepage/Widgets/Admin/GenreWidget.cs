@@ -53,13 +53,6 @@ public sealed class GenreWidget : AdminWidgetBase
             Recursive = true
         });
 
-        return result.Items
-            .Select(x => x.Item1.Name)
-            .Where(name => string.IsNullOrEmpty(search)
-                || name.Contains(search, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-            .Select(name => new AdminWidgetValue(name, name))
-            .ToList()
-            .AsReadOnly();
+        return FilterAndProject(result.Items.Select(x => x.Item1.Name), search);
     }
 }
