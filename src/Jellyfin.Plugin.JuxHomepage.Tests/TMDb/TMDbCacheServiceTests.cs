@@ -23,7 +23,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
         int refreshIntervalHours = 24)
     {
         var applicationPathsMock = new Mock<IApplicationPaths>();
-        applicationPathsMock.Setup(p => p.PluginConfigurationsPath).Returns(_tempDir);
+        applicationPathsMock.Setup(p => p.DataPath).Returns(_tempDir);
 
         return new TMDbCacheService(
             applicationPathsMock.Object,
@@ -36,7 +36,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
     private TMDbCacheService BuildServiceWithWidgets(ITMDbApiClient apiClient, ILibraryManager libraryManager, WidgetConfig[] widgets)
     {
         var applicationPathsMock = new Mock<IApplicationPaths>();
-        applicationPathsMock.Setup(p => p.PluginConfigurationsPath).Returns(_tempDir);
+        applicationPathsMock.Setup(p => p.DataPath).Returns(_tempDir);
 
         return new TMDbCacheService(
             applicationPathsMock.Object,

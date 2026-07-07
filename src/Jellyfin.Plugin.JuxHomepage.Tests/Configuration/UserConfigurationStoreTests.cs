@@ -126,7 +126,7 @@ public sealed class UserConfigurationStoreTests : IDisposable
     private UserConfigurationStore BuildStore(IFileSystem fileSystem)
     {
         var applicationPathsMock = new Mock<IApplicationPaths>();
-        applicationPathsMock.Setup(p => p.PluginConfigurationsPath).Returns(_tempDir);
+        applicationPathsMock.Setup(p => p.DataPath).Returns(_tempDir);
 
         return new UserConfigurationStore(
             applicationPathsMock.Object,

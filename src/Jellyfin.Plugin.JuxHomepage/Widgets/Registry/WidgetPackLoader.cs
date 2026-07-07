@@ -18,6 +18,18 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets;
 /// process/WASM host -- out of scope at the current single-author scale, and accepted as a risk until
 /// a real third-party widget pack ecosystem becomes a concrete goal (see Audit_after_v1.md).
 /// </para>
+/// <para>
+/// <b>Directory placement is load-bearing, not cosmetic.</b> The <c>packDirectory</c> argument to
+/// <see cref="LoadInto"/> must never be rooted under
+/// <see cref="MediaBrowser.Common.Configuration.IApplicationPaths.PluginConfigurationsPath"/> --
+/// that path lives inside Jellyfin's own <c>/config/plugins</c> tree, which the core
+/// <c>PluginManager</c> scans recursively (any <c>*.dll</c> anywhere under any top-level subdirectory,
+/// including <c>configurations/</c>) and treats as belonging to a candidate plugin. A malformed DLL
+/// placed there once caused Jellyfin's core plugin manager to disable and wipe the entire
+/// <c>configurations</c> directory tree at the next restart, destroying unrelated plugin data (TMDb
+/// cache, per-user overrides) that happened to live alongside it. Always root this directory under
+/// <see cref="MediaBrowser.Common.Configuration.IApplicationPaths.DataPath"/> instead.
+/// </para>
 /// </summary>
 public static class WidgetPackLoader
 {

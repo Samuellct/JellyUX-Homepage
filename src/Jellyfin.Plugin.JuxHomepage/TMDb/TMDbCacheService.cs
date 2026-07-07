@@ -14,7 +14,10 @@ namespace Jellyfin.Plugin.JuxHomepage.TMDb;
 
 /// <summary>
 /// Reads and refreshes the on-disk TMDb data cache under
-/// <c>PluginConfigurationsPath/Jellyfin.Plugin.JuxHomepage/cache/tmdb/</c>.
+/// <c>DataPath/Jellyfin.Plugin.JuxHomepage/cache/tmdb/</c>. Deliberately under <c>DataPath</c> rather
+/// than <c>PluginConfigurationsPath</c> (which lives inside Jellyfin's own <c>/config/plugins</c> tree,
+/// scanned by the core <c>PluginManager</c> for candidate plugin assemblies -- see
+/// <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.WidgetPackLoader"/> for the incident this avoids).
 /// Mirrors <see cref="Configuration.UserConfigurationStore"/>'s disk-persistence pattern:
 /// <c>System.Text.Json</c> serialization guarded by a <see cref="ReaderWriterLockSlim"/>.
 /// </summary>
@@ -34,7 +37,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="TMDbCacheService"/> class.
     /// </summary>
-    /// <param name="applicationPaths">Provides the plugin configurations directory path.</param>
+    /// <param name="applicationPaths">Provides the application data directory path.</param>
     /// <param name="apiClient">TMDb API client used to fetch fresh data during a refresh.</param>
     /// <param name="libraryManager">Jellyfin library manager, used to cross-reference cached items.</param>
     /// <param name="getConfiguration">
@@ -55,7 +58,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         _logger = logger;
 
         _cacheDir = Path.Combine(
-            applicationPaths.PluginConfigurationsPath,
+            applicationPaths.DataPath,
             "Jellyfin.Plugin.JuxHomepage",
             "cache",
             "tmdb");

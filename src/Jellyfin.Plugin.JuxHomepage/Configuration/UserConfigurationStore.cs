@@ -7,7 +7,11 @@ namespace Jellyfin.Plugin.JuxHomepage.Configuration;
 
 /// <summary>
 /// Reads and writes per-user <see cref="UserConfiguration"/> as JSON files on disk.
-/// Files are stored under <c>PluginConfigurationsPath/Jellyfin.Plugin.JuxHomepage/users/{userId}.json</c>.
+/// Files are stored under <c>DataPath/Jellyfin.Plugin.JuxHomepage/users/{userId}.json</c>. Deliberately
+/// under <c>DataPath</c> rather than <c>PluginConfigurationsPath</c> (which lives inside Jellyfin's own
+/// <c>/config/plugins</c> tree, scanned by the core <c>PluginManager</c> for candidate plugin
+/// assemblies -- see <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.WidgetPackLoader"/> for the
+/// incident this avoids).
 /// All file access is protected by a <see cref="ReaderWriterLockSlim"/> to allow concurrent reads
 /// while serializing writes.
 /// </summary>
@@ -27,7 +31,7 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
     /// <summary>
     /// Initializes a new instance of the <see cref="UserConfigurationStore"/> class.
     /// </summary>
-    /// <param name="applicationPaths">Provides the plugin configurations directory path.</param>
+    /// <param name="applicationPaths">Provides the application data directory path.</param>
     /// <param name="fileSystem">File system abstraction, for testability.</param>
     /// <param name="logger">Logger.</param>
     public UserConfigurationStore(
@@ -38,7 +42,7 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
         _fileSystem = fileSystem;
         _logger = logger;
         _usersDir = Path.Combine(
-            applicationPaths.PluginConfigurationsPath,
+            applicationPaths.DataPath,
             "Jellyfin.Plugin.JuxHomepage",
             "users");
 
