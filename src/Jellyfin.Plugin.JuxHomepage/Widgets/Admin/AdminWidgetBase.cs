@@ -126,7 +126,7 @@ public abstract class AdminWidgetBase : IWidget
             return Task.FromResult(WidgetResult.Empty);
         }
 
-        var dtoOptions = BuildDtoOptions();
+        var dtoOptions = WidgetDtoOptions.Standard();
         var query = new InternalItemsQuery(user)
         {
             Recursive = true,
@@ -157,26 +157,5 @@ public abstract class AdminWidgetBase : IWidget
         Category = Category,
         ViewMode = DefaultViewMode,
         MinItems = DefaultMinItems
-    };
-
-    /// <summary>
-    /// Builds a standard <see cref="DtoOptions"/> for admin widget queries.
-    /// Requests primary image aspect ratio, creation date, thumbnail, and backdrop images.
-    /// </summary>
-    /// <returns>A pre-configured <see cref="DtoOptions"/> instance.</returns>
-    protected static DtoOptions BuildDtoOptions() => new()
-    {
-        Fields =
-        [
-            ItemFields.PrimaryImageAspectRatio,
-            ItemFields.DateCreated
-        ],
-        ImageTypeLimit = 1,
-        ImageTypes =
-        [
-            ImageType.Primary,
-            ImageType.Thumb,
-            ImageType.Backdrop
-        ]
     };
 }

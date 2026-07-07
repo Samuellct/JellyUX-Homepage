@@ -149,7 +149,7 @@ public abstract class PersonalizedWidgetBase : IWidget
             return Task.FromResult(WidgetResult.Empty);
         }
 
-        var dtoOptions = BuildDtoOptions();
+        var dtoOptions = WidgetDtoOptions.Standard();
         var query = new InternalItemsQuery(user)
         {
             IncludeItemTypes = IncludeItemTypes,
@@ -201,25 +201,4 @@ public abstract class PersonalizedWidgetBase : IWidget
 
         return true;
     }
-
-    /// <summary>
-    /// Builds a standard <see cref="DtoOptions"/> for personalized widget queries.
-    /// Requests primary image aspect ratio, creation date, thumbnail, and backdrop images.
-    /// </summary>
-    /// <returns>A pre-configured <see cref="DtoOptions"/> instance.</returns>
-    protected static DtoOptions BuildDtoOptions() => new()
-    {
-        Fields =
-        [
-            ItemFields.PrimaryImageAspectRatio,
-            ItemFields.DateCreated
-        ],
-        ImageTypeLimit = 1,
-        ImageTypes =
-        [
-            ImageType.Primary,
-            ImageType.Thumb,
-            ImageType.Backdrop
-        ]
-    };
 }

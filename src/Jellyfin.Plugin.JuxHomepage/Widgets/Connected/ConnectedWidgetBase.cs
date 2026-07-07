@@ -122,7 +122,7 @@ public abstract class ConnectedWidgetBase<T> : IWidget
             return Task.FromResult(WidgetResult.Empty);
         }
 
-        var dtoOptions = BuildDtoOptions();
+        var dtoOptions = WidgetDtoOptions.Standard();
 
         // This is an in-memory id list (already resolved by the cache's cross-referencing), not a
         // live InternalItemsQuery, so pagination is a plain Skip/Take -- the same pattern
@@ -174,26 +174,5 @@ public abstract class ConnectedWidgetBase<T> : IWidget
         ViewMode = DefaultViewMode,
         Route = Route,
         MinItems = DefaultMinItems
-    };
-
-    /// <summary>
-    /// Builds a standard <see cref="DtoOptions"/> for connected widget queries.
-    /// Requests primary image aspect ratio, creation date, thumbnail, and backdrop images.
-    /// </summary>
-    /// <returns>A pre-configured <see cref="DtoOptions"/> instance.</returns>
-    protected static DtoOptions BuildDtoOptions() => new()
-    {
-        Fields =
-        [
-            ItemFields.PrimaryImageAspectRatio,
-            ItemFields.DateCreated
-        ],
-        ImageTypeLimit = 1,
-        ImageTypes =
-        [
-            ImageType.Primary,
-            ImageType.Thumb,
-            ImageType.Backdrop
-        ]
     };
 }

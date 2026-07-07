@@ -77,25 +77,4 @@ public abstract class NativeWidgetBase : IWidget
         Route = Route,
         MinItems = DefaultMinItems
     };
-
-    /// <summary>
-    /// Builds a standard <see cref="DtoOptions"/> for native widget queries.
-    /// Requests primary image aspect ratio, creation date, thumbnail, and backdrop images.
-    /// </summary>
-    /// <returns>A pre-configured <see cref="DtoOptions"/> instance.</returns>
-    protected static DtoOptions BuildDtoOptions() => new()
-    {
-        Fields =
-        [
-            ItemFields.PrimaryImageAspectRatio,
-            ItemFields.DateCreated
-        ],
-        ImageTypeLimit = 1,
-        ImageTypes =
-        [
-            ImageType.Primary,
-            ImageType.Thumb,
-            ImageType.Backdrop
-        ]
-    };
 }

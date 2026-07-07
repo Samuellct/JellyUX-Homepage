@@ -55,7 +55,7 @@ public sealed class NextUpWidget : NativeWidgetBase
             return Task.FromResult(WidgetResult.Empty);
         }
 
-        var dtoOptions = BuildDtoOptions();
+        var dtoOptions = WidgetDtoOptions.Standard();
 
         QueryResult<BaseItem> result = _tvSeriesManager.GetNextUp(
             new NextUpQuery

@@ -52,7 +52,7 @@ public sealed class ContinueWatchingWidget : NativeWidgetBase
             return Task.FromResult(WidgetResult.Empty);
         }
 
-        var dtoOptions = BuildDtoOptions();
+        var dtoOptions = WidgetDtoOptions.Standard();
 
         QueryResult<BaseItem> result = LibraryManager.GetItemsResult(new InternalItemsQuery(user)
         {

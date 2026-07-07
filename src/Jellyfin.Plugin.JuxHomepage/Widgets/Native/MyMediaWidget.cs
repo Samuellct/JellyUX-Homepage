@@ -57,7 +57,7 @@ public sealed class MyMediaWidget : NativeWidgetBase
             return Task.FromResult(WidgetResult.Empty);
         }
 
-        var dtoOptions = BuildDtoOptions();
+        var dtoOptions = WidgetDtoOptions.Standard();
 
         Folder[] folders = _userViewManager.GetUserViews(new UserViewQuery
         {
