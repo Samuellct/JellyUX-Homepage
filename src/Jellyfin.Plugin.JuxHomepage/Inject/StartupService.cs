@@ -199,9 +199,13 @@ public class StartupService : IScheduledTask
             return;
         }
 
+        var fragmentTemplate = TransformationPatches.LoadInjectFragmentTemplate();
+
         foreach (var chunkPath in chunks)
         {
             var fileName = Path.GetFileName(chunkPath);
+
+            WarnIfLoadSectionsHookHasDrifted(chunkPath, fileName, fragmentTemplate);
 
             // Build a regex pattern that matches the same chunk regardless of content-hash
             // e.g. "56213.a6cde3c8ba80d7030952.chunk.js" -> "56213\.[^.]+\.chunk\.js"
@@ -225,6 +229,41 @@ public class StartupService : IScheduledTask
                 fileName,
                 fileNamePattern,
                 chunkId);
+        }
+    }
+
+    /// <summary>
+    /// Runs a dry splice attempt against the detected chunk at startup so that a Jellyfin Web bundle
+    /// drift (the minified module self-reference no longer resolving) is surfaced as an explicit log
+    /// warning immediately, instead of silently falling back to native rendering and only being
+    /// noticed later when the home page fails to show JellyUX sections.
+    /// </summary>
+    private void WarnIfLoadSectionsHookHasDrifted(string chunkPath, string fileName, string? fragmentTemplate)
+    {
+        if (fragmentTemplate is null)
+        {
+            return;
+        }
+
+        string content;
+        try
+        {
+            content = _fileSystem.ReadAllText(chunkPath);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "Could not read chunk file for drift self-check: {File}", chunkPath);
+            return;
+        }
+
+        var outcome = TransformationPatches.TryPatchLoadSections(content, fragmentTemplate).Outcome;
+        if (outcome == LoadSectionsOutcome.HookNotFound)
+        {
+            _logger.LogWarning(
+                "Chunk {FileName} contains ',loadSections:' but the minified hook could not be resolved. "
+                + "Jellyfin Web may have drifted; the home page will fall back to native rendering. "
+                + "See CLAUDE.md 'Jellyfin Update Procedure'.",
+                fileName);
         }
     }
 }

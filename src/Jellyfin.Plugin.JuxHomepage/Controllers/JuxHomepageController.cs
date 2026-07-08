@@ -490,16 +490,27 @@ public class JuxHomepageController : ControllerBase
             .AsReadOnly();
     }
 
-    private int GetTMDbItemCount(TMDbCacheType type) => type switch
+    private int GetTMDbItemCount(TMDbCacheType type)
     {
-        TMDbCacheType.TrendingMovies => _tmdbCacheService.GetTrendingMovies().Count,
-        TMDbCacheType.TrendingShows => _tmdbCacheService.GetTrendingShows().Count,
-        TMDbCacheType.AiringToday => _tmdbCacheService.GetAiringToday().Count,
-        TMDbCacheType.TopRatedMovies => _tmdbCacheService.GetTopRatedMovies().Count,
-        TMDbCacheType.TopRatedShows => _tmdbCacheService.GetTopRatedShows().Count,
-        TMDbCacheType.NowPlayingMovies => _tmdbCacheService.GetNowPlayingMovies().Count,
-        _ => 0
-    };
+        switch (type)
+        {
+            case TMDbCacheType.TrendingMovies:
+                return _tmdbCacheService.GetTrendingMovies().Count;
+            case TMDbCacheType.TrendingShows:
+                return _tmdbCacheService.GetTrendingShows().Count;
+            case TMDbCacheType.AiringToday:
+                return _tmdbCacheService.GetAiringToday().Count;
+            case TMDbCacheType.TopRatedMovies:
+                return _tmdbCacheService.GetTopRatedMovies().Count;
+            case TMDbCacheType.TopRatedShows:
+                return _tmdbCacheService.GetTopRatedShows().Count;
+            case TMDbCacheType.NowPlayingMovies:
+                return _tmdbCacheService.GetNowPlayingMovies().Count;
+            default:
+                _logger.LogWarning("Unhandled TMDbCacheType {Type} in item-count switch; reporting 0.", type);
+                return 0;
+        }
+    }
 
     /// <summary>Plugin status metadata returned by /JuxHomepage/meta.</summary>
     /// <param name="Enabled">Whether the plugin is active.</param>
