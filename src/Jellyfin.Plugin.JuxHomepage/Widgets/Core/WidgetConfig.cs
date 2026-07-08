@@ -35,10 +35,21 @@ public sealed class WidgetConfig
     /// </summary>
     public string ViewMode { get; set; } = WidgetViewMode.Landscape;
 
-    /// <summary>Gets or sets the minimum number of instances to create for this widget type.</summary>
+    /// <summary>
+    /// Gets or sets the minimum number of instances to create for this widget type.
+    /// Retained for schema stability but no longer read by the widget engine as of TODO_V2.md
+    /// Phase 8: every row is now assigned a rank by <see cref="WidgetLayoutResolver"/>
+    /// instead (see <see cref="MaxInstances"/>).
+    /// </summary>
     public int MinInstances { get; set; } = 1;
 
-    /// <summary>Gets or sets the maximum number of instances to create for this widget type.</summary>
+    /// <summary>
+    /// Gets or sets the maximum number of instances to create for this widget type. Historically the
+    /// fan-out count passed to <see cref="IWidget.CreateInstances"/> for Personalized widgets; as of
+    /// TODO_V2.md Phase 8, every category's row is instead assigned a 1-indexed rank by
+    /// <see cref="WidgetLayoutResolver.BuildDescriptors"/>, so this field is no longer read by
+    /// the widget engine for any category. Retained on the model for schema stability.
+    /// </summary>
     public int MaxInstances { get; set; } = 1;
 
     /// <summary>Gets or sets optional extra parameters for widget-specific configuration.</summary>

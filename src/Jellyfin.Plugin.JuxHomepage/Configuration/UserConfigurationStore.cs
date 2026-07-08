@@ -3,6 +3,7 @@ using Jellyfin.Plugin.JuxHomepage.IO;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Logging;
 
+
 namespace Jellyfin.Plugin.JuxHomepage.Configuration;
 
 /// <summary>
@@ -67,7 +68,17 @@ public sealed class UserConfigurationStore : IUserConfigurationStore, IDisposabl
             }
 
             var json = _fileSystem.ReadAllText(path);
-            return JsonSerializer.Deserialize<UserConfiguration>(json);
+            var config = JsonSerializer.Deserialize<UserConfiguration>(json);
+
+            // Migrate in memory on read, mirroring PluginConfiguration's own migration timing (see
+            // Plugin.cs) -- the on-disk file is only corrected the next time this user's overrides
+            // are saved, not immediately.
+            if (config is not null)
+            {
+                Plugin.MigrateUserConfiguration(config);
+            }
+
+            return config;
         }
         catch (Exception ex)
         {

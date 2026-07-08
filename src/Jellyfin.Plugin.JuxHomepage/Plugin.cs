@@ -1,4 +1,6 @@
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.Widgets;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
@@ -15,7 +17,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     /// The current configuration schema version. See the "Configuration Schema Versioning" section
     /// in CLAUDE.md for the migration policy.
     /// </summary>
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 2;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -31,8 +33,18 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         // default-instance creation) immediately, so migration and validation apply on load, not
         // only when an admin saves from the dashboard (which previously left a hand-edited XML
         // file's invalid values in effect until the next save).
+        var priorSchemaVersion = Configuration.SchemaVersion;
         MigrateConfiguration(Configuration);
         ValidateConfiguration(Configuration);
+
+        // Migration restructures data (not just clamps values) -- persist immediately rather than
+        // waiting for the next admin save, so a hand-edited or pre-Phase-8 V1 config file on disk
+        // gets corrected right away instead of silently staying stale until someone opens the
+        // config page and saves.
+        if (Configuration.SchemaVersion != priorSchemaVersion)
+        {
+            SaveConfiguration();
+        }
     }
 
     /// <summary>
@@ -73,16 +85,80 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     }
 
     /// <summary>
-    /// Applies version-gated migrations to a loaded or newly-created configuration. Currently a
-    /// no-op: no schema change has shipped yet. Future phases (e.g. Phase 8's Personalized widget
-    /// rework) will add transformations here, keyed off <see cref="PluginConfiguration.SchemaVersion"/>,
-    /// then bump it to <see cref="CurrentSchemaVersion"/> once applied. See the "Configuration Schema
-    /// Versioning" section in CLAUDE.md.
+    /// Applies version-gated migrations to a loaded or newly-created configuration, keyed off
+    /// <see cref="PluginConfiguration.SchemaVersion"/>, then bumps it to
+    /// <see cref="CurrentSchemaVersion"/> once applied. See the "Configuration Schema Versioning"
+    /// section in CLAUDE.md.
     /// </summary>
     /// <param name="config">The configuration to migrate in place.</param>
     internal static void MigrateConfiguration(PluginConfiguration config)
     {
-        // No migration steps yet.
+        if (config.SchemaVersion < 2)
+        {
+            config.Widgets = ExplodePersonalizedFanOut(config.Widgets);
+            config.SchemaVersion = 2;
+        }
+    }
+
+    /// <summary>
+    /// Applies the same version-gated migrations as <see cref="MigrateConfiguration"/>, but to a
+    /// per-user configuration's <see cref="UserConfiguration.WidgetOverrides"/> -- per the
+    /// "Configuration Schema Versioning" policy in CLAUDE.md, any migration of widget configuration
+    /// rows must apply to both models identically.
+    /// </summary>
+    /// <param name="config">The user configuration to migrate in place.</param>
+    internal static void MigrateUserConfiguration(UserConfiguration config)
+    {
+        if (config.SchemaVersion < 2)
+        {
+            config.WidgetOverrides = ExplodePersonalizedFanOut(config.WidgetOverrides);
+            config.SchemaVersion = 2;
+        }
+    }
+
+    /// <summary>
+    /// V1-to-V2 migration step (TODO_V2.md Phase 8.4): explodes any Personalized widget row that
+    /// still has <c>MaxInstances &gt; 1</c> (the old fan-out setting) into that many independent
+    /// rows, one per instance, rather than silently losing the setting now that Personalized widgets
+    /// are single-instance ("1 row = 1 section", see <see cref="PersonalizedWidgetBase"/>).
+    /// The first copy keeps the original row's <see cref="WidgetConfig.CustomDisplayName"/> and
+    /// <see cref="WidgetConfig.ExtraParams"/>; subsequent copies start blank. Rows for other widget
+    /// categories, or Personalized rows already at <c>MaxInstances &lt;= 1</c>, pass through unchanged.
+    /// </summary>
+    /// <param name="widgets">The widget configuration rows to migrate.</param>
+    /// <returns>The migrated array of rows.</returns>
+    private static WidgetConfig[] ExplodePersonalizedFanOut(WidgetConfig[] widgets)
+    {
+        var result = new List<WidgetConfig>(widgets.Length);
+
+        foreach (var widget in widgets)
+        {
+            if (!PersonalizedWidgetTypes.All.Contains(widget.WidgetType) || widget.MaxInstances <= 1)
+            {
+                result.Add(widget);
+                continue;
+            }
+
+            for (var i = 0; i < widget.MaxInstances; i++)
+            {
+                result.Add(new WidgetConfig
+                {
+                    WidgetType = widget.WidgetType,
+                    CustomDisplayName = i == 0 ? widget.CustomDisplayName : null,
+                    Enabled = widget.Enabled,
+                    AllowUserOverride = widget.AllowUserOverride,
+                    Order = widget.Order + (i * 10),
+                    MinItems = widget.MinItems,
+                    MaxItems = widget.MaxItems,
+                    ViewMode = widget.ViewMode,
+                    MinInstances = 1,
+                    MaxInstances = 1,
+                    ExtraParams = i == 0 ? widget.ExtraParams : []
+                });
+            }
+        }
+
+        return result.ToArray();
     }
 
     /// <summary>

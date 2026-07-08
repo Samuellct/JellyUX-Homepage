@@ -106,11 +106,70 @@ public sealed class PluginValidationTests
     [Fact]
     public void MigrateConfiguration_NoOpForCurrentSchemaVersion_DoesNotThrow()
     {
-        var config = new PluginConfiguration { SchemaVersion = 1 };
+        var config = new PluginConfiguration { SchemaVersion = 2 };
 
         var exception = Record.Exception(() => Plugin.MigrateConfiguration(config));
 
         Assert.Null(exception);
-        Assert.Equal(1, config.SchemaVersion);
+        Assert.Equal(2, config.SchemaVersion);
+    }
+
+    [Fact]
+    public void MigrateConfiguration_PersonalizedRowWithMaxInstancesGreaterThanOne_ExplodesIntoIndependentRows()
+    {
+        var config = new PluginConfiguration
+        {
+            SchemaVersion = 1,
+            Widgets =
+            [
+                new WidgetConfig
+                {
+                    WidgetType = "jux.personalized.favorite-genre",
+                    CustomDisplayName = "My Genres",
+                    Order = 20,
+                    MaxInstances = 3,
+                    ExtraParams = [new WidgetExtraParam { Key = "excludeWatched", Value = "false" }]
+                }
+            ]
+        };
+
+        Plugin.MigrateConfiguration(config);
+
+        Assert.Equal(2, config.SchemaVersion);
+        Assert.Equal(3, config.Widgets.Length);
+
+        Assert.Equal("jux.personalized.favorite-genre", config.Widgets[0].WidgetType);
+        Assert.Equal("My Genres", config.Widgets[0].CustomDisplayName);
+        Assert.Equal(20, config.Widgets[0].Order);
+        Assert.Equal(1, config.Widgets[0].MaxInstances);
+        Assert.Single(config.Widgets[0].ExtraParams);
+
+        Assert.Equal("jux.personalized.favorite-genre", config.Widgets[1].WidgetType);
+        Assert.Null(config.Widgets[1].CustomDisplayName);
+        Assert.Equal(30, config.Widgets[1].Order);
+        Assert.Equal(1, config.Widgets[1].MaxInstances);
+        Assert.Empty(config.Widgets[1].ExtraParams);
+
+        Assert.Equal("jux.personalized.favorite-genre", config.Widgets[2].WidgetType);
+        Assert.Null(config.Widgets[2].CustomDisplayName);
+        Assert.Equal(40, config.Widgets[2].Order);
+        Assert.Equal(1, config.Widgets[2].MaxInstances);
+    }
+
+    [Fact]
+    public void MigrateConfiguration_NonPersonalizedRowWithMaxInstancesGreaterThanOne_LeftUnchanged()
+    {
+        var config = new PluginConfiguration
+        {
+            SchemaVersion = 1,
+            Widgets = [new WidgetConfig { WidgetType = "jux.admin.genre", MaxInstances = 5 }]
+        };
+
+        Plugin.MigrateConfiguration(config);
+
+        Assert.Equal(2, config.SchemaVersion);
+        var widget = Assert.Single(config.Widgets);
+        Assert.Equal("jux.admin.genre", widget.WidgetType);
+        Assert.Equal(5, widget.MaxInstances);
     }
 }
