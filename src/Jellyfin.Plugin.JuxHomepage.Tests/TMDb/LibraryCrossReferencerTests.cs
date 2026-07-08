@@ -1,0 +1,131 @@
+using System.Globalization;
+using Jellyfin.Data.Enums;
+using Jellyfin.Plugin.JuxHomepage.TMDb;
+using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Library;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using Xunit;
+
+namespace Jellyfin.Plugin.JuxHomepage.Tests.TMDb;
+
+// Unit-level coverage of LibraryCrossReferencer in isolation (mocking only ILibraryManager, no
+// ITMDbApiClient or disk cache involved), extracted from TMDbCacheService in Phase 7.3 of
+// TODO_V2.md. TMDbCacheServiceTests.cs's existing cross-referencing tests (ImdbMatchFound,
+// NoImdbMatch fallback, NoMatchAtAll, bounded concurrency) remain unchanged and continue to cover
+// the same logic end-to-end through the full refresh pipeline -- the two files intentionally
+// coexist, one at the integration level, one at the unit level.
+public sealed class LibraryCrossReferencerTests
+{
+    [Fact]
+    public async Task CrossReferenceAsync_ImdbMatchFound_SetsLibraryItemIdAndCountsAsMatched()
+    {
+        var libraryItem = new Movie { Id = Guid.NewGuid(), Name = "Inception" };
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.HasAnyProviderId != null && q.HasAnyProviderId.ContainsKey("Imdb"))))
+            .Returns([libraryItem]);
+
+        var referencer = new LibraryCrossReferencer(libraryManagerMock.Object, NullLogger.Instance);
+        var items = new List<TMDbMovie> { new() { Id = 27205, Title = "Inception" } };
+
+        var matched = await referencer.CrossReferenceAsync(
+            items,
+            (_, _) => Task.FromResult<string?>("tt1375666"),
+            [BaseItemKind.Movie],
+            CancellationToken.None);
+
+        Assert.Equal(1, matched);
+        Assert.Equal(libraryItem.Id, items[0].LibraryItemId);
+    }
+
+    [Fact]
+    public async Task CrossReferenceAsync_NoImdbId_FallsBackToProviderId()
+    {
+        var libraryItem = new Movie { Id = Guid.NewGuid(), Name = "Inception" };
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.HasAnyProviderId != null && q.HasAnyProviderId.ContainsKey("Tmdb")
+                     && q.HasAnyProviderId["Tmdb"] == "27205")))
+            .Returns([libraryItem]);
+
+        var referencer = new LibraryCrossReferencer(libraryManagerMock.Object, NullLogger.Instance);
+        var items = new List<TMDbMovie> { new() { Id = 27205, Title = "Inception" } };
+
+        var matched = await referencer.CrossReferenceAsync(
+            items,
+            (_, _) => Task.FromResult<string?>(null),
+            [BaseItemKind.Movie],
+            CancellationToken.None);
+
+        Assert.Equal(1, matched);
+        Assert.Equal(libraryItem.Id, items[0].LibraryItemId);
+    }
+
+    [Fact]
+    public async Task CrossReferenceAsync_NoMatchAtAll_LibraryItemIdStaysNullAndNotCountedAsMatched()
+    {
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock.Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>())).Returns([]);
+
+        var referencer = new LibraryCrossReferencer(libraryManagerMock.Object, NullLogger.Instance);
+        var items = new List<TMDbMovie> { new() { Id = 999, Title = "Unknown" } };
+
+        var matched = await referencer.CrossReferenceAsync(
+            items,
+            (_, _) => Task.FromResult<string?>(null),
+            [BaseItemKind.Movie],
+            CancellationToken.None);
+
+        Assert.Equal(0, matched);
+        Assert.Null(items[0].LibraryItemId);
+    }
+
+    [Fact]
+    public async Task CrossReferenceAsync_ManyItems_RunsWithBoundedConcurrency()
+    {
+        const int ItemCount = 30;
+        const int MaxConcurrency = 5;
+        var perCallDelay = TimeSpan.FromMilliseconds(50);
+        var inFlight = 0;
+        var maxObservedInFlight = 0;
+        var gate = new object();
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock.Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>())).Returns([]);
+
+        var referencer = new LibraryCrossReferencer(libraryManagerMock.Object, NullLogger.Instance);
+        var items = Enumerable.Range(1, ItemCount)
+            .Select(i => new TMDbMovie { Id = i, Title = "Movie " + i.ToString(CultureInfo.InvariantCulture) })
+            .ToList();
+
+        var matched = await referencer.CrossReferenceAsync(
+            items,
+            async (_, ct) =>
+            {
+                lock (gate)
+                {
+                    inFlight++;
+                    maxObservedInFlight = Math.Max(maxObservedInFlight, inFlight);
+                }
+
+                await Task.Delay(perCallDelay, ct).ConfigureAwait(false);
+
+                lock (gate)
+                {
+                    inFlight--;
+                }
+
+                return null;
+            },
+            [BaseItemKind.Movie],
+            CancellationToken.None);
+
+        Assert.Equal(0, matched);
+        Assert.True(maxObservedInFlight <= MaxConcurrency, $"Observed {maxObservedInFlight} concurrent calls, expected at most {MaxConcurrency}.");
+    }
+}

@@ -1,13 +1,10 @@
-using System.Globalization;
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.IO;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using MediaBrowser.Common.Configuration;
-using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.JuxHomepage.TMDb;
@@ -25,8 +22,8 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
 {
     private readonly DiskJsonCache<TMDbMovie> _movieCache;
     private readonly DiskJsonCache<TMDbShow> _showCache;
+    private readonly LibraryCrossReferencer _crossReferencer;
     private readonly ITMDbApiClient _apiClient;
-    private readonly ILibraryManager _libraryManager;
     private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<TMDbCacheService> _logger;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
@@ -53,9 +50,9 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         ILogger<TMDbCacheService> logger)
     {
         _apiClient = apiClient;
-        _libraryManager = libraryManager;
         _getConfiguration = getConfiguration;
         _logger = logger;
+        _crossReferencer = new LibraryCrossReferencer(libraryManager, logger);
 
         var cacheDir = Path.Combine(
             applicationPaths.DataPath,
@@ -178,7 +175,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         try
         {
             var items = DeduplicateById(await _apiClient.DiscoverMoviesAsync(filter, cancellationToken).ConfigureAwait(false));
-            var matched = await CrossReferenceAsync(
+            var matched = await _crossReferencer.CrossReferenceAsync(
                 items,
                 _apiClient.GetMovieExternalIdsAsync,
                 [BaseItemKind.Movie],
@@ -287,7 +284,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         try
         {
             var items = DeduplicateById(await fetch(cancellationToken).ConfigureAwait(false));
-            var matched = await CrossReferenceAsync(
+            var matched = await _crossReferencer.CrossReferenceAsync(
                 items,
                 _apiClient.GetMovieExternalIdsAsync,
                 [BaseItemKind.Movie],
@@ -309,7 +306,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         try
         {
             var items = DeduplicateById(await fetch(cancellationToken).ConfigureAwait(false));
-            var matched = await CrossReferenceAsync(
+            var matched = await _crossReferencer.CrossReferenceAsync(
                 items,
                 _apiClient.GetShowExternalIdsAsync,
                 [BaseItemKind.Series],
@@ -332,7 +329,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// appear twice in the widget.
     /// </summary>
     private static IReadOnlyList<T> DeduplicateById<T>(IReadOnlyList<T> items)
-        where T : ITMDbCacheItem
+        where T : IExternalCacheItem
     {
         var seenIds = new HashSet<int>();
         var deduplicated = new List<T>(items.Count);
@@ -368,83 +365,6 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
             type,
             itemCount,
             matchedCount);
-    }
-
-    /// <summary>Maximum number of items cross-referenced concurrently.</summary>
-    private const int MaxCrossReferenceConcurrency = 5;
-
-    /// <summary>
-    /// Sets <see cref="ITMDbCacheItem.LibraryItemId"/> on each item by looking it up in the local
-    /// library, primarily by IMDb ID (fetched via <paramref name="getExternalImdbId"/>), falling
-    /// back to a direct TMDb ID match when no IMDb ID is available or no match is found. Items are
-    /// processed with bounded concurrency (both the external IMDb ID HTTP lookup and the local
-    /// library query per item) -- <see cref="ILibraryManager"/> does not support matching against a
-    /// list of provider id values in a single query (<c>InternalItemsQuery.HasAnyProviderId</c> is a
-    /// dictionary, one exact value per provider key), so <see cref="FindLibraryMatch"/> itself cannot
-    /// be batched across items; parallelizing the per-item pipeline is the available alternative.
-    /// </summary>
-    /// <returns>The number of items that were matched to a local library item.</returns>
-    private async Task<int> CrossReferenceAsync<T>(
-        IReadOnlyList<T> items,
-        Func<int, CancellationToken, Task<string?>> getExternalImdbId,
-        BaseItemKind[] includeItemTypes,
-        CancellationToken cancellationToken)
-        where T : ITMDbCacheItem
-    {
-        using var semaphore = new SemaphoreSlim(MaxCrossReferenceConcurrency);
-
-        var tasks = items.Select(async item =>
-        {
-            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                string? imdbId = null;
-                try
-                {
-                    imdbId = await getExternalImdbId(item.Id, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to fetch external IDs for TMDb id {TmdbId}.", item.Id);
-                }
-
-                BaseItem? match = string.IsNullOrEmpty(imdbId)
-                    ? null
-                    : FindLibraryMatch(MetadataProvider.Imdb, imdbId, includeItemTypes);
-
-                match ??= FindLibraryMatch(
-                    MetadataProvider.Tmdb,
-                    item.Id.ToString(CultureInfo.InvariantCulture),
-                    includeItemTypes);
-
-                item.LibraryItemId = match?.Id;
-                return match is not null;
-            }
-            finally
-            {
-                semaphore.Release();
-            }
-        });
-
-        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-        var matched = results.Count(wasMatched => wasMatched);
-
-        return matched;
-    }
-
-    private BaseItem? FindLibraryMatch(MetadataProvider provider, string value, BaseItemKind[] includeItemTypes)
-    {
-        var result = _libraryManager.GetItemList(new InternalItemsQuery
-        {
-            HasAnyProviderId = new Dictionary<string, string> { [provider.ToString()] = value },
-            IncludeItemTypes = includeItemTypes,
-            Recursive = true,
-            Limit = 1
-        });
-
-        return result.Count > 0 ? result[0] : null;
     }
 
     /// <summary>

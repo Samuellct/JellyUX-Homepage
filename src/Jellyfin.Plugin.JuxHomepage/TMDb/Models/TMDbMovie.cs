@@ -5,7 +5,7 @@ namespace Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 /// <summary>
 /// A movie as returned by TMDb's trending/top-rated/now-playing/discover list endpoints.
 /// </summary>
-public sealed class TMDbMovie : ITMDbCacheItem
+public sealed class TMDbMovie : IExternalCacheItem
 {
     /// <summary>Gets or sets the TMDb movie identifier.</summary>
     [JsonPropertyName("id")]

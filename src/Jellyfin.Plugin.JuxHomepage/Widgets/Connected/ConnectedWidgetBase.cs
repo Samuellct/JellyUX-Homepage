@@ -16,7 +16,7 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 /// Connected widgets display TMDb data (trending/on the air/top rated/now playing/discover) that
 /// has been cross-referenced
 /// against the local Jellyfin library by <see cref="ITMDbCacheService"/>. Only cached entries that
-/// carry a non-null <see cref="ITMDbCacheItem.LibraryItemId"/> -- i.e. items the user actually owns
+/// carry a non-null <see cref="IExternalCacheItem.LibraryItemId"/> -- i.e. items the user actually owns
 /// -- are ever displayed; a cached entry with no local match is not a playable Jellyfin item and is
 /// silently excluded.
 /// </para>
@@ -27,7 +27,7 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 /// </summary>
 /// <typeparam name="T">The cached TMDb item type (<see cref="TMDbMovie"/> or <see cref="TMDbShow"/>).</typeparam>
 public abstract class ConnectedWidgetBase<T> : IWidget
-    where T : ITMDbCacheItem
+    where T : IExternalCacheItem
 {
     private readonly ILogger _logger;
 
