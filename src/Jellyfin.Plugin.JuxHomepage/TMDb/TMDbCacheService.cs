@@ -1,7 +1,7 @@
 using System.Globalization;
-using System.Text.Json;
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.IO;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using MediaBrowser.Common.Configuration;
@@ -23,14 +23,12 @@ namespace Jellyfin.Plugin.JuxHomepage.TMDb;
 /// </summary>
 public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new() { WriteIndented = true };
-
-    private readonly string _cacheDir;
+    private readonly DiskJsonCache<TMDbMovie> _movieCache;
+    private readonly DiskJsonCache<TMDbShow> _showCache;
     private readonly ITMDbApiClient _apiClient;
     private readonly ILibraryManager _libraryManager;
     private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<TMDbCacheService> _logger;
-    private readonly ReaderWriterLockSlim _lock = new();
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private bool _disposed;
 
@@ -38,6 +36,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// Initializes a new instance of the <see cref="TMDbCacheService"/> class.
     /// </summary>
     /// <param name="applicationPaths">Provides the application data directory path.</param>
+    /// <param name="fileSystem">File system abstraction, for testability, passed through to the composed <see cref="DiskJsonCache{T}"/> instances.</param>
     /// <param name="apiClient">TMDb API client used to fetch fresh data during a refresh.</param>
     /// <param name="libraryManager">Jellyfin library manager, used to cross-reference cached items.</param>
     /// <param name="getConfiguration">
@@ -47,6 +46,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// <param name="logger">Logger.</param>
     public TMDbCacheService(
         IApplicationPaths applicationPaths,
+        IFileSystem fileSystem,
         ITMDbApiClient apiClient,
         ILibraryManager libraryManager,
         Func<PluginConfiguration?> getConfiguration,
@@ -57,35 +57,48 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         _getConfiguration = getConfiguration;
         _logger = logger;
 
-        _cacheDir = Path.Combine(
+        var cacheDir = Path.Combine(
             applicationPaths.DataPath,
             "Jellyfin.Plugin.JuxHomepage",
             "cache",
             "tmdb");
 
-        Directory.CreateDirectory(_cacheDir);
+        // One DiskJsonCache instance per cached item type, both rooted at the same directory: the
+        // movie cache serves the fixed trending/top-rated/now-playing movie files as well as every
+        // per-instance Discover file (also movies), the show cache serves the fixed trending/airing
+        // today/top-rated show files.
+        _movieCache = new DiskJsonCache<TMDbMovie>(cacheDir, fileSystem, logger);
+        _showCache = new DiskJsonCache<TMDbShow>(cacheDir, fileSystem, logger);
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbMovie> GetTrendingMovies() => ReadCache<TMDbMovie>(TMDbCacheType.TrendingMovies);
+    public IReadOnlyList<TMDbMovie> GetTrendingMovies() => _movieCache.Read(GetFileName(TMDbCacheType.TrendingMovies));
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbShow> GetTrendingShows() => ReadCache<TMDbShow>(TMDbCacheType.TrendingShows);
+    public IReadOnlyList<TMDbShow> GetTrendingShows() => _showCache.Read(GetFileName(TMDbCacheType.TrendingShows));
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbShow> GetAiringToday() => ReadCache<TMDbShow>(TMDbCacheType.AiringToday);
+    public IReadOnlyList<TMDbShow> GetAiringToday() => _showCache.Read(GetFileName(TMDbCacheType.AiringToday));
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbMovie> GetTopRatedMovies() => ReadCache<TMDbMovie>(TMDbCacheType.TopRatedMovies);
+    public IReadOnlyList<TMDbMovie> GetTopRatedMovies() => _movieCache.Read(GetFileName(TMDbCacheType.TopRatedMovies));
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbShow> GetTopRatedShows() => ReadCache<TMDbShow>(TMDbCacheType.TopRatedShows);
+    public IReadOnlyList<TMDbShow> GetTopRatedShows() => _showCache.Read(GetFileName(TMDbCacheType.TopRatedShows));
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbMovie> GetNowPlayingMovies() => ReadCache<TMDbMovie>(TMDbCacheType.NowPlayingMovies);
+    public IReadOnlyList<TMDbMovie> GetNowPlayingMovies() => _movieCache.Read(GetFileName(TMDbCacheType.NowPlayingMovies));
 
     /// <inheritdoc/>
-    public IReadOnlyList<TMDbMovie> GetDiscoverMovies(string instanceId) => ReadDiscoverCache(instanceId);
+    public IReadOnlyList<TMDbMovie> GetDiscoverMovies(string instanceId)
+    {
+        if (!Guid.TryParse(instanceId, out _))
+        {
+            return [];
+        }
+
+        return _movieCache.Read(GetDiscoverFileName(instanceId));
+    }
 
     /// <inheritdoc/>
     public Task RefreshTrendingMoviesAsync(CancellationToken cancellationToken)
@@ -170,7 +183,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
                 _apiClient.GetMovieExternalIdsAsync,
                 [BaseItemKind.Movie],
                 cancellationToken).ConfigureAwait(false);
-            WriteDiscoverCacheUnlessEmpty(instanceId, items);
+            _movieCache.WriteUnlessEmpty(GetDiscoverFileName(instanceId), items);
             _logger.LogInformation(
                 "TMDb Discover cache '{InstanceId}' refreshed: {ItemCount} item(s), {MatchedCount} matched to the local library.",
                 instanceId,
@@ -186,23 +199,12 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     /// <inheritdoc/>
     public bool IsStale(TMDbCacheType type)
     {
-        var path = GetPath(type);
-        if (!File.Exists(path))
-        {
-            return true;
-        }
-
         var hours = _getConfiguration()?.Cache?.TMDbRefreshIntervalHours ?? 24;
-        var lastWrite = File.GetLastWriteTimeUtc(path);
-        return DateTime.UtcNow - lastWrite >= TimeSpan.FromHours(hours);
+        return _movieCache.IsStale(GetFileName(type), TimeSpan.FromHours(hours));
     }
 
     /// <inheritdoc/>
-    public DateTime? GetLastRefreshedUtc(TMDbCacheType type)
-    {
-        var path = GetPath(type);
-        return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
-    }
+    public DateTime? GetLastRefreshedUtc(TMDbCacheType type) => _movieCache.GetLastWriteUtc(GetFileName(type));
 
     /// <inheritdoc/>
     public bool TryAcquireRefreshLock() => _refreshGate.Wait(0);
@@ -270,7 +272,8 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
     {
         if (!_disposed)
         {
-            _lock.Dispose();
+            _movieCache.Dispose();
+            _showCache.Dispose();
             _refreshGate.Dispose();
             _disposed = true;
         }
@@ -289,7 +292,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
                 _apiClient.GetMovieExternalIdsAsync,
                 [BaseItemKind.Movie],
                 cancellationToken).ConfigureAwait(false);
-            WriteCacheUnlessEmpty(type, items);
+            _movieCache.WriteUnlessEmpty(GetFileName(type), items);
             LogRefreshOutcome(type, items.Count, matched);
         }
         catch (Exception ex)
@@ -311,7 +314,7 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
                 _apiClient.GetShowExternalIdsAsync,
                 [BaseItemKind.Series],
                 cancellationToken).ConfigureAwait(false);
-            WriteCacheUnlessEmpty(type, items);
+            _showCache.WriteUnlessEmpty(GetFileName(type), items);
             LogRefreshOutcome(type, items.Count, matched);
         }
         catch (Exception ex)
@@ -444,142 +447,22 @@ public sealed class TMDbCacheService : ITMDbCacheService, IDisposable
         return result.Count > 0 ? result[0] : null;
     }
 
-    private IReadOnlyList<T> ReadCache<T>(TMDbCacheType type)
-    {
-        var path = GetPath(type);
-
-        _lock.EnterReadLock();
-        try
-        {
-            if (!File.Exists(path))
-            {
-                return [];
-            }
-
-            var json = File.ReadAllText(path);
-            var entry = JsonSerializer.Deserialize<TMDbCacheEntry<T>>(json);
-            return entry?.Items ?? [];
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to read TMDb cache file for '{Type}'.", type);
-            return [];
-        }
-        finally
-        {
-            _lock.ExitReadLock();
-        }
-    }
-
     /// <summary>
-    /// Writes the cache file for the given type, unless <paramref name="items"/> is empty. An empty
-    /// result almost always means the fetch failed (missing/invalid key, network error) rather than
-    /// TMDb genuinely having nothing to report, so overwriting a previously-populated cache with an
-    /// empty one would silently destroy good data on a transient failure (e.g. a temporarily invalid
-    /// API key). <see cref="LogRefreshOutcome"/> still surfaces the empty result either way.
-    /// </summary>
-    private void WriteCacheUnlessEmpty<T>(TMDbCacheType type, IReadOnlyList<T> items)
-    {
-        if (items.Count == 0)
-        {
-            return;
-        }
-
-        var path = GetPath(type);
-        var entry = new TMDbCacheEntry<T> { RefreshedAtUtc = DateTime.UtcNow, Items = items };
-        var json = JsonSerializer.Serialize(entry, SerializerOptions);
-
-        _lock.EnterWriteLock();
-        try
-        {
-            File.WriteAllText(path, json);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to write TMDb cache file for '{Type}'.", type);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
-    }
-
-    private IReadOnlyList<TMDbMovie> ReadDiscoverCache(string instanceId)
-    {
-        if (!Guid.TryParse(instanceId, out _))
-        {
-            return [];
-        }
-
-        var path = GetDiscoverPath(instanceId);
-
-        _lock.EnterReadLock();
-        try
-        {
-            if (!File.Exists(path))
-            {
-                return [];
-            }
-
-            var json = File.ReadAllText(path);
-            var entry = JsonSerializer.Deserialize<TMDbCacheEntry<TMDbMovie>>(json);
-            return entry?.Items ?? [];
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to read TMDb Discover cache file for instance '{InstanceId}'.", instanceId);
-            return [];
-        }
-        finally
-        {
-            _lock.ExitReadLock();
-        }
-    }
-
-    private void WriteDiscoverCacheUnlessEmpty(string instanceId, IReadOnlyList<TMDbMovie> items)
-    {
-        if (items.Count == 0)
-        {
-            return;
-        }
-
-        var path = GetDiscoverPath(instanceId);
-        var entry = new TMDbCacheEntry<TMDbMovie> { RefreshedAtUtc = DateTime.UtcNow, Items = items };
-        var json = JsonSerializer.Serialize(entry, SerializerOptions);
-
-        _lock.EnterWriteLock();
-        try
-        {
-            File.WriteAllText(path, json);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to write TMDb Discover cache file for instance '{InstanceId}'.", instanceId);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
-    }
-
-    /// <summary>
-    /// Builds the cache file path for a Discover widget instance. <paramref name="instanceId"/> is
+    /// Builds the cache file name for a Discover widget instance. <paramref name="instanceId"/> is
     /// validated as a GUID by the only two callers (<see cref="RefreshDiscoverMoviesAsync"/> and
     /// <see cref="GetDiscoverMovies"/> via the widget's own <c>ExtraParams["value"]</c>-derived
     /// AdditionalData) before it ever reaches this method, but re-validating here is cheap defense
     /// in depth against a malformed instance id being used as a file name.
     /// </summary>
-    private string GetDiscoverPath(string instanceId)
+    private static string GetDiscoverFileName(string instanceId)
     {
         if (!Guid.TryParse(instanceId, out var validated))
         {
             throw new ArgumentException("Discover instance id must be a GUID.", nameof(instanceId));
         }
 
-        return Path.Combine(_cacheDir, $"discover_{validated:N}.json");
+        return $"discover_{validated:N}.json";
     }
-
-    private string GetPath(TMDbCacheType type) => Path.Combine(_cacheDir, GetFileName(type));
 
     private static string GetFileName(TMDbCacheType type) => type switch
     {

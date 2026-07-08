@@ -47,4 +47,9 @@ public interface IFileSystem
     /// <param name="searchOption">Whether to search only the top directory or all subdirectories.</param>
     /// <returns>The matching file paths.</returns>
     IReadOnlyList<string> GetFiles(string path, string searchPattern, SearchOption searchOption);
+
+    /// <summary>Returns the UTC timestamp the given file was last written to.</summary>
+    /// <param name="path">The file path to check.</param>
+    /// <returns>The last-write timestamp, in UTC.</returns>
+    DateTime GetLastWriteTimeUtc(string path);
 }

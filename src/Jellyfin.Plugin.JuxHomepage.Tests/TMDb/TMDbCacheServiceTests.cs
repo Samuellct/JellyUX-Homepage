@@ -1,5 +1,6 @@
 using System.Globalization;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.IO;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
@@ -27,6 +28,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
 
         return new TMDbCacheService(
             applicationPathsMock.Object,
+            new FileSystem(),
             apiClient,
             libraryManager,
             () => new PluginConfiguration { Cache = new CacheConfig { TMDbRefreshIntervalHours = refreshIntervalHours } },
@@ -40,6 +42,7 @@ public sealed class TMDbCacheServiceTests : IDisposable
 
         return new TMDbCacheService(
             applicationPathsMock.Object,
+            new FileSystem(),
             apiClient,
             libraryManager,
             () => new PluginConfiguration { Widgets = widgets },

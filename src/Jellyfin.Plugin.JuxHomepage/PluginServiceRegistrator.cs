@@ -43,6 +43,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<ILogger<TMDbApiClient>>()));
         serviceCollection.AddSingleton<ITMDbCacheService>(serviceProvider => new TMDbCacheService(
             serviceProvider.GetRequiredService<IApplicationPaths>(),
+            serviceProvider.GetRequiredService<IFileSystem>(),
             serviceProvider.GetRequiredService<ITMDbApiClient>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
             () => Plugin.Instance?.Configuration,

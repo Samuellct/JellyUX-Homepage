@@ -170,5 +170,7 @@ public sealed class UserConfigurationStoreTests : IDisposable
 
         public IReadOnlyList<string> GetFiles(string path, string searchPattern, SearchOption searchOption) =>
             _inner.GetFiles(path, searchPattern, searchOption);
+
+        public DateTime GetLastWriteTimeUtc(string path) => _inner.GetLastWriteTimeUtc(path);
     }
 }

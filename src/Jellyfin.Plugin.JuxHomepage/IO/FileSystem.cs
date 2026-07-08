@@ -30,4 +30,7 @@ public sealed class FileSystem : IFileSystem
     /// <inheritdoc/>
     public IReadOnlyList<string> GetFiles(string path, string searchPattern, SearchOption searchOption) =>
         Directory.GetFiles(path, searchPattern, searchOption);
+
+    /// <inheritdoc/>
+    public DateTime GetLastWriteTimeUtc(string path) => File.GetLastWriteTimeUtc(path);
 }
