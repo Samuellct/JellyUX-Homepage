@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JuxHomepage.IO;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Common.Configuration;
@@ -25,6 +26,7 @@ public class StartupService : IScheduledTask
     private readonly ILogger<StartupService> _logger;
     private readonly FileTransformationDetector _detector;
     private readonly ITMDbCacheService _tmdbCacheService;
+    private readonly IFileSystem _fileSystem;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StartupService"/> class.
@@ -33,16 +35,19 @@ public class StartupService : IScheduledTask
     /// <param name="logger">Logger.</param>
     /// <param name="detector">FileTransformation reflection bridge.</param>
     /// <param name="tmdbCacheService">TMDb cache service, used to refresh a missing/stale cache immediately.</param>
+    /// <param name="fileSystem">File system abstraction, used to locate and read the loadSections chunk.</param>
     public StartupService(
         IApplicationPaths applicationPaths,
         ILogger<StartupService> logger,
         FileTransformationDetector detector,
-        ITMDbCacheService tmdbCacheService)
+        ITMDbCacheService tmdbCacheService,
+        IFileSystem fileSystem)
     {
         _applicationPaths = applicationPaths;
         _logger = logger;
         _detector = detector;
         _tmdbCacheService = tmdbCacheService;
+        _fileSystem = fileSystem;
     }
 
     /// <inheritdoc/>
@@ -187,7 +192,7 @@ public class StartupService : IScheduledTask
 
     private void RegisterLoadSectionsTransformations()
     {
-        var chunks = TransformationPatches.FindLoadSectionsChunks(_applicationPaths.WebPath, _logger);
+        var chunks = TransformationPatches.FindLoadSectionsChunks(_applicationPaths.WebPath, _fileSystem, _logger);
 
         if (chunks.Count == 0)
         {
