@@ -14,6 +14,32 @@ public sealed class TransformationPatchesTests
     private const string FragmentTemplate = "/*{{cardbuilder}}{{layoutmanager}}{{shapes}}{{approuter}}{{globalize}}{{this_hook}}*/";
 
     [Fact]
+    public void TryPatchLoadSections_ValidChunkWithHook_SplicesFragmentAndReplacesTokens()
+    {
+        const string raw = "var u={default:1};var n={A:1};,loadSections:function(){},other:2";
+
+        var (content, outcome) = TransformationPatches.TryPatchLoadSections(raw, FragmentTemplate);
+
+        Assert.Equal(LoadSectionsOutcome.Patched, outcome);
+        Assert.Contains(",originalLoadSections:", content, StringComparison.Ordinal);
+        // The last "var X=" before ",loadSections:" is "n" -- confirms {{this_hook}} resolution.
+        Assert.Contains("/*", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("{{this_hook}}", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("{{cardbuilder}}", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TryPatchLoadSections_NoLoadSectionsMarker_ReturnsContentUnchanged()
+    {
+        const string raw = "var u={default:1};function unrelated(){return 1;}";
+
+        var (content, outcome) = TransformationPatches.TryPatchLoadSections(raw, FragmentTemplate);
+
+        Assert.Equal(LoadSectionsOutcome.NoMarker, outcome);
+        Assert.Equal(raw, content);
+    }
+
+    [Fact]
     public void TryPatchLoadSections_MarkerPresentButNoVarDeclaration_ReturnsHookNotFoundAndContentUnchanged()
     {
         // Simulates a Jellyfin Web drift where the module self-reference is no longer declared via

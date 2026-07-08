@@ -3,9 +3,12 @@ using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Controllers;
 using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
+using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Net;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -13,11 +16,101 @@ using Xunit;
 
 namespace Jellyfin.Plugin.JuxHomepage.Tests.Controllers;
 
-// Covers JuxHomepageController. Endpoints requiring HttpContext/authorization (Sections, Section) are
-// intentionally out of scope here -- they are already exercised end to end by UserAccessGuardTests
-// plus manual testing (Phase 0).
+// Covers the two highest-value gaps identified for the controller in Phase 9 of TODO_V2.md: the
+// admin widget-values guard (400/404) and the TMDb search/status endpoints. Endpoints requiring
+// HttpContext/authorization (Sections, Section) are intentionally out of scope here -- they are
+// already exercised end to end by UserAccessGuardTests plus manual testing (Phase 0).
 public sealed class JuxHomepageControllerTests
 {
+    [Fact]
+    public void GetWidgetValues_WidgetIsNotAdminWidget_ReturnsBadRequest()
+    {
+        var nonAdminWidget = new Mock<IWidget>();
+        nonAdminWidget.Setup(w => w.WidgetType).Returns("jux.native.continue-watching");
+
+        var registryMock = new Mock<IWidgetRegistry>();
+        registryMock.Setup(r => r.GetByType("jux.native.continue-watching")).Returns(nonAdminWidget.Object);
+
+        var controller = BuildController(registryMock: registryMock);
+
+        var result = controller.GetWidgetValues("jux.native.continue-watching", Guid.NewGuid());
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public void GetWidgetValues_WidgetTypeNotRegistered_ReturnsNotFound()
+    {
+        var registryMock = new Mock<IWidgetRegistry>();
+        registryMock.Setup(r => r.GetByType(It.IsAny<string>())).Returns((IWidget?)null);
+
+        var controller = BuildController(registryMock: registryMock);
+
+        var result = controller.GetWidgetValues("jux.admin.genre", Guid.NewGuid());
+
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Fact]
+    public void GetWidgetValues_UserNotFound_ReturnsNotFound()
+    {
+        var adminWidgetMock = new Mock<AdminWidgetBase>(
+            Mock.Of<IUserManager>(),
+            Mock.Of<ILibraryManager>(),
+            Mock.Of<MediaBrowser.Controller.Dto.IDtoService>());
+
+        var registryMock = new Mock<IWidgetRegistry>();
+        registryMock.Setup(r => r.GetByType("jux.admin.genre")).Returns(adminWidgetMock.Object);
+
+        var userManagerMock = TestMocks.UserManagerReturningNull();
+
+        var controller = BuildController(registryMock: registryMock, userManagerMock: userManagerMock);
+
+        var result = controller.GetWidgetValues("jux.admin.genre", Guid.NewGuid());
+
+        Assert.IsType<NotFoundResult>(result.Result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task SearchTMDbPerson_EmptyOrWhitespaceQuery_ReturnsEmptyWithoutCallingApi(string query)
+    {
+        var tmdbApiClientMock = new Mock<ITMDbApiClient>();
+
+        var controller = BuildController(tmdbApiClientMock: tmdbApiClientMock);
+
+        var result = await controller.SearchTMDbPerson(query, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<AdminWidgetValue>>(ok.Value));
+        tmdbApiClientMock.Verify(
+            c => c.SearchPersonAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public void GetTMDbStatus_ReturnsOneEntryPerCacheType_WithConfiguredCounts()
+    {
+        var tmdbCacheServiceMock = new Mock<ITMDbCacheService>();
+        tmdbCacheServiceMock.Setup(s => s.GetTrendingMovies()).Returns([new TMDbMovie()]);
+        tmdbCacheServiceMock.Setup(s => s.GetTrendingShows()).Returns([new TMDbShow(), new TMDbShow()]);
+        tmdbCacheServiceMock.Setup(s => s.GetAiringToday()).Returns([]);
+        tmdbCacheServiceMock.Setup(s => s.GetTopRatedMovies()).Returns([]);
+        tmdbCacheServiceMock.Setup(s => s.GetTopRatedShows()).Returns([]);
+        tmdbCacheServiceMock.Setup(s => s.GetNowPlayingMovies()).Returns([]);
+
+        var controller = BuildController(tmdbCacheServiceMock: tmdbCacheServiceMock);
+
+        var result = controller.GetTMDbStatus();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var statuses = Assert.IsAssignableFrom<IReadOnlyList<JuxHomepageController.TMDbCacheStatusDto>>(ok.Value);
+        Assert.Equal(Enum.GetValues<TMDbCacheType>().Length, statuses.Count);
+        Assert.Equal(1, statuses.Single(s => s.Type == nameof(TMDbCacheType.TrendingMovies)).ItemCount);
+        Assert.Equal(2, statuses.Single(s => s.Type == nameof(TMDbCacheType.TrendingShows)).ItemCount);
+    }
+
     [Fact]
     public void GetTMDbItemCount_UnhandledCacheType_ReturnsZeroAndLogsWarning()
     {
