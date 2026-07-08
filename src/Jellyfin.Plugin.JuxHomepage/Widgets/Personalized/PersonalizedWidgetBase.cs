@@ -17,12 +17,16 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 /// rather than a value chosen by an administrator.
 /// </para>
 /// <para>
-/// A single <see cref="WidgetConfig"/> row (added by the administrator, with no value to pick)
-/// fans out per user into up to <see cref="IWidget.MaxInstances"/> instances, one per scored
-/// value returned by <see cref="GetScoredValues"/>. Each instance is a transient clone
-/// produced by <see cref="CreateInstances"/> that self-identifies via its own
-/// <see cref="WidgetDescriptor.AdditionalData"/> and <see cref="WidgetDescriptor.DisplayName"/>,
-/// so a user with no matching history simply receives zero instances (no section shown).
+/// Each <see cref="WidgetConfig"/> row is independent, exactly like the other widget categories --
+/// "1 row = 1 section". Since a personalized value can't be picked by the administrator, each row
+/// is instead assigned a <b>rank</b> (1-indexed) among the rows sharing its <c>WidgetType</c>,
+/// computed by <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.WidgetLayoutResolver"/> from the rows'
+/// own <c>Order</c>. <see cref="CreateInstances"/> resolves that row's rank against
+/// <see cref="GetScoredValues"/>: if the user has a scored value at that rank, it produces exactly
+/// one instance carrying it; otherwise it produces none, so the row is naturally excluded from the
+/// layout (TODO_V2.md Phase 8 -- replaces the previous model where a single row fanned out into up
+/// to <see cref="IWidget.MaxInstances"/> instances via <c>MemberwiseClone</c> in a loop, one per
+/// scored value).
 /// </para>
 /// </summary>
 public abstract class PersonalizedWidgetBase : IWidget
@@ -98,7 +102,8 @@ public abstract class PersonalizedWidgetBase : IWidget
 
     /// <summary>
     /// Returns the user's scored values for this widget's preference dimension (e.g. top genres),
-    /// most relevant first. Used by <see cref="CreateInstances"/> to fan out one instance per value.
+    /// most relevant first. Used by <see cref="CreateInstances"/> to resolve the value at a given
+    /// rank (the <paramref name="count"/>-th element, 1-indexed).
     /// </summary>
     /// <param name="userId">The requesting user's identifier.</param>
     /// <param name="count">The maximum number of scored values to return.</param>
@@ -122,16 +127,32 @@ public abstract class PersonalizedWidgetBase : IWidget
     /// <param name="user">The requesting Jellyfin user.</param>
     protected abstract void ApplyFilter(InternalItemsQuery query, string value, User user);
 
+    /// <remarks>
+    /// For this category, <paramref name="count"/> is not a fan-out cap -- it is the row's
+    /// 1-indexed rank among rows sharing this widget's <c>WidgetType</c> (see the class-level
+    /// remarks). Produces exactly one instance if the user has a scored value at that rank,
+    /// otherwise none. A single <c>MemberwiseClone()</c> per call keeps this safe under
+    /// concurrent requests -- <see cref="PersonalizedWidgetBase"/> instances are DI singletons
+    /// shared across every row/user, and <see cref="Widgets.WidgetLayoutResolver.BuildDescriptors"/>
+    /// may call this concurrently (once per configured row, via <c>Task.WhenAll</c>) for the very
+    /// same widget instance; each call produces its own private clone rather than mutating
+    /// <see langword="this"/> directly, so concurrent calls never race on shared state.
+    /// </remarks>
     /// <inheritdoc/>
     public IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count)
     {
-        foreach (var scored in GetScoredValues(userId, count))
+        var rank = count;
+        var scoredValues = GetScoredValues(userId, rank);
+        if (scoredValues.Count < rank)
         {
-            var clone = (PersonalizedWidgetBase)MemberwiseClone();
-            clone._value = scored.Value;
-            clone._displayName = FormatDisplayName(scored.Label, config.Lang);
-            yield return clone;
+            yield break;
         }
+
+        var scored = scoredValues[rank - 1];
+        var clone = (PersonalizedWidgetBase)MemberwiseClone();
+        clone._value = scored.Value;
+        clone._displayName = FormatDisplayName(scored.Label, config.Lang);
+        yield return clone;
     }
 
     /// <inheritdoc/>

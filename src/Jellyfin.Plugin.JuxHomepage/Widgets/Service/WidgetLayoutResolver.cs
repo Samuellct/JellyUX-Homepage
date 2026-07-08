@@ -77,9 +77,18 @@ public sealed class WidgetLayoutResolver
             .OrderBy(c => c.Order)
             .ToList();
 
+        // Assign a 1-indexed rank to each row within its WidgetType group, ordered by Order --
+        // replaces the old MaxInstances fan-out count (TODO_V2.md Phase 8.2). Every row gets a rank,
+        // not just Personalized ones: CreateInstances for every other category already ignores the
+        // "count" parameter entirely (yield return this), so this is a harmless no-op for them.
+        var ranks = effectiveConfigs
+            .GroupBy(c => c.WidgetType)
+            .SelectMany(g => g.OrderBy(c => c.Order).Select((c, i) => (Config: c, Rank: i + 1)))
+            .ToDictionary(x => x.Config, x => x.Rank);
+
         // Resolve widget instances for each enabled config entry
         var tasks = effectiveConfigs
-            .Select(config => ResolveAndFetch(userId, config, lang, cancellationToken))
+            .Select(config => ResolveAndFetch(userId, config, ranks[config], lang, cancellationToken))
             .ToList();
 
         var results = await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -126,13 +135,14 @@ public sealed class WidgetLayoutResolver
 
     /// <summary>
     /// Resolves a single <see cref="WidgetConfig"/> row into zero or more descriptors.
-    /// Most widgets are single-instance and produce at most one descriptor. Widgets whose
-    /// <see cref="IWidget.CreateInstances"/> fans out into several instances (e.g. personalized
-    /// widgets producing one section per scored value) produce one descriptor per instance.
+    /// Most widgets are single-instance and produce exactly one descriptor. Personalized widgets may
+    /// produce zero (the requested <paramref name="rank"/> has no scored value for this user) or one
+    /// (see <see cref="Personalized.PersonalizedWidgetBase.CreateInstances"/>).
     /// </summary>
     private async Task<IReadOnlyList<WidgetDescriptor>> ResolveAndFetch(
         Guid userId,
         WidgetConfig config,
+        int rank,
         string? lang,
         CancellationToken cancellationToken)
     {
@@ -151,7 +161,7 @@ public sealed class WidgetLayoutResolver
         List<IWidget> instances;
         try
         {
-            instances = widget.CreateInstances(userId, instanceConfig, config.MaxInstances).ToList();
+            instances = widget.CreateInstances(userId, instanceConfig, rank).ToList();
         }
         catch (Exception ex)
         {

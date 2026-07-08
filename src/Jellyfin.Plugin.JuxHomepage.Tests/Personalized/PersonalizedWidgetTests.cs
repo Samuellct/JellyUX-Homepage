@@ -86,11 +86,12 @@ public sealed class PersonalizedWidgetTests
     }
 
     // -------------------------------------------------------------------------
-    // CreateInstances fan-out
+    // CreateInstances rank resolution (Phase 8 of TODO_V2.md -- replaces the old
+    // fan-out-per-scored-value model: each call now resolves exactly one rank).
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void FavoriteGenre_CreateInstances_FansOutOneInstancePerScoredGenre()
+    public void FavoriteGenre_CreateInstances_RankAvailable_AssignsCorrectValue()
     {
         var user = new User("test", "Default", "Default");
         var action1 = new Movie { Id = Guid.NewGuid(), Name = "A1", Genres = ["Action"] };
@@ -99,14 +100,32 @@ public sealed class PersonalizedWidgetTests
 
         var widget = BuildWidget(BuildScoringService(user, [action1, action2, drama1]));
 
+        var rank1 = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
+        var rank2 = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 2).ToList();
+
+        var rank1Descriptor = Assert.Single(rank1).GetDescriptor();
+        Assert.Equal("Action", rank1Descriptor.AdditionalData);
+        Assert.Equal("More Action", rank1Descriptor.DisplayName);
+
+        var rank2Descriptor = Assert.Single(rank2).GetDescriptor();
+        Assert.Equal("Drama", rank2Descriptor.AdditionalData);
+        Assert.Equal("More Drama", rank2Descriptor.DisplayName);
+    }
+
+    [Fact]
+    public void FavoriteGenre_CreateInstances_RankBeyondAvailableValues_ReturnsNoInstances()
+    {
+        var user = new User("test", "Default", "Default");
+        var action1 = new Movie { Id = Guid.NewGuid(), Name = "A1", Genres = ["Action"] };
+        var drama1 = new Movie { Id = Guid.NewGuid(), Name = "D1", Genres = ["Drama"] };
+
+        // Only 2 distinct genres exist -- rank 3 must yield no instance, not fall back to the
+        // last available genre (that would silently recreate the V1 duplicate-section bug).
+        var widget = BuildWidget(BuildScoringService(user, [action1, drama1]));
+
         var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
 
-        Assert.Equal(2, instances.Count);
-        var descriptors = instances.Select(i => i.GetDescriptor()).ToList();
-        Assert.Equal("Action", descriptors[0].AdditionalData);
-        Assert.Equal("More Action", descriptors[0].DisplayName);
-        Assert.Equal("Drama", descriptors[1].AdditionalData);
-        Assert.Equal("More Drama", descriptors[1].DisplayName);
+        Assert.Empty(instances);
     }
 
     [Fact]
@@ -115,7 +134,7 @@ public sealed class PersonalizedWidgetTests
         var user = new User("test", "Default", "Default");
         var widget = BuildWidget(BuildScoringService(user, []));
 
-        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
+        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
 
         Assert.Empty(instances);
     }
@@ -346,7 +365,7 @@ public sealed class PersonalizedWidgetTests
             scoringService,
             TestLocalization);
 
-        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
+        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
 
         var single = Assert.Single(instances);
         var descriptor = single.GetDescriptor();
@@ -387,7 +406,7 @@ public sealed class PersonalizedWidgetTests
             BuildScoringService(user, []),
             TestLocalization);
 
-        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
+        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
 
         Assert.Empty(instances);
     }
