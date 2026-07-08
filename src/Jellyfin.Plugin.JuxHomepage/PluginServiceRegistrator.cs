@@ -51,11 +51,16 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
             () => Plugin.Instance?.Configuration));
+        serviceCollection.AddSingleton<WidgetLayoutResolver>(serviceProvider => new WidgetLayoutResolver(
+            serviceProvider.GetRequiredService<IWidgetRegistry>(),
+            serviceProvider.GetRequiredService<IUserConfigurationStore>(),
+            serviceProvider.GetRequiredService<ILocalizationService>(),
+            () => Plugin.Instance?.Configuration,
+            serviceProvider.GetRequiredService<ILogger<WidgetLayoutResolver>>()));
         serviceCollection.AddSingleton<WidgetService>(serviceProvider => new WidgetService(
             serviceProvider.GetRequiredService<IWidgetRegistry>(),
             serviceProvider.GetRequiredService<SessionCache>(),
-            serviceProvider.GetRequiredService<IUserConfigurationStore>(),
-            serviceProvider.GetRequiredService<ILocalizationService>(),
+            serviceProvider.GetRequiredService<WidgetLayoutResolver>(),
             () => Plugin.Instance?.Configuration,
             serviceProvider.GetRequiredService<ILogger<WidgetService>>()));
 

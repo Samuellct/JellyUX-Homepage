@@ -360,11 +360,17 @@ public sealed class WidgetServiceTests : IDisposable
 
         var config = new PluginConfiguration { Widgets = globalWidgets };
 
+        var layoutResolver = new WidgetLayoutResolver(
+            registry,
+            _userConfigStoreMock.Object,
+            localizationService ?? new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>()),
+            () => config,
+            NullLogger<WidgetLayoutResolver>.Instance);
+
         return new WidgetService(
             registry,
             _sessionCache,
-            _userConfigStoreMock.Object,
-            localizationService ?? new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>()),
+            layoutResolver,
             () => config,
             NullLogger<WidgetService>.Instance);
     }
