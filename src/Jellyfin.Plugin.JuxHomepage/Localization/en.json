@@ -95,8 +95,6 @@
   "admin.viewmode.landscape": "Landscape",
   "admin.viewmode.portrait": "Portrait",
   "admin.viewmode.square": "Square",
-  "admin.instances.label": "Number of sections",
-  "admin.instances.help": "Up to this many sections are shown per user, one per top-scored value.",
   "admin.excludewatched.label": "Exclude already watched",
   "admin.excludewatched.help": "When enabled, titles the user has already watched are not recommended.",
   "admin.tmdbregion.label": "Region",

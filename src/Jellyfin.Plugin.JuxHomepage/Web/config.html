@@ -596,13 +596,6 @@
                         if (isPers) {
                             var excludeWatched = self.getExtraParam(w, 'excludeWatched') !== 'false';
 
-                            html += '<div class="inputContainer">';
-                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetInstances_' + i + '">' + self.escHtml(self.t('admin.instances.label')) + '</label>';
-                            html += '<input id="widgetInstances_' + i + '" type="number" min="1" max="10"';
-                            html += ' class="emby-input jux-admin-instances" value="' + (w.MaxInstances || 3) + '" />';
-                            html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.instances.help')) + '</div>';
-                            html += '</div>';
-
                             html += '<div class="checkboxContainer checkboxContainer-withDescription">';
                             html += '<label class="emby-checkbox-label">';
                             html += '<input type="checkbox" id="widgetExcludeWatched_' + i + '" class="emby-checkbox jux-admin-exclude-watched"';
@@ -760,7 +753,6 @@
                     var maxEl = card.querySelector('.jux-admin-max-items');
                     var viewEl = card.querySelector('.jux-admin-view-mode');
                     var valueEl = card.querySelector('.jux-admin-widget-value');
-                    var instancesEl = card.querySelector('.jux-admin-instances');
                     var excludeWatchedEl = card.querySelector('.jux-admin-exclude-watched');
                     if (enabledEl) { w.Enabled = enabledEl.checked; }
                     if (nameEl) { w.CustomDisplayName = nameEl.value.trim() || null; }
@@ -779,10 +771,6 @@
                         w.ExtraParams = resolvedValue
                             ? [{ Key: 'value', Value: resolvedValue }]
                             : [];
-                    }
-                    if (instancesEl) {
-                        w.MaxInstances = Math.max(1, parseInt(instancesEl.value, 10) || 3);
-                        w.MinInstances = 1;
                     }
                     if (excludeWatchedEl) {
                         w.ExtraParams = [{ Key: 'excludeWatched', Value: excludeWatchedEl.checked ? 'true' : 'false' }];
@@ -1198,7 +1186,7 @@
                                 ViewMode: desc ? (desc.ViewMode || 'Portrait') : 'Portrait',
                                 AllowUserOverride: false,
                                 MinInstances: 1,
-                                MaxInstances: isPers ? 3 : (isConn ? 1 : 5),
+                                MaxInstances: isPers ? 1 : (isConn ? 1 : 5),
                                 ExtraParams: extraParams
                             });
                             sel.value = '';

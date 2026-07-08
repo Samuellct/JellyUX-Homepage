@@ -95,8 +95,6 @@
   "admin.viewmode.landscape": "Paysage",
   "admin.viewmode.portrait": "Portrait",
   "admin.viewmode.square": "Carré",
-  "admin.instances.label": "Nombre de sections",
-  "admin.instances.help": "Jusqu'à ce nombre de sections sont affichées par utilisateur, une par valeur la mieux notée.",
   "admin.excludewatched.label": "Exclure les titres déjà vus",
   "admin.excludewatched.help": "Si activé, les titres déjà vus par l'utilisateur ne sont pas recommandés.",
   "admin.tmdbregion.label": "Région",
