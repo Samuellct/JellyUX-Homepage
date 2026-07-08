@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.6.0...v1.6.1) (2026-07-08)
+
+### Bug Fixes
+
+* surface silent loadSections drift and unhandled TMDb status types ([0df27ca](https://github.com/Samuellct/JellyUX-Homepage/commit/0df27ca58abb4c3a0d23367ec5d095cedea1a492))
+
 ## [1.6.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.5.1...v1.6.0) (2026-07-08)
 
 ### Features
