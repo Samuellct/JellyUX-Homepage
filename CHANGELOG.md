@@ -1,3 +1,11 @@
+## [1.6.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.5.1...v1.6.0) (2026-07-08)
+
+### Features
+
+* compute per-row rank for Personalized widgets, replacing MaxInstances fan-out ([bb89e54](https://github.com/Samuellct/JellyUX-Homepage/commit/bb89e544649c48931521a2150097b53530288d7c))
+* migrate existing MaxInstances configuration into independent rows ([833686a](https://github.com/Samuellct/JellyUX-Homepage/commit/833686a830c118d0f16b0a790910f3b735344dfd))
+* update admin UI for the Personalized rank model ([5e46eec](https://github.com/Samuellct/JellyUX-Homepage/commit/5e46eec41e8436514eb71f8e7f0097c33ba4331d))
+
 ## [1.5.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.5.0...v1.5.1) (2026-07-07)
 
 ### Bug Fixes
