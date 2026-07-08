@@ -1,6 +1,13 @@
+using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Querying;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
@@ -97,6 +104,126 @@ public sealed class WidgetLayoutResolverTests
 
         var descriptor = Assert.Single(descriptors);
         Assert.Equal("Global Name", descriptor.DisplayName);
+    }
+
+    // -------------------------------------------------------------------------
+    // Personalized rank resolution, end to end: WidgetLayoutResolver -> rank computation ->
+    // FavoriteGenreWidget.CreateInstances/GetItemsAsync -> WidgetDescriptor (TODO_V2.md Phase 8.6
+    // garde-fou -- a real widget/ScoringService, not an isolated unit test, so a dead fan-out would
+    // be caught the way it wasn't in V1).
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task BuildDescriptors_TwoFavoriteGenreRows_ProduceDistinctGenreSections()
+    {
+        var user = new User("test", "Default", "Default");
+        var action1 = new Movie { Id = Guid.NewGuid(), Name = "A1", Genres = ["Action"] };
+        var action2 = new Movie { Id = Guid.NewGuid(), Name = "A2", Genres = ["Action"] };
+        var drama1 = new Movie { Id = Guid.NewGuid(), Name = "D1", Genres = ["Drama"] };
+
+        var registry = new WidgetRegistry();
+        registry.Register(BuildFavoriteGenreWidget(user, [action1, action2, drama1]));
+
+        var row1 = new WidgetConfig { WidgetType = "jux.personalized.favorite-genre", Order = 0, MinItems = 1 };
+        var row2 = new WidgetConfig { WidgetType = "jux.personalized.favorite-genre", Order = 10, MinItems = 1 };
+
+        var resolver = BuildResolver(registry, [row1, row2]);
+
+        var descriptors = await resolver.BuildDescriptors(user.Id, lang: null, CancellationToken.None);
+
+        Assert.Equal(2, descriptors.Count);
+        var genres = descriptors.Select(d => d.AdditionalData).ToList();
+        Assert.Equal(["Action", "Drama"], genres);
+    }
+
+    [Fact]
+    public async Task BuildDescriptors_ThreeFavoriteGenreRowsOnlyTwoDistinctGenres_ExcludesThirdRow()
+    {
+        var user = new User("test", "Default", "Default");
+        var action1 = new Movie { Id = Guid.NewGuid(), Name = "A1", Genres = ["Action"] };
+        var drama1 = new Movie { Id = Guid.NewGuid(), Name = "D1", Genres = ["Drama"] };
+
+        var registry = new WidgetRegistry();
+        registry.Register(BuildFavoriteGenreWidget(user, [action1, drama1]));
+
+        var row1 = new WidgetConfig { WidgetType = "jux.personalized.favorite-genre", Order = 0, MinItems = 1 };
+        var row2 = new WidgetConfig { WidgetType = "jux.personalized.favorite-genre", Order = 10, MinItems = 1 };
+        var row3 = new WidgetConfig { WidgetType = "jux.personalized.favorite-genre", Order = 20, MinItems = 1 };
+
+        var resolver = BuildResolver(registry, [row1, row2, row3]);
+
+        var descriptors = await resolver.BuildDescriptors(user.Id, lang: null, CancellationToken.None);
+
+        // Only 2 distinct genres exist, so the 3rd row (rank 3) must be excluded -- not fall back to
+        // a duplicate of an already-shown genre (the V1 bug this phase eliminates).
+        Assert.Equal(2, descriptors.Count);
+        var genres = descriptors.Select(d => d.AdditionalData).ToList();
+        Assert.Equal(["Action", "Drama"], genres);
+    }
+
+    private static WidgetLayoutResolver BuildResolver(IWidgetRegistry registry, WidgetConfig[] widgets)
+    {
+        var userConfigStoreMock = new Mock<IUserConfigurationStore>();
+        userConfigStoreMock
+            .Setup(s => s.GetUserConfiguration(It.IsAny<Guid>()))
+            .Returns((UserConfiguration?)null);
+
+        return new WidgetLayoutResolver(
+            registry,
+            userConfigStoreMock.Object,
+            new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>()),
+            () => new PluginConfiguration { Widgets = widgets },
+            NullLogger<WidgetLayoutResolver>.Instance);
+    }
+
+    private static FavoriteGenreWidget BuildFavoriteGenreWidget(User user, IReadOnlyList<BaseItem> watched)
+    {
+        var userManagerMock = new Mock<IUserManager>();
+        userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(user);
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite != true)))
+            .Returns(watched);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite == true)))
+            .Returns([]);
+        libraryManagerMock
+            .Setup(m => m.GetPeople(It.IsAny<BaseItem>()))
+            .Returns([]);
+
+        // Probe query (Limit=1, called by WidgetLayoutResolver.FetchInstanceDescriptor) -- enough
+        // items to clear each row's MinItems=1 threshold.
+        libraryManagerMock
+            .Setup(m => m.GetItemsResult(It.IsAny<InternalItemsQuery>()))
+            .Returns(new QueryResult<BaseItem>([new Movie { Id = Guid.NewGuid(), Name = "Result" }]));
+
+        var dtoServiceMock = new Mock<IDtoService>();
+        dtoServiceMock
+            .Setup(m => m.GetBaseItemDtos(
+                It.IsAny<IReadOnlyList<BaseItem>>(),
+                It.IsAny<DtoOptions>(),
+                It.IsAny<User>(),
+                It.IsAny<BaseItem>()))
+            .Returns([]);
+
+        var scoringService = new ScoringService(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            () => new PluginConfiguration());
+
+        return new FavoriteGenreWidget(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            dtoServiceMock.Object,
+            scoringService,
+            new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>
+            {
+                ["en"] = new Dictionary<string, string>
+                {
+                    ["jux.personalized.favorite-genre.format"] = "More {value}"
+                }
+            }));
     }
 
     private static IWidget MakeWidget(string widgetType, int totalRecordCount)
