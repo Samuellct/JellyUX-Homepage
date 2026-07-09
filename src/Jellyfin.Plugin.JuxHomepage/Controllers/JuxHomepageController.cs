@@ -115,6 +115,29 @@ public class JuxHomepageController : ControllerBase
     }
 
     /// <summary>
+    /// Serves the JellyUX Homepage admin config page's CSS stylesheet.
+    /// Anonymous - a browser-loaded &lt;link&gt; tag carries no Jellyfin auth token, same reasoning as
+    /// jux-homepage.css above.
+    /// </summary>
+    /// <returns>CSS file contents.</returns>
+    [HttpGet("config.css")]
+    [AllowAnonymous]
+    [Produces("text/css")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetConfigStylesheet()
+    {
+        var stream = GetEmbeddedResource("config.css");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "text/css");
+    }
+
+    /// <summary>
     /// Returns the flat translation dictionary for a language, for the admin config page and the
     /// home screen script to translate their own UI/section titles client- or server-side.
     /// Anonymous - translation strings are not sensitive, same as the JS/CSS resources above.

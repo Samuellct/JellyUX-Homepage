@@ -107,88 +107,7 @@
 
     </div>
 
-    <style>
-        .jux-admin-warning {
-            color: var(--error-color, #e5350b);
-            padding: 0.75em;
-            border: 1px solid var(--error-color, #e5350b);
-            border-radius: 4px;
-        }
-        ul.jux-admin-warning {
-            margin: 0;
-            padding-left: 2em;
-        }
-        .jux-admin-field-error {
-            color: var(--error-color, #e5350b);
-        }
-        .jux-admin-widget-card {
-            border: 1px solid var(--borderColor, rgba(255, 255, 255, 0.1));
-            border-radius: 4px;
-            padding: 1em;
-            margin-bottom: 1em;
-        }
-        .jux-admin-widget-header {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5em;
-            margin-bottom: 0.75em;
-        }
-        .jux-admin-enabled-label {
-            flex: 1 1 auto;
-        }
-        .jux-admin-category-badge {
-            font-size: 0.75em;
-            padding: 0.2em 0.6em;
-            border-radius: 3px;
-            background-color: var(--hoverBackgroundColor, rgba(255, 255, 255, 0.1));
-            color: var(--secondaryTextColor);
-        }
-        .jux-admin-order-buttons {
-            display: flex;
-            gap: 0.25em;
-        }
-        .jux-admin-row {
-            display: flex;
-            gap: 1em;
-            flex-wrap: wrap;
-        }
-        .jux-admin-half {
-            flex: 1 1 8em;
-        }
-        .jux-admin-btn-remove {
-            color: var(--error-color, #e5350b);
-            margin-left: auto;
-        }
-        .jux-admin-value-error {
-            color: var(--error-color, #e5350b);
-            font-size: 0.85em;
-        }
-        .jux-admin-add-section {
-            margin-top: 0.5em;
-            padding-top: 0.75em;
-            border-top: 1px solid var(--borderColor, rgba(255, 255, 255, 0.1));
-        }
-        .jux-admin-tmdb-status-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 1em;
-            padding: 0.4em 0;
-            border-bottom: 1px solid var(--borderColor, rgba(255, 255, 255, 0.1));
-        }
-        .jux-admin-tmdb-status-row:last-child {
-            border-bottom: none;
-        }
-        .jux-admin-tmdb-pages {
-            display: flex;
-            align-items: center;
-            gap: 0.5em;
-            flex-shrink: 0;
-        }
-        .jux-admin-tmdb-pages-input {
-            width: 4em;
-        }
-    </style>
+    <link rel="stylesheet" href="/JuxHomepage/config.css" />
 
     <script type="text/javascript">
     if (typeof JuxHomepageConfig === 'undefined') {
@@ -269,23 +188,27 @@
                 return false;
             },
 
+            // Category name -> numeric index, derived from GET JuxHomepage/meta's WidgetCategories
+            // (matches WidgetCategory's declaration order server-side: Native, Admin, Personalized,
+            // Connected). Populated once in loadConfig, before renderWidgets/isAdmin/etc. are ever
+            // called. Never hardcode the numeric values here -- read them from _categoryIndex instead.
+            _categoryIndex: {},
+
             isAdmin: function (widgetType) {
                 var desc = this.getDescriptor(widgetType);
-                // Category is serialized as an integer: 0=Native, 1=Admin, 2=Personalized, 3=Connected
-                // Accept both numeric 1 and string "Admin" to be safe.
-                return desc && (desc.Category === 1 || desc.Category === 'Admin');
+                // Category is serialized as an integer matching WidgetCategory's declaration order.
+                // Accept both the numeric index and the string name to be safe.
+                return desc && (desc.Category === this._categoryIndex.Admin || desc.Category === 'Admin');
             },
 
             isPersonalized: function (widgetType) {
                 var desc = this.getDescriptor(widgetType);
-                // Accept both numeric 2 and string "Personalized" to be safe.
-                return desc && (desc.Category === 2 || desc.Category === 'Personalized');
+                return desc && (desc.Category === this._categoryIndex.Personalized || desc.Category === 'Personalized');
             },
 
             isConnected: function (widgetType) {
                 var desc = this.getDescriptor(widgetType);
-                // Accept both numeric 3 and string "Connected" to be safe.
-                return desc && (desc.Category === 3 || desc.Category === 'Connected');
+                return desc && (desc.Category === this._categoryIndex.Connected || desc.Category === 'Connected');
             },
 
             DISCOVER_MOVIES_TYPE: 'jux.connected.discover-movies',
@@ -433,12 +356,11 @@
                         html += '</label>';
 
                         if (category !== undefined && category !== null && category !== '') {
-                            var categoryLabels = {
-                                0: self.t('admin.category.native'),
-                                1: self.t('admin.category.admin'),
-                                2: self.t('admin.category.personalized'),
-                                3: self.t('admin.category.connected')
-                            };
+                            var categoryLabels = {};
+                            categoryLabels[self._categoryIndex.Native] = self.t('admin.category.native');
+                            categoryLabels[self._categoryIndex.Admin] = self.t('admin.category.admin');
+                            categoryLabels[self._categoryIndex.Personalized] = self.t('admin.category.personalized');
+                            categoryLabels[self._categoryIndex.Connected] = self.t('admin.category.connected');
                             var catLabel = categoryLabels[category] || String(category);
                             html += '<span class="jux-admin-category-badge">' + self.escHtml(catLabel) + '</span>';
                         }
@@ -1008,10 +930,22 @@
                     ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/Widgets/PackErrors')).catch(function () { return []; }),
                     self.loadTmdbCountries(),
                     self.loadTmdbGenres(),
-                    self.loadLocalizations()
+                    self.loadLocalizations(),
+                    ApiClient.getJSON(ApiClient.getUrl('JuxHomepage/meta')).catch(function () { return null; })
                 ]).then(function (results) {
                     self.state.config = results[0];
                     self.state.descriptors = results[1] || [];
+
+                    // Populate _categoryIndex before anything below reads it (isAdmin/isPersonalized/
+                    // isConnected, populateAddSelect, renderWidgets). Falls back to the historical
+                    // hardcoded indices if /meta failed to load, so a transient network error here
+                    // doesn't leave every widget miscategorized.
+                    var meta = results[7];
+                    var categoryNames = (meta && meta.WidgetCategories) || ['Native', 'Admin', 'Personalized', 'Connected'];
+                    categoryNames.forEach(function (name, i) {
+                        self._categoryIndex[name] = i;
+                    });
+
                     self.translateStaticText();
                     self.renderTmdbStatus(results[2] || []);
                     self.renderPackErrors(results[3] || []);
