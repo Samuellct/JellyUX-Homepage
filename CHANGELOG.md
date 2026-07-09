@@ -1,3 +1,9 @@
+## [1.6.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.6.1...v1.6.2) (2026-07-09)
+
+### Bug Fixes
+
+* register FileTransformation before the best-effort TMDb refresh at startup ([09184bd](https://github.com/Samuellct/JellyUX-Homepage/commit/09184bdc0b4b9bcadb50e0e382981cc5ebf48511))
+
 ## [1.6.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.6.0...v1.6.1) (2026-07-08)
 
 ### Bug Fixes
