@@ -29,6 +29,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<FileTransformationDetector>();
         serviceCollection.AddSingleton<SessionCache>();
         serviceCollection.AddHostedService<ConfigurationChangeListener>();
+        serviceCollection.AddHostedService<StartupService>();
         serviceCollection.AddSingleton<IFileSystem, FileSystem>();
         serviceCollection.AddSingleton<IUserConfigurationStore, UserConfigurationStore>();
         serviceCollection.AddSingleton<ILocalizationService, LocalizationService>();

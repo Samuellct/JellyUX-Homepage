@@ -2,18 +2,19 @@ using Jellyfin.Plugin.JuxHomepage.IO;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Common.Configuration;
-using MediaBrowser.Model.Tasks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Jellyfin.Plugin.JuxHomepage.Inject;
 
 /// <summary>
-/// Scheduled task that runs at server startup to register web transformations
-/// and detect required Jellyfin assets.
-/// Auto-discovered by Jellyfin - not registered in DI.
+/// Hosted service that runs once at server startup to register web transformations and detect
+/// required Jellyfin assets. Registered explicitly via <c>AddHostedService</c> in
+/// <see cref="PluginServiceRegistrator"/> (not auto-discovered -- unlike an <c>IScheduledTask</c>,
+/// an <see cref="IHostedService"/> does not show up in Dashboard &gt; Scheduled Tasks).
 /// </summary>
-public class StartupService : IScheduledTask
+public sealed class StartupService : IHostedService
 {
     private static readonly TMDbCacheType[] TMDbCacheTypes =
     [
@@ -51,21 +52,8 @@ public class StartupService : IScheduledTask
     }
 
     /// <inheritdoc/>
-    public string Name => "JellyUX Homepage Startup";
-
-    /// <inheritdoc/>
-    public string Key => "Jellyfin.Plugin.JuxHomepage.Startup";
-
-    /// <inheritdoc/>
-    public string Description => "Registers JellyUX Homepage web transformations and detects Jellyfin assets.";
-
-    /// <inheritdoc/>
-    public string Category => "Startup Services";
-
-    /// <inheritdoc/>
-    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        progress.Report(0);
         SeedDefaultWidgetConfiguration();
 
         await RefreshStaleTMDbCacheAsync(cancellationToken).ConfigureAwait(false);
@@ -94,26 +82,12 @@ public class StartupService : IScheduledTask
             Plugin.Instance.SaveConfiguration();
         }
 
-        progress.Report(20);
-
         RegisterIndexHtmlTransformation();
-
-        progress.Report(60);
-
         RegisterLoadSectionsTransformations();
-
-        progress.Report(100);
-        await Task.CompletedTask.ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
-    {
-        yield return new TaskTriggerInfo
-        {
-            Type = TaskTriggerInfoType.StartupTrigger
-        };
-    }
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <summary>
     /// Immediately refreshes any TMDb cache type that is missing or older than the configured
