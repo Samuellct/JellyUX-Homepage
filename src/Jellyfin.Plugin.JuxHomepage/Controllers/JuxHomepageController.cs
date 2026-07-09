@@ -134,7 +134,10 @@ public class JuxHomepageController : ControllerBase
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Returns plugin status metadata: enabled flag and any startup warning.
+    /// Returns plugin status metadata: enabled flag, any startup warning, and the ordered list of
+    /// widget category names (matching <see cref="WidgetCategory"/>'s declaration order), so the
+    /// admin config page can resolve a descriptor's numeric <c>Category</c> to a name without
+    /// hardcoding the enum's underlying values.
     /// </summary>
     /// <returns>Plugin metadata object.</returns>
     [HttpGet("meta")]
@@ -143,7 +146,7 @@ public class JuxHomepageController : ControllerBase
     public ActionResult<PluginMeta> GetMeta()
     {
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
-        return Ok(new PluginMeta(config.Enabled, config.StartupWarning));
+        return Ok(new PluginMeta(config.Enabled, config.StartupWarning, Enum.GetNames<WidgetCategory>()));
     }
 
     // -------------------------------------------------------------------------
@@ -516,7 +519,12 @@ public class JuxHomepageController : ControllerBase
     /// <summary>Plugin status metadata returned by /JuxHomepage/meta.</summary>
     /// <param name="Enabled">Whether the plugin is active.</param>
     /// <param name="Warning">Startup warning if a dependency is missing; otherwise null.</param>
-    public record PluginMeta(bool Enabled, string? Warning);
+    /// <param name="WidgetCategories">
+    /// Widget category names in <see cref="WidgetCategory"/> declaration order (index = underlying
+    /// enum value), so the admin config page can resolve a descriptor's <c>Category</c> without
+    /// hardcoding the enum's numeric values.
+    /// </param>
+    public record PluginMeta(bool Enabled, string? Warning, IReadOnlyList<string> WidgetCategories);
 
     /// <summary>TMDb cache status entry returned by /JuxHomepage/TMDb/Status.</summary>
     /// <param name="Type">The <see cref="TMDbCacheType"/> name (e.g. "TrendingMovies").</param>

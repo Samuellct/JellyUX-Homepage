@@ -136,6 +136,18 @@ public sealed class JuxHomepageControllerTests
             Times.Once);
     }
 
+    [Fact]
+    public void GetMeta_ReturnsWidgetCategoryNamesInEnumOrder()
+    {
+        var controller = BuildController();
+
+        var result = controller.GetMeta();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var meta = Assert.IsType<JuxHomepageController.PluginMeta>(ok.Value);
+        Assert.Equal(Enum.GetNames<WidgetCategory>(), meta.WidgetCategories);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
