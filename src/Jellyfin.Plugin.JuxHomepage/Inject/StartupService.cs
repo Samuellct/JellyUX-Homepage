@@ -52,12 +52,28 @@ public sealed class StartupService : IHostedService
     }
 
     /// <inheritdoc/>
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
         SeedDefaultWidgetConfiguration();
 
-        await RefreshStaleTMDbCacheAsync(cancellationToken).ConfigureAwait(false);
+        RegisterFileTransformationsIfAvailable();
 
+        // Best-effort, not awaited: FileTransformation registration above must never be delayed
+        // behind a slow or unreachable TMDb refresh. Previously this refresh was awaited first, so an
+        // unreachable TMDb (see the Phase 3.2 circuit breaker) could leave the home page unpatched --
+        // falling back to native rendering -- for longer than necessary after a restart.
+        // RefreshStaleTMDbCacheAsync already wraps its own body in try/catch and logs failures, so
+        // discarding the task here is safe.
+        _ = RefreshStaleTMDbCacheAsync(CancellationToken.None);
+
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private void RegisterFileTransformationsIfAvailable()
+    {
         if (!_detector.IsAvailable())
         {
             const string warning =
@@ -85,9 +101,6 @@ public sealed class StartupService : IHostedService
         RegisterIndexHtmlTransformation();
         RegisterLoadSectionsTransformations();
     }
-
-    /// <inheritdoc/>
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <summary>
     /// Immediately refreshes any TMDb cache type that is missing or older than the configured
