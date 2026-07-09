@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.6.2...v1.7.0) (2026-07-09)
+
+### Features
+
+* expose ordered widget category names via GET /JuxHomepage/meta ([77246a2](https://github.com/Samuellct/JellyUX-Homepage/commit/77246a2f4f387683ad2d50a7f3d84c3a947ea922))
+
 ## [1.6.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.6.1...v1.6.2) (2026-07-09)
 
 ### Bug Fixes

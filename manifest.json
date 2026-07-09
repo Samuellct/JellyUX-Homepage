@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "1.7.0.0",
+                "changelog": "### Features\n\n* expose ordered widget category names via GET /JuxHomepage/meta ([77246a2](https://github.com/Samuellct/JellyUX-Homepage/commit/77246a2f4f387683ad2d50a7f3d84c3a947ea922))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v1.7.0/jellyux-homepage_1.7.0.0.zip",
+                "checksum": "69fb8e417759495139e1e1fb49a48665",
+                "timestamp": "2026-07-09T23:53:16Z"
+            },
+            {
                 "version": "1.6.2.0",
                 "changelog": "### Bug Fixes\n\n* register FileTransformation before the best-effort TMDb refresh at startup ([09184bd](https://github.com/Samuellct/JellyUX-Homepage/commit/09184bdc0b4b9bcadb50e0e382981cc5ebf48511))",
                 "targetAbi": "10.11.0.0",
