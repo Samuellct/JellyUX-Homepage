@@ -6,6 +6,7 @@ using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
+using MediaBrowser.Common.Api;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
@@ -234,7 +235,7 @@ public class JuxHomepageController : ControllerBase
     /// </summary>
     /// <returns>An array of <see cref="WidgetDescriptor"/> objects.</returns>
     [HttpGet("Widgets")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<IReadOnlyList<WidgetDescriptor>> GetWidgets()
     {
@@ -253,7 +254,7 @@ public class JuxHomepageController : ControllerBase
     /// </summary>
     /// <returns>An array of <see cref="WidgetPackLoadError"/> objects.</returns>
     [HttpGet("Widgets/PackErrors")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<IReadOnlyList<WidgetPackLoadError>> GetWidgetPackErrors()
     {
@@ -269,7 +270,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="search">Optional search string to filter results.</param>
     /// <returns>An array of <see cref="AdminWidgetValue"/> objects.</returns>
     [HttpGet("Widget/{widgetType}/values")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -304,7 +305,7 @@ public class JuxHomepageController : ControllerBase
     /// </summary>
     /// <returns>An array of <see cref="TMDbCacheStatusDto"/> objects, one per <see cref="TMDbCacheType"/>.</returns>
     [HttpGet("TMDb/Status")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<IReadOnlyList<TMDbCacheStatusDto>> GetTMDbStatus()
     {
@@ -326,7 +327,7 @@ public class JuxHomepageController : ControllerBase
     /// </summary>
     /// <returns>202 Accepted if a refresh was started; 409 Conflict if one was already running.</returns>
     [HttpPost("TMDb/Refresh")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public IActionResult RefreshTMDbCache()
@@ -358,7 +359,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=country code, Label=name).</returns>
     [HttpGet("TMDb/Countries")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> GetTMDbCountries(CancellationToken cancellationToken)
     {
@@ -378,7 +379,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=genre id, Label=name).</returns>
     [HttpGet("TMDb/Genres")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> GetTMDbGenres(CancellationToken cancellationToken)
     {
@@ -399,7 +400,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=person id, Label=name).</returns>
     [HttpGet("TMDb/Search/Person")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchTMDbPerson(
         [FromQuery] string query,
@@ -415,7 +416,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=keyword id, Label=name).</returns>
     [HttpGet("TMDb/Search/Keyword")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchTMDbKeyword(
         [FromQuery] string query,
@@ -431,7 +432,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=company id, Label=name).</returns>
     [HttpGet("TMDb/Search/Company")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchTMDbCompany(
         [FromQuery] string query,
