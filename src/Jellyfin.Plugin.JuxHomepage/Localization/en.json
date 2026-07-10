@@ -90,7 +90,7 @@
   "admin.rewards.ceremony": "Ceremony",
   "admin.rewards.category": "Award category",
   "admin.rewards.year": "Year",
-  "admin.rewards.help": "At least one of Ceremony or Category is required. Data comes from Wikidata and may not cover every ceremony/year.",
+  "admin.rewards.help": "At least one of Ceremony or Category is required. Data comes from Wikidata and may not cover every ceremony/year. For better search results, type the full name (e.g. \"Academy Award for Best Picture\" rather than \"Academy\").",
   "admin.minitems.label": "Min items",
   "admin.minitems.help": "Section hidden if below this count.",
   "admin.maxitems.label": "Max items",
