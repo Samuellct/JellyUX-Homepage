@@ -1,3 +1,4 @@
+using System.Net;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.IO;
@@ -62,8 +63,15 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             client.Timeout = TimeSpan.FromSeconds(90);
             client.DefaultRequestHeaders.UserAgent.ParseAdd(
                 $"JellyUX-Homepage/{Plugin.Instance?.Version.ToString() ?? "dev"} (https://github.com/Samuellct/JellyUX-Homepage)");
-            client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip");
-            client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("deflate");
+        })
+        // Setting the Accept-Encoding header alone does NOT make HttpClient decompress a
+        // gzip/deflate response -- that requires this separate handler setting. Without it, Wikidata
+        // (which does compress its responses) sent gzip bytes that ReadFromJsonAsync tried to parse
+        // as JSON text and failed on (JsonException: '0x1F' is an invalid start of a value -- 0x1F is
+        // the first byte of the gzip magic number), a bug caught live via the real server's logs.
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
         });
         serviceCollection.AddSingleton<IWikidataApiClient>(serviceProvider => new WikidataApiClient(
             serviceProvider.GetRequiredService<IHttpClientFactory>(),
