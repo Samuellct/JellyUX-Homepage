@@ -10,6 +10,7 @@
 !.github/workflows/
 !.github/workflows/ci.yml
 !.github/workflows/jellyfin-web-drift.yml
+!.github/workflows/docs.yml
 !.github/scripts/
 !.github/scripts/update-manifest.py
 !README.md
@@ -20,6 +21,7 @@
 !manifest.json
 !.releaserc.json
 !package.json
+!mkdocs.yml
 
 # Documentation assets
 !docs/
@@ -30,6 +32,25 @@ docs/*
 docs/screenshots/*
 !docs/screenshots/home.png
 !docs/screenshots/admin.png
+
+# MkDocs site source (Phase 13 of TODO_V2.md)
+!docs/index.md
+!docs/configuration.md
+!docs/troubleshooting.md
+!docs/widgets/
+docs/widgets/*
+!docs/widgets/native/
+docs/widgets/native/*
+!docs/widgets/native/*.md
+!docs/widgets/admin/
+docs/widgets/admin/*
+!docs/widgets/admin/*.md
+!docs/widgets/personalized/
+docs/widgets/personalized/*
+!docs/widgets/personalized/*.md
+!docs/widgets/connected/
+docs/widgets/connected/*
+!docs/widgets/connected/*.md
 
 # Docker dev environment
 !docker/

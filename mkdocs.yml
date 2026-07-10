@@ -1,0 +1,60 @@
+site_name: JellyUX Homepage
+site_url: https://samuellct.github.io/JellyUX-Homepage/
+repo_url: https://github.com/Samuellct/JellyUX-Homepage
+repo_name: Samuellct/JellyUX-Homepage
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Configuration: configuration.md
+  - Widgets:
+      - Native:
+          - Continue Watching: widgets/native/continue-watching.md
+          - Next Up: widgets/native/next-up.md
+          - Recently Added Movies: widgets/native/recently-added-movies.md
+          - Recently Added Shows: widgets/native/recently-added-shows.md
+          - My Media: widgets/native/my-media.md
+      - Admin:
+          - Genre: widgets/admin/genre.md
+          - Actor: widgets/admin/actor.md
+          - Director: widgets/admin/director.md
+          - Studio: widgets/admin/studio.md
+          - Collection: widgets/admin/collection.md
+          - Tag: widgets/admin/tag.md
+          - Year: widgets/admin/year.md
+      - Personalized:
+          - Favorite Genre: widgets/personalized/favorite-genre.md
+          - Favorite Actor: widgets/personalized/favorite-actor.md
+          - Favorite Director: widgets/personalized/favorite-director.md
+          - Because You Watched: widgets/personalized/because-you-watched.md
+      - Connected:
+          - Trending Movies: widgets/connected/trending-movies.md
+          - Trending Shows: widgets/connected/trending-shows.md
+          - On TV: widgets/connected/airing-today.md
+          - Top Rated Movies: widgets/connected/top-rated-movies.md
+          - Top Rated Shows: widgets/connected/top-rated-shows.md
+          - Now Playing: widgets/connected/now-playing-movies.md
+          - Discover Movies: widgets/connected/discover-movies.md
+  - Troubleshooting: troubleshooting.md
