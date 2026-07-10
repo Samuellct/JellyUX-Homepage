@@ -198,10 +198,16 @@ public sealed class WikidataApiClient : IWikidataApiClient
     private async Task<T?> ExecuteGetAsync<T>(string uri, string acceptHeader, CancellationToken cancellationToken)
         where T : class
     {
-        var client = _httpClientFactory.CreateClient(HttpClientName);
-
+        // The entire body -- including CreateClient, which re-runs the AddHttpClient configuration
+        // delegate (User-Agent header parsing) on every call -- is inside this try/catch. This class
+        // is documented as never throwing from a public method; narrowing the catch to only
+        // HttpRequestException/TaskCanceledException (as TMDbApiClient does) would let any other
+        // failure (header parsing, an unexpected JSON shape, etc.) escape uncaught, surface as a bare
+        // 500 from the controller, and be silently swallowed by config.html's own error handling --
+        // exactly the "nothing happens, no visible error" failure mode this must never produce.
         try
         {
+            var client = _httpClientFactory.CreateClient(HttpClientName);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptHeader));
 
@@ -216,10 +222,20 @@ public sealed class WikidataApiClient : IWikidataApiClient
                 return null;
             }
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                _logger.LogWarning(
+                    "Wikidata request to '{Uri}' failed with HTTP {StatusCode}: {Body}",
+                    uri,
+                    (int)response.StatusCode,
+                    body.Length > 500 ? body[..500] : body);
+                return null;
+            }
+
             return await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
             _logger.LogWarning(ex, "Wikidata request to '{Uri}' failed; not retrying (see WikidataApiClient resilience policy).", uri);
             return null;
