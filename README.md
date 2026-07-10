@@ -9,9 +9,12 @@
   <img src="https://img.shields.io/github/v/release/Samuellct/JellyUX-Homepage" alt="Version">
   <img src="https://img.shields.io/badge/Jellyfin-10.11.10-orange" alt="Jellyfin">
   <img src="https://img.shields.io/badge/license-GPL--3.0-green" alt="License">
+  <a href="https://samuellct.github.io/JellyUX-Homepage/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Documentation"></a>
 </p>
 
 A modular home screen engine for Jellyfin that replaces the default home page with a fully configurable widget system.
+
+**[Full documentation](https://samuellct.github.io/JellyUX-Homepage/)** - a detailed page for every widget, all global settings, and troubleshooting.
 
 ---
 
@@ -41,6 +44,9 @@ After installation, the plugin configuration page lets you:
 - Enable or disable individual widgets
 - Reorder widgets via drag and drop
 - Configure per-widget parameters (minimum items, source library, etc.)
+
+See the **[documentation site](https://samuellct.github.io/JellyUX-Homepage/)** for a detailed
+breakdown of every widget's parameters and all global settings.
 
 ---
 
