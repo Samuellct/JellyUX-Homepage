@@ -1,3 +1,9 @@
+## [1.8.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.8.0...v1.8.1) (2026-07-10)
+
+### Bug Fixes
+
+* harden WikidataApiClient error handling and surface failure details ([ce19449](https://github.com/Samuellct/JellyUX-Homepage/commit/ce194492f14d630f32ab55855e1a3e12f47609cd))
+
 ## [1.8.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.7.0...v1.8.0) (2026-07-10)
 
 ### Features
