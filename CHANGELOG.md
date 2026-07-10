@@ -1,3 +1,11 @@
+## [1.8.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.7.0...v1.8.0) (2026-07-10)
+
+### Features
+
+* add Rewards cache service with library cross-referencing ([6a11a8e](https://github.com/Samuellct/JellyUX-Homepage/commit/6a11a8e0a687088f7cc61837d864c24acefe54d0))
+* add Rewards widget and admin configuration UI ([5386527](https://github.com/Samuellct/JellyUX-Homepage/commit/53865271aab312014b7f4c5d9a06ad8990b67597))
+* add Wikidata SPARQL client for structured award data ([26867ab](https://github.com/Samuellct/JellyUX-Homepage/commit/26867abc3f3b842f9f2ab35a83f0b6be08b6ac6b))
+
 ## [1.7.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.6.2...v1.7.0) (2026-07-09)
 
 ### Features
