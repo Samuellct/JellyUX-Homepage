@@ -11,6 +11,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 /// </summary>
 public sealed class TrendingShowsWidget : ConnectedWidgetBase<TMDbShow>
 {
+    private readonly ITMDbCacheService _cacheService;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TrendingShowsWidget"/> class.
     /// </summary>
@@ -25,8 +27,9 @@ public sealed class TrendingShowsWidget : ConnectedWidgetBase<TMDbShow>
         IDtoService dtoService,
         ITMDbCacheService cacheService,
         ILogger<TrendingShowsWidget> logger)
-        : base(userManager, libraryManager, dtoService, cacheService, logger)
+        : base(userManager, libraryManager, dtoService, logger)
     {
+        _cacheService = cacheService;
     }
 
     /// <inheritdoc/>
@@ -39,5 +42,5 @@ public sealed class TrendingShowsWidget : ConnectedWidgetBase<TMDbShow>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<TMDbShow> GetCachedItems(WidgetPayload payload) => CacheService.GetTrendingShows();
+    protected override IReadOnlyList<TMDbShow> GetCachedItems(WidgetPayload payload) => _cacheService.GetTrendingShows();
 }

@@ -15,6 +15,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 /// </summary>
 public sealed class DiscoverMoviesWidget : ConnectedWidgetBase<TMDbMovie>
 {
+    private readonly ITMDbCacheService _cacheService;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="DiscoverMoviesWidget"/> class.
     /// </summary>
@@ -29,8 +31,9 @@ public sealed class DiscoverMoviesWidget : ConnectedWidgetBase<TMDbMovie>
         IDtoService dtoService,
         ITMDbCacheService cacheService,
         ILogger<DiscoverMoviesWidget> logger)
-        : base(userManager, libraryManager, dtoService, cacheService, logger)
+        : base(userManager, libraryManager, dtoService, logger)
     {
+        _cacheService = cacheService;
     }
 
     /// <inheritdoc/>
@@ -47,5 +50,5 @@ public sealed class DiscoverMoviesWidget : ConnectedWidgetBase<TMDbMovie>
 
     /// <inheritdoc/>
     protected override IReadOnlyList<TMDbMovie> GetCachedItems(WidgetPayload payload) =>
-        payload.AdditionalData is null ? [] : CacheService.GetDiscoverMovies(payload.AdditionalData);
+        payload.AdditionalData is null ? [] : _cacheService.GetDiscoverMovies(payload.AdditionalData);
 }

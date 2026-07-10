@@ -86,6 +86,33 @@ public sealed class LibraryCrossReferencerTests
     }
 
     [Fact]
+    public async Task CrossReferenceAsync_NoImdbIdAndNullFallbackProvider_DoesNotQueryAnyProviderId()
+    {
+        // Regression test for TODO_V2.md Phase 14: a Wikidata-backed caller has no MetadataProvider
+        // to fall back on (its own Id is a parsed Q-id, not a TMDb id), so passing
+        // fallbackProvider: null must skip the provider-id lookup entirely rather than defaulting to
+        // MetadataProvider.Tmdb -- which would risk a spurious match against an unrelated item.
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock.Setup(m => m.GetItemList(It.IsAny<InternalItemsQuery>())).Returns([]);
+
+        var referencer = new LibraryCrossReferencer(libraryManagerMock.Object, NullLogger.Instance);
+        var items = new List<TMDbMovie> { new() { Id = 550, Title = "Fight Club" } };
+
+        var matched = await referencer.CrossReferenceAsync(
+            items,
+            (_, _) => Task.FromResult<string?>(null),
+            [BaseItemKind.Movie],
+            CancellationToken.None,
+            fallbackProvider: null);
+
+        Assert.Equal(0, matched);
+        libraryManagerMock.Verify(
+            m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.HasAnyProviderId != null && q.HasAnyProviderId.ContainsKey("Tmdb"))),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task CrossReferenceAsync_ManyItems_RunsWithBoundedConcurrency()
     {
         const int ItemCount = 30;

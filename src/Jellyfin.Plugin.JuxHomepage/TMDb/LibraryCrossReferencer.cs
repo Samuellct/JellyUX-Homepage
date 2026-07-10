@@ -53,12 +53,22 @@ public sealed class LibraryCrossReferencer
     /// <param name="getExternalImdbId">Fetches the IMDb ID for a given provider id, if known.</param>
     /// <param name="includeItemTypes">The Jellyfin item kinds to search within.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="fallbackProvider">
+    /// The <see cref="MetadataProvider"/> whose id matches <typeparamref name="T"/>'s own
+    /// <see cref="IExternalCacheItem.Id"/>, used as a fallback when no IMDb match is found. Defaults
+    /// to <see cref="MetadataProvider.Tmdb"/> for the existing TMDb-backed callers. Pass <c>null</c>
+    /// for a provider with no corresponding <see cref="MetadataProvider"/> entry (e.g. Wikidata, see
+    /// TODO_V2.md Phase 14) -- falling back to <see cref="MetadataProvider.Tmdb"/> in that case would
+    /// compare an unrelated identifier (a parsed Wikidata Q-id) against real TMDb ids, risking a
+    /// spurious match rather than just a missed one.
+    /// </param>
     /// <returns>The number of items that were matched to a local library item.</returns>
     public async Task<int> CrossReferenceAsync<T>(
         IReadOnlyList<T> items,
         Func<int, CancellationToken, Task<string?>> getExternalImdbId,
         BaseItemKind[] includeItemTypes,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        MetadataProvider? fallbackProvider = MetadataProvider.Tmdb)
         where T : IExternalCacheItem
     {
         using var semaphore = new SemaphoreSlim(MaxConcurrency);
@@ -84,10 +94,13 @@ public sealed class LibraryCrossReferencer
                     ? null
                     : FindLibraryMatch(MetadataProvider.Imdb, imdbId, includeItemTypes);
 
-                match ??= FindLibraryMatch(
-                    MetadataProvider.Tmdb,
-                    item.Id.ToString(CultureInfo.InvariantCulture),
-                    includeItemTypes);
+                if (match is null && fallbackProvider is { } provider)
+                {
+                    match = FindLibraryMatch(
+                        provider,
+                        item.Id.ToString(CultureInfo.InvariantCulture),
+                        includeItemTypes);
+                }
 
                 item.LibraryItemId = match?.Id;
                 return match is not null;

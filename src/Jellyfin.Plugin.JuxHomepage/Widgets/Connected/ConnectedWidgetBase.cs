@@ -13,19 +13,25 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 /// <summary>
 /// Abstract base class for JellyUX Homepage connected widgets.
 /// <para>
-/// Connected widgets display TMDb data (trending/on the air/top rated/now playing/discover) that
-/// has been cross-referenced
-/// against the local Jellyfin library by <see cref="ITMDbCacheService"/>. Only cached entries that
-/// carry a non-null <see cref="IExternalCacheItem.LibraryItemId"/> -- i.e. items the user actually owns
-/// -- are ever displayed; a cached entry with no local match is not a playable Jellyfin item and is
-/// silently excluded.
+/// Connected widgets display external data (TMDb trending/on the air/top rated/now playing/discover,
+/// or Wikidata-backed Rewards) that has been cross-referenced against the local Jellyfin library by a
+/// disk cache service (<see cref="ITMDbCacheService"/> or <see cref="Rewards.IRewardsCacheService"/>).
+/// Only cached entries that carry a non-null <see cref="IExternalCacheItem.LibraryItemId"/> -- i.e.
+/// items the user actually owns -- are ever displayed; a cached entry with no local match is not a
+/// playable Jellyfin item and is silently excluded.
+/// </para>
+/// <para>
+/// Deliberately does not itself depend on any specific cache service type: each concrete widget holds
+/// its own cache service field and implements <see cref="GetCachedItems"/> against it, so this base
+/// class can be reused across unrelated external data providers without coupling them to each other
+/// (see TODO_V2.md Phase 14, which added the second provider, Wikidata).
 /// </para>
 /// <para>
 /// Single-instance, like <see cref="Native.NativeWidgetBase"/>: there is exactly one "Trending
 /// Movies" section, not one per scored/chosen value.
 /// </para>
 /// </summary>
-/// <typeparam name="T">The cached TMDb item type (<see cref="TMDbMovie"/> or <see cref="TMDbShow"/>).</typeparam>
+/// <typeparam name="T">The cached item type (<see cref="TMDbMovie"/>, <see cref="TMDbShow"/>, or <see cref="Rewards.Models.RewardsWinner"/>).</typeparam>
 public abstract class ConnectedWidgetBase<T> : IWidget
     where T : IExternalCacheItem
 {
@@ -37,19 +43,16 @@ public abstract class ConnectedWidgetBase<T> : IWidget
     /// <param name="userManager">Jellyfin user manager.</param>
     /// <param name="libraryManager">Jellyfin library manager.</param>
     /// <param name="dtoService">Jellyfin DTO projection service.</param>
-    /// <param name="cacheService">TMDb disk cache service.</param>
     /// <param name="logger">Logger.</param>
     protected ConnectedWidgetBase(
         IUserManager userManager,
         ILibraryManager libraryManager,
         IDtoService dtoService,
-        ITMDbCacheService cacheService,
         ILogger logger)
     {
         UserManager = userManager;
         LibraryManager = libraryManager;
         DtoService = dtoService;
-        CacheService = cacheService;
         _logger = logger;
     }
 
@@ -61,9 +64,6 @@ public abstract class ConnectedWidgetBase<T> : IWidget
 
     /// <summary>Gets the Jellyfin DTO projection service.</summary>
     protected IDtoService DtoService { get; }
-
-    /// <summary>Gets the TMDb disk cache service.</summary>
-    protected ITMDbCacheService CacheService { get; }
 
     /// <inheritdoc/>
     public abstract string WidgetType { get; }
@@ -87,7 +87,8 @@ public abstract class ConnectedWidgetBase<T> : IWidget
     public virtual int MaxInstances => 1;
 
     /// <summary>
-    /// Returns the currently cached TMDb items for this widget's data set (e.g. trending movies).
+    /// Returns the currently cached external items for this widget's data set (e.g. trending movies,
+    /// or a Rewards instance's award winners).
     /// </summary>
     /// <param name="payload">
     /// The request payload. Fixed single-instance widgets ignore it; multi-instance widgets (e.g.
@@ -156,7 +157,7 @@ public abstract class ConnectedWidgetBase<T> : IWidget
         if (unresolvedCount > 0)
         {
             _logger.LogDebug(
-                "{Count} cached TMDb item(s) for widget '{WidgetType}' no longer resolve to a local library item (likely removed since the last refresh).",
+                "{Count} cached item(s) for widget '{WidgetType}' no longer resolve to a local library item (likely removed since the last refresh).",
                 unresolvedCount,
                 WidgetType);
         }

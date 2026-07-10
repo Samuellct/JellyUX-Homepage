@@ -12,6 +12,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 /// </summary>
 public sealed class AiringTodayShowsWidget : ConnectedWidgetBase<TMDbShow>
 {
+    private readonly ITMDbCacheService _cacheService;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="AiringTodayShowsWidget"/> class.
     /// </summary>
@@ -26,8 +28,9 @@ public sealed class AiringTodayShowsWidget : ConnectedWidgetBase<TMDbShow>
         IDtoService dtoService,
         ITMDbCacheService cacheService,
         ILogger<AiringTodayShowsWidget> logger)
-        : base(userManager, libraryManager, dtoService, cacheService, logger)
+        : base(userManager, libraryManager, dtoService, logger)
     {
+        _cacheService = cacheService;
     }
 
     /// <inheritdoc/>
@@ -40,5 +43,5 @@ public sealed class AiringTodayShowsWidget : ConnectedWidgetBase<TMDbShow>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<TMDbShow> GetCachedItems(WidgetPayload payload) => CacheService.GetAiringToday();
+    protected override IReadOnlyList<TMDbShow> GetCachedItems(WidgetPayload payload) => _cacheService.GetAiringToday();
 }
