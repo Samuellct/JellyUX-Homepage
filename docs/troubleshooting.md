@@ -47,6 +47,34 @@ TMDb circuit breaker opened after 3 consecutive failures; TMDb requests will be 
 This is expected behavior during a sustained TMDb outage and requires no action: normal requests
 resume automatically once the 5-minute window elapses and TMDb is reachable again.
 
+## Sections don't appear even after clearing the browser cache and using incognito mode
+
+If the home page still shows native Jellyfin sections after installing or updating JellyUX, and this
+persists even in a private/incognito window or after fully clearing browser data, the cause is
+probably **not** the browser at all: a CDN or a caching reverse proxy in front of your Jellyfin server
+may be serving a cached copy of the patched chunk from before the install/update.
+
+This was confirmed on a real deployment (TrueNAS app, Jellyfin behind an **nginx reverse proxy**, DNS
+managed through **Cloudflare**): the chunk containing `loadSections` was served with
+`cf-cache-status: HIT` at Cloudflare's edge, from before the plugin was installed. No amount of
+browser-side cache clearing can bust an edge/CDN cache, since it lives entirely outside the browser.
+
+**How to check**: open your browser's developer tools (F12), go to the **Network** tab, reload the
+home page, find the request for the `*.chunk.js` file containing your home screen bundle, and inspect
+its response headers. A `cf-cache-status: HIT` (Cloudflare) or similar cache-hit header from any other
+CDN/reverse proxy confirms this is the cause rather than a plugin issue.
+
+**Fix**: purge the cache at the CDN/proxy level, not the browser:
+- **Cloudflare**: dashboard > your zone > **Caching > Configuration > Purge Cache** (Purge Everything
+  is simplest, since the chunk's filename hash changes on every Jellyfin Web update anyway).
+- **nginx reverse proxy with `proxy_cache`**: clear the configured cache path, or reload nginx if it
+  was configured to bypass its own cache for the relevant location.
+- Other CDNs: use their equivalent cache purge/invalidation feature.
+
+If you consistently run into this after every JellyUX update, consider adding a cache rule at your
+CDN/proxy that bypasses caching for `*.chunk.js`/`*.bundle.js` paths, or that purges automatically as
+part of your plugin update routine.
+
 ## Home page falls back to native rendering after a Jellyfin update
 
 JellyUX patches a specific Jellyfin Web chunk to render its widgets. If Jellyfin Web's internal
