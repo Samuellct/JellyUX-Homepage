@@ -1,0 +1,46 @@
+# Configuration
+
+All settings below are found in **Administration > Plugins > JellyUX Homepage**.
+
+## Common per-widget parameters
+
+Every widget section shares this set of fields, no matter its category:
+
+| Field | Description |
+|---|---|
+| Enabled | Toggles the section on or off without removing it. |
+| Min items | Section is hidden if fewer items than this are available. |
+| Max items | Maximum number of items fetched per section. |
+| View mode | Card shape: Landscape, Portrait, or Square. |
+| Name | Custom display name shown instead of the widget's default title. Not available for Personalized widgets, whose section names are generated per user (e.g. "Because you watched ..."). |
+
+Widget pages in this site only document parameters that are specific to that widget, on top of this
+shared set.
+
+## Cache
+
+| Field | Default | Description |
+|---|---|---|
+| Session cache TTL (minutes) | 15 | How long the home screen widget layout is cached per user. Reduce to see configuration changes more quickly; increase to lower server load. |
+| TMDb refresh interval (hours) | 24 | How often TMDb data is refreshed. Increase to reduce external API calls; decrease for fresher content. |
+
+## API Keys
+
+| Field | Description |
+|---|---|
+| TMDb API Key | Required for [Connected](widgets/connected/trending-movies.md) widgets. Leave empty if not needed. Accepted formats: a 32-character hexadecimal key (v3), or a v4 bearer token starting with `ey`. |
+
+## TMDb Cache
+
+The **TMDb Cache** section shows, per TMDb list type, the last refresh time and the number of cached
+items, plus a **Refresh now** button. Each page is roughly 20 items from TMDb, so setting "Pages: 3"
+fetches about 60 items for that list.
+
+| Field | Applies to | Default |
+|---|---|---|
+| Pages | Trending Movies, Trending Shows, On TV, Top Rated Movies, Top Rated Shows, Now Playing | 1 (1-5) |
+| Min votes | Top Rated Movies and Top Rated Shows (shared field) | 200 |
+| Region | Now Playing | Default (all regions) |
+
+Note: [Discover Movies](widgets/connected/discover-movies.md) has its own `Pages` field per
+configured section, independent of the global TMDb Lists pages above.
