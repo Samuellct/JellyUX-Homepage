@@ -80,7 +80,7 @@ JellyUX Homepage is built to coexist cleanly with other popular Jellyfin customi
 
 ## Widgets
 
-23 widgets across 4 categories, each independently enabled, reordered, and configured from the admin panel.
+24 widgets across 4 categories, each independently enabled, reordered, and configured from the admin panel.
 
 | Widget | Category | Description |
 |---|---|---|
@@ -107,6 +107,7 @@ JellyUX Homepage is built to coexist cleanly with other popular Jellyfin customi
 | Top Rated Shows | Connected (TMDb) | TMDb's top-rated shows |
 | Now Playing | Connected (TMDb) | Movies currently in theaters, per TMDb |
 | Discover Movies | Connected (TMDb) | Movie discovery filtered by admin-configured criteria |
+| Rewards | Connected (Wikidata) | Library films that won an admin-configured award (ceremony/category/year) |
 
 ---
 

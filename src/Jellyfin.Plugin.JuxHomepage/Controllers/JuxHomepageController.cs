@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Localization;
+using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
@@ -31,6 +32,8 @@ public class JuxHomepageController : ControllerBase
     private readonly IUserManager _userManager;
     private readonly ITMDbCacheService _tmdbCacheService;
     private readonly ITMDbApiClient _tmdbApiClient;
+    private readonly IRewardsCacheService _rewardsCacheService;
+    private readonly IWikidataApiClient _wikidataApiClient;
     private readonly ILocalizationService _localizationService;
     private readonly IAuthorizationContext _authContext;
     private readonly ILogger<JuxHomepageController> _logger;
@@ -43,6 +46,8 @@ public class JuxHomepageController : ControllerBase
     /// <param name="userManager">Jellyfin user manager.</param>
     /// <param name="tmdbCacheService">TMDb disk cache service.</param>
     /// <param name="tmdbApiClient">TMDb HTTP API client.</param>
+    /// <param name="rewardsCacheService">Rewards disk cache service.</param>
+    /// <param name="wikidataApiClient">Wikidata HTTP API client.</param>
     /// <param name="localizationService">Widget/admin-UI translation service.</param>
     /// <param name="authContext">Jellyfin request authorization context.</param>
     /// <param name="logger">Logger.</param>
@@ -52,6 +57,8 @@ public class JuxHomepageController : ControllerBase
         IUserManager userManager,
         ITMDbCacheService tmdbCacheService,
         ITMDbApiClient tmdbApiClient,
+        IRewardsCacheService rewardsCacheService,
+        IWikidataApiClient wikidataApiClient,
         ILocalizationService localizationService,
         IAuthorizationContext authContext,
         ILogger<JuxHomepageController> logger)
@@ -61,6 +68,8 @@ public class JuxHomepageController : ControllerBase
         _userManager = userManager;
         _tmdbCacheService = tmdbCacheService;
         _tmdbApiClient = tmdbApiClient;
+        _rewardsCacheService = rewardsCacheService;
+        _wikidataApiClient = wikidataApiClient;
         _localizationService = localizationService;
         _authContext = authContext;
         _logger = logger;
@@ -347,9 +356,11 @@ public class JuxHomepageController : ControllerBase
     }
 
     /// <summary>
-    /// Triggers an immediate refresh of all four TMDb cache types. Runs in the background; the
-    /// response does not wait for the refresh to complete. Rejects the request with 409 Conflict if
-    /// a refresh (manual or the daily scheduled task) is already in progress.
+    /// Triggers an immediate refresh of all four TMDb cache types, plus every configured Rewards
+    /// widget instance (TODO_V2.md Phase 14: Rewards deliberately has no separate "Refresh now" button
+    /// -- this one action covers both external data providers). Runs in the background; the response
+    /// does not wait for the refresh to complete. Rejects the request with 409 Conflict if a TMDb
+    /// refresh (manual or the daily scheduled task) is already in progress.
     /// </summary>
     /// <returns>202 Accepted if a refresh was started; 409 Conflict if one was already running.</returns>
     [HttpPost("TMDb/Refresh")]
@@ -373,6 +384,15 @@ public class JuxHomepageController : ControllerBase
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Manually triggered TMDb refresh failed.");
+            }
+
+            try
+            {
+                await _rewardsCacheService.RefreshAllInstancesAsync(CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Manually triggered Rewards refresh failed.");
             }
         });
 
@@ -467,6 +487,40 @@ public class JuxHomepageController : ControllerBase
         return Ok(await SearchTMDbAsync(_tmdbApiClient.SearchCompanyAsync, query, cancellationToken).ConfigureAwait(false));
     }
 
+    /// <summary>
+    /// Searches Wikidata entities by label, for the Rewards widget's Ceremony and Category
+    /// autocomplete fields. Proxied server-side (TODO_V2.md Phase 14 research): browsers cannot set a
+    /// custom <c>User-Agent</c> header via <c>fetch()</c>/<c>XMLHttpRequest</c> (a "forbidden header
+    /// name" per the Fetch spec), so a Wikidata-policy-compliant request can only be made from the
+    /// server, exactly like the TMDb search endpoints above.
+    /// </summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=Wikidata Q-id, Label=entity label).</returns>
+    [HttpGet("Rewards/Search/Ceremony")]
+    [Authorize(Policy = Policies.RequiresElevation)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchRewardsCeremony(
+        [FromQuery] string query,
+        CancellationToken cancellationToken) => SearchWikidataAsync(query, cancellationToken);
+
+    /// <summary>
+    /// Searches Wikidata entities by label, for the Rewards widget's Category autocomplete field.
+    /// Shares the same Wikidata entity search endpoint as
+    /// <see cref="SearchRewardsCeremony"/> -- ceremonies and award categories are both plain Wikidata
+    /// entities, distinguished only by how they're used in the SPARQL query
+    /// (<see cref="Rewards.WikidataApiClient"/>), not by a different search mechanism.
+    /// </summary>
+    /// <param name="query">The search text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An array of <see cref="AdminWidgetValue"/> objects (Value=Wikidata Q-id, Label=entity label).</returns>
+    [HttpGet("Rewards/Search/Category")]
+    [Authorize(Policy = Policies.RequiresElevation)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchRewardsCategory(
+        [FromQuery] string query,
+        CancellationToken cancellationToken) => SearchWikidataAsync(query, cancellationToken);
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -515,6 +569,24 @@ public class JuxHomepageController : ControllerBase
             .Select(r => new AdminWidgetValue(r.Id.ToString(CultureInfo.InvariantCulture), r.Name))
             .ToList()
             .AsReadOnly();
+    }
+
+    private async Task<ActionResult<IReadOnlyList<AdminWidgetValue>>> SearchWikidataAsync(
+        string query,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Ok(Array.Empty<AdminWidgetValue>());
+        }
+
+        var results = await _wikidataApiClient.SearchEntitiesAsync(query, cancellationToken).ConfigureAwait(false);
+        var values = results
+            .Select(r => new AdminWidgetValue(r.Id, string.IsNullOrEmpty(r.Description) ? r.Label : $"{r.Label} ({r.Description})"))
+            .ToList()
+            .AsReadOnly();
+
+        return Ok(values);
     }
 
     private int GetTMDbItemCount(TMDbCacheType type)

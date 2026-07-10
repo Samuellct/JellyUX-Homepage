@@ -217,9 +217,19 @@
                 return widgetType === this.DISCOVER_MOVIES_TYPE;
             },
 
+            REWARDS_TYPE: 'jux.connected.rewards',
+
+            isRewards: function (widgetType) {
+                return widgetType === this.REWARDS_TYPE;
+            },
+
             // Per-field autocomplete cache for the Discover widget's person/keyword/company inputs.
             // Keyed by field name ("person"|"keyword"|"company"), each an array of {Value,Label}.
             _discoverSearchCache: { person: [], keyword: [], company: [] },
+
+            // Same mechanism as _discoverSearchCache, for the Rewards widget's Ceremony/Category
+            // fields (Value is a Wikidata Q-id, e.g. "Q102427").
+            _rewardsSearchCache: { ceremony: [], category: [] },
 
             getDiscoverLabelForValue: function (field, value) {
                 var vals = this._discoverSearchCache[field] || [];
@@ -231,6 +241,22 @@
 
             getDiscoverValueForLabel: function (field, label) {
                 var vals = this._discoverSearchCache[field] || [];
+                for (var i = 0; i < vals.length; i++) {
+                    if (vals[i].Label === label) { return vals[i].Value; }
+                }
+                return '';
+            },
+
+            getRewardsLabelForValue: function (field, value) {
+                var vals = this._rewardsSearchCache[field] || [];
+                for (var i = 0; i < vals.length; i++) {
+                    if (vals[i].Value === value) { return vals[i].Label; }
+                }
+                return value;
+            },
+
+            getRewardsValueForLabel: function (field, label) {
+                var vals = this._rewardsSearchCache[field] || [];
                 for (var i = 0; i < vals.length; i++) {
                     if (vals[i].Label === label) { return vals[i].Value; }
                 }
@@ -484,6 +510,34 @@
                             html += '</div>';
                         }
 
+                        if (self.isRewards(w.WidgetType)) {
+                            var ceremonyValue = self.getExtraParam(w, 'ceremonyQid');
+                            var categoryValue = self.getExtraParam(w, 'categoryQid');
+                            var rewardsYearValue = self.getExtraParam(w, 'year');
+                            var rewardsDatalistId = 'rewardsVals_' + i;
+
+                            [
+                                ['ceremony', self.t('admin.rewards.ceremony'), ceremonyValue],
+                                ['category', self.t('admin.rewards.category'), categoryValue]
+                            ].forEach(function (field) {
+                                var fieldName = field[0], fieldLabel = field[1], fieldValue = field[2];
+                                var currentLabel = fieldValue ? self.getRewardsLabelForValue(fieldName, fieldValue) : '';
+                                html += '<div class="inputContainer">';
+                                html += '<label class="inputLabel inputLabelUnfocused" for="rewards' + fieldName + '_' + i + '">' + self.escHtml(fieldLabel) + '</label>';
+                                html += '<input id="rewards' + fieldName + '_' + i + '" type="text" list="' + rewardsDatalistId + '_' + fieldName + '"';
+                                html += ' class="emby-input jux-rewards-' + fieldName + '" data-field="' + fieldName + '"';
+                                html += ' placeholder="' + self.escHtml(self.t('admin.discover.search.placeholder')) + '" value="' + self.escHtml(currentLabel || fieldValue) + '" />';
+                                html += '<datalist id="' + rewardsDatalistId + '_' + fieldName + '"></datalist>';
+                                html += '</div>';
+                            });
+
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="rewardsYear_' + i + '">' + self.escHtml(self.t('admin.rewards.year')) + '</label>';
+                            html += '<input id="rewardsYear_' + i + '" type="number" class="emby-input jux-rewards-year" value="' + self.escHtml(rewardsYearValue) + '" />';
+                            html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.rewards.help')) + '</div>';
+                            html += '</div>';
+                        }
+
                         html += '<div class="jux-admin-row">';
 
                         html += '<div class="inputContainer jux-admin-half">';
@@ -660,6 +714,40 @@
                         }, 300);
                     });
                 });
+
+                // Rewards widget: search-as-you-type for Ceremony/Category autocomplete, proxied
+                // server-side (config.js/browsers cannot set the User-Agent header Wikidata's 2026
+                // access policy requires -- see JuxHomepageController.SearchRewardsCeremony/Category).
+                var rewardsSearchEndpoints = { ceremony: 'Rewards/Search/Ceremony', category: 'Rewards/Search/Category' };
+                list.querySelectorAll('.jux-rewards-ceremony, .jux-rewards-category').forEach(function (inputEl) {
+                    var fieldName = inputEl.getAttribute('data-field');
+                    var datalistId = inputEl.getAttribute('list');
+                    var timer = null;
+                    inputEl.addEventListener('input', function () {
+                        clearTimeout(timer);
+                        var query = inputEl.value.trim();
+                        if (!query) { return; }
+                        timer = setTimeout(function () {
+                            var url = ApiClient.getUrl('JuxHomepage/' + rewardsSearchEndpoints[fieldName], { query: query });
+                            ApiClient.getJSON(url).then(function (vals) {
+                                var dl = document.getElementById(datalistId);
+                                if (!dl) { return; }
+                                var dlHtml = '';
+                                (vals || []).forEach(function (v) {
+                                    dlHtml += '<option value="' + self.escHtml(v.Label) + '"></option>';
+                                });
+                                dl.innerHTML = dlHtml;
+                                var cache = self._rewardsSearchCache[fieldName];
+                                (vals || []).forEach(function (v) {
+                                    for (var k = 0; k < cache.length; k++) {
+                                        if (cache[k].Value === v.Value) { return; }
+                                    }
+                                    cache.push(v);
+                                });
+                            }).catch(function () {});
+                        }, 300);
+                    });
+                });
             },
 
             readDomIntoState: function () {
@@ -730,6 +818,29 @@
                         if (pagesEl && pagesEl.value) { params.push({ Key: 'pages', Value: pagesEl.value }); }
 
                         w.ExtraParams = params;
+                    }
+
+                    if (self.isRewards(w.WidgetType)) {
+                        var ceremonyEl = card.querySelector('.jux-rewards-ceremony');
+                        var categoryEl = card.querySelector('.jux-rewards-category');
+                        var rewardsYearEl = card.querySelector('.jux-rewards-year');
+
+                        var rewardsInstanceId = self.getExtraParam(w, 'value');
+                        var rewardsParams = [{ Key: 'value', Value: rewardsInstanceId }];
+
+                        [
+                            ['ceremony', ceremonyEl, 'ceremonyQid'],
+                            ['category', categoryEl, 'categoryQid']
+                        ].forEach(function (entry) {
+                            var fieldName = entry[0], el = entry[1], paramKey = entry[2];
+                            if (!el) { return; }
+                            var label = el.value.trim();
+                            var resolved = label ? self.getRewardsValueForLabel(fieldName, label) : '';
+                            if (resolved) { rewardsParams.push({ Key: paramKey, Value: resolved }); }
+                        });
+                        if (rewardsYearEl && rewardsYearEl.value) { rewardsParams.push({ Key: 'year', Value: rewardsYearEl.value }); }
+
+                        w.ExtraParams = rewardsParams;
                     }
                 });
             },
@@ -1093,6 +1204,7 @@
                             var isPers = self.isPersonalized(widgetType);
                             var isConn = self.isConnected(widgetType);
                             var isDisc = self.isDiscover(widgetType);
+                            var isRew = self.isRewards(widgetType);
                             self.readDomIntoState();
                             var extraParams = [];
                             if (isPers) {
@@ -1110,6 +1222,14 @@
                                     { Key: 'minVotes', Value: '50' },
                                     { Key: 'pages', Value: '1' }
                                 ];
+                            } else if (isRew) {
+                                var newRewardsInstanceId = (window.crypto && window.crypto.randomUUID)
+                                    ? window.crypto.randomUUID()
+                                    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                                        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                                        return v.toString(16);
+                                    });
+                                extraParams = [{ Key: 'value', Value: newRewardsInstanceId }];
                             }
                             self.state.sortedWidgets.push({
                                 WidgetType: widgetType,

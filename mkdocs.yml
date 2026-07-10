@@ -57,4 +57,5 @@ nav:
           - Top Rated Shows: widgets/connected/top-rated-shows.md
           - Now Playing: widgets/connected/now-playing-movies.md
           - Discover Movies: widgets/connected/discover-movies.md
+          - Rewards: widgets/connected/rewards.md
   - Troubleshooting: troubleshooting.md

@@ -7,6 +7,7 @@ using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
+using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
@@ -49,6 +50,31 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<ILibraryManager>(),
             () => Plugin.Instance?.Configuration,
             serviceProvider.GetRequiredService<ILogger<TMDbCacheService>>()));
+
+        // Wikidata (TODO_V2.md Phase 14): no BaseAddress, since SPARQL queries and entity search live
+        // on different hosts (query.wikidata.org vs. www.wikidata.org). Timeout is set above
+        // Wikidata's own 60s server-side query execution ceiling, so that ceiling -- not ours --
+        // is what a slow query actually hits. The User-Agent is set once here (not per request) to
+        // satisfy Wikimedia's 2026 access policy: a compliant User-Agent lifts the rate limit from
+        // 10 to 200 requests/minute, far more than this plugin's weekly refresh ever needs.
+        serviceCollection.AddHttpClient("Wikidata", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(90);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                $"JellyUX-Homepage/{Plugin.Instance?.Version.ToString() ?? "dev"} (https://github.com/Samuellct/JellyUX-Homepage)");
+            client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip");
+            client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("deflate");
+        });
+        serviceCollection.AddSingleton<IWikidataApiClient>(serviceProvider => new WikidataApiClient(
+            serviceProvider.GetRequiredService<IHttpClientFactory>(),
+            serviceProvider.GetRequiredService<ILogger<WikidataApiClient>>()));
+        serviceCollection.AddSingleton<IRewardsCacheService>(serviceProvider => new RewardsCacheService(
+            serviceProvider.GetRequiredService<IApplicationPaths>(),
+            serviceProvider.GetRequiredService<IFileSystem>(),
+            serviceProvider.GetRequiredService<IWikidataApiClient>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            () => Plugin.Instance?.Configuration,
+            serviceProvider.GetRequiredService<ILogger<RewardsCacheService>>()));
         serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
@@ -109,6 +135,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterWidget<TopRatedShowsWidget>(registry, serviceProvider, logger);
             RegisterWidget<NowPlayingMoviesWidget>(registry, serviceProvider, logger);
             RegisterWidget<DiscoverMoviesWidget>(registry, serviceProvider, logger);
+            RegisterWidget<RewardsWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
 

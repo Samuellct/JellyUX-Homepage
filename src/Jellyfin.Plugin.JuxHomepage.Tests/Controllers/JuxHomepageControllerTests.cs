@@ -2,6 +2,7 @@ using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Controllers;
 using Jellyfin.Plugin.JuxHomepage.Localization;
+using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
@@ -178,6 +179,8 @@ public sealed class JuxHomepageControllerTests
             (userManagerMock ?? new Mock<IUserManager>()).Object,
             (tmdbCacheServiceMock ?? new Mock<ITMDbCacheService>()).Object,
             (tmdbApiClientMock ?? new Mock<ITMDbApiClient>()).Object,
+            Mock.Of<IRewardsCacheService>(),
+            Mock.Of<IWikidataApiClient>(),
             new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>()),
             Mock.Of<IAuthorizationContext>(),
             logger ?? NullLogger<JuxHomepageController>.Instance);
