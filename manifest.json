@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "1.8.2.0",
+                "changelog": "### Bug Fixes\n\n* enable automatic gzip/deflate decompression on the Wikidata HTTP client ([73b972d](https://github.com/Samuellct/JellyUX-Homepage/commit/73b972d20e0a4aaa806e644ae5bb2d45d8b00c70))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v1.8.2/jellyux-homepage_1.8.2.0.zip",
+                "checksum": "ae5fbdf1cc5d9631e028099e2d6b8236",
+                "timestamp": "2026-07-10T23:34:03Z"
+            },
+            {
                 "version": "1.8.1.0",
                 "changelog": "### Bug Fixes\n\n* harden WikidataApiClient error handling and surface failure details ([ce19449](https://github.com/Samuellct/JellyUX-Homepage/commit/ce194492f14d630f32ab55855e1a3e12f47609cd))",
                 "targetAbi": "10.11.0.0",

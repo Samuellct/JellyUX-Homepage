@@ -1,3 +1,9 @@
+## [1.8.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.8.1...v1.8.2) (2026-07-10)
+
+### Bug Fixes
+
+* enable automatic gzip/deflate decompression on the Wikidata HTTP client ([73b972d](https://github.com/Samuellct/JellyUX-Homepage/commit/73b972d20e0a4aaa806e644ae5bb2d45d8b00c70))
+
 ## [1.8.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.8.0...v1.8.1) (2026-07-10)
 
 ### Bug Fixes
