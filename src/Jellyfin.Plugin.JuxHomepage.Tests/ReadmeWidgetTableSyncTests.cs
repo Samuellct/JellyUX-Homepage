@@ -7,6 +7,7 @@ namespace Jellyfin.Plugin.JuxHomepage.Tests;
 // during V1 with nothing catching it. This test fails the build if a widget is registered/removed in
 // PluginServiceRegistrator without a matching update to the README table (and to the "N widgets across"
 // prose sentence right above it, a second drift-prone spot found while writing this test).
+// Extended in Phase 13.4 to also guard the MkDocs widget pages under docs/widgets/.
 public sealed class ReadmeWidgetTableSyncTests
 {
     private const string RegisterWidgetPattern = @"RegisterWidget<\w+>\(registry";
@@ -25,6 +26,21 @@ public sealed class ReadmeWidgetTableSyncTests
         var tableRowCount = CountWidgetTableRows(readme);
 
         Assert.Equal(registeredCount, tableRowCount);
+    }
+
+    [Fact]
+    public void WidgetDocsPageCount_MatchesRegisteredWidgetCount()
+    {
+        var repoRoot = FindRepoRoot();
+
+        var registrarSource = File.ReadAllText(Path.Combine(
+            repoRoot, "src", "Jellyfin.Plugin.JuxHomepage", "PluginServiceRegistrator.cs"));
+        var registeredCount = Regex.Matches(registrarSource, RegisterWidgetPattern).Count;
+
+        var docsWidgetsDir = Path.Combine(repoRoot, "docs", "widgets");
+        var docsPageCount = Directory.GetFiles(docsWidgetsDir, "*.md", SearchOption.AllDirectories).Length;
+
+        Assert.Equal(registeredCount, docsPageCount);
     }
 
     [Fact]
