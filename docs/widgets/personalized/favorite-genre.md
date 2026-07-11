@@ -23,3 +23,11 @@ In addition to the [common parameters](../../configuration.md#common-per-widget-
 
 Note: Personalized widgets don't have a custom name field. Section names are generated per user (for
 example "Because you watched ...").
+
+## On a small library
+
+With **Exclude already watched** on, a section only shows if enough *unwatched* titles in that genre
+remain. A genre match is broad, so this is rarely an issue -- but on a small library, or for a genre
+the user has watched most of already, the section may be hidden rather than shown empty. See
+[Favorite Actor](favorite-actor.md#on-a-small-library) for the same behavior in its narrower, more
+noticeable form.
