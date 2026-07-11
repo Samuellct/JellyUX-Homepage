@@ -1,3 +1,16 @@
+## [2.0.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.8.2...v2.0.0) (2026-07-11)
+
+### ⚠ BREAKING CHANGES
+
+* the Personalized widget configuration schema changed -- MaxInstances is no
+longer read by the widget engine for Personalized rows, replaced by a per-row rank
+(SchemaVersion 1->2, Plugin.MigrateConfiguration). Existing configurations are migrated
+automatically on load; no manual action is required.
+
+### Features
+
+* complete V2 feature set ([d9f55bd](https://github.com/Samuellct/JellyUX-Homepage/commit/d9f55bd834a4425bc97c3adefc54451eab176f76))
+
 ## [1.8.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.8.1...v1.8.2) (2026-07-10)
 
 ### Bug Fixes

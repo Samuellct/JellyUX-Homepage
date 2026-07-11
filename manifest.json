@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.0.0.0",
+                "changelog": "### ⚠ BREAKING CHANGES\n\n* the Personalized widget configuration schema changed -- MaxInstances is no\nlonger read by the widget engine for Personalized rows, replaced by a per-row rank\n(SchemaVersion 1->2, Plugin.MigrateConfiguration). Existing configurations are migrated\nautomatically on load; no manual action is required.\n\n### Features\n\n* complete V2 feature set ([d9f55bd](https://github.com/Samuellct/JellyUX-Homepage/commit/d9f55bd834a4425bc97c3adefc54451eab176f76))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.0.0/jellyux-homepage_2.0.0.0.zip",
+                "checksum": "edaa942390ff196555125bcf7a7043e1",
+                "timestamp": "2026-07-11T09:53:43Z"
+            },
+            {
                 "version": "1.8.2.0",
                 "changelog": "### Bug Fixes\n\n* enable automatic gzip/deflate decompression on the Wikidata HTTP client ([73b972d](https://github.com/Samuellct/JellyUX-Homepage/commit/73b972d20e0a4aaa806e644ae5bb2d45d8b00c70))",
                 "targetAbi": "10.11.0.0",
