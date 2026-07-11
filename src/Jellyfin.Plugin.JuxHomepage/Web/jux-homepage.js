@@ -291,7 +291,7 @@
                 var newSections = elem.querySelectorAll(
                     '.jux-widget-section:not([data-jux-page])'
                 );
-                if (newSections.length === 0) {
+                if (!_hasMoreSections(newSections)) {
                     finished = true;
                     observer.disconnect();
                 } else {
@@ -305,6 +305,13 @@
         }, { rootMargin: '200px' });
 
         observer.observe(sentinel);
+    }
+
+    // Pure lazy-load pagination decision: whether the page just loaded contains at least one new
+    // section worth continuing to observe for. Extracted from _setupLazyLoader (TODO_V2.md Phase
+    // 15.3) so it's testable in isolation from the real DOM/IntersectionObserver.
+    function _hasMoreSections(newSections) {
+        return newSections.length > 0;
     }
 
     // -------------------------------------------------------------------------
@@ -340,5 +347,22 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    }
+
+    // Guarded UMD-lite export (TODO_V2.md Phase 15.3): `module` is undefined in a browser, so this
+    // branch never executes in production -- zero behavior change there. It lets a Node-based test
+    // runner (Vitest) `require()`/`import` this file and exercise its pure functions directly,
+    // without needing to convert this script to a real ES module (which would work fine here, since
+    // it's injected via a plain <script src> tag -- see TransformationPatches.cs -- rather than the
+    // AJAX-evaluated fragment mechanism that ruled out ES modules for config.js in Phase 11; this
+    // file simply doesn't need that conversion for testing purposes).
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = {
+            _escHtml: _escHtml,
+            _buildSeeAllHref: _buildSeeAllHref,
+            _fallback: _fallback,
+            _isHomePage: _isHomePage,
+            _hasMoreSections: _hasMoreSections
+        };
     }
 })();

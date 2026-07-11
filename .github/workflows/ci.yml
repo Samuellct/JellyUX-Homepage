@@ -30,6 +30,16 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --filter "Category!=RequiresDocker"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run Vitest
+        run: npm test
+
   release:
     name: Release
     needs: build-test

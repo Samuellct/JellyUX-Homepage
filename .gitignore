@@ -21,6 +21,8 @@
 !manifest.json
 !.releaserc.json
 !package.json
+!package-lock.json
+!vitest.config.js
 !mkdocs.yml
 
 # Documentation assets
@@ -84,3 +86,8 @@ src/**
 !src/**/Localization/*.json
 src/**/bin/
 src/**/obj/
+
+# Vitest tests for front-end pure functions (TODO_V2.md Phase 15.3)
+!test/
+test/*
+!test/*.js
