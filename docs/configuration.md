@@ -28,7 +28,7 @@ shared set.
 
 | Field | Description |
 |---|---|
-| TMDb API Key | Required for [Connected](widgets/connected/trending-movies.md) widgets. Leave empty if not needed. Accepted formats: a 32-character hexadecimal key (v3), or a v4 bearer token starting with `ey`. |
+| TMDb API Key | Required for every TMDb-backed [Connected](widgets/connected/trending-movies.md) widget. Leave empty if not needed. Accepted formats: a 32-character hexadecimal key (v3), or a v4 bearer token starting with `ey`. **Not required** for the [Rewards](widgets/connected/rewards.md) widget, which uses Wikidata's free public data instead. |
 
 ## TMDb Cache
 
@@ -44,3 +44,6 @@ fetches about 60 items for that list.
 
 Note: [Discover Movies](widgets/connected/discover-movies.md) has its own `Pages` field per
 configured section, independent of the global TMDb Lists pages above.
+
+**Refresh now** also refreshes every configured [Rewards](widgets/connected/rewards.md) section --
+Rewards has no separate refresh button of its own, even though it is not TMDb data.
