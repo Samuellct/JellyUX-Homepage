@@ -4,6 +4,7 @@ using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using Moq;
 using Xunit;
@@ -20,15 +21,21 @@ public sealed class ScoringServiceTests
         User user,
         IReadOnlyList<BaseItem> watched,
         IReadOnlyList<BaseItem> favorites,
-        Func<BaseItem, IReadOnlyList<PersonInfo>> people)
+        Func<BaseItem, IReadOnlyList<PersonInfo>> people,
+        IReadOnlyList<BaseItem>? watchedSeries = null)
     {
         var userManagerMock = new Mock<IUserManager>();
         userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(user);
 
         var libraryManagerMock = new Mock<ILibraryManager>();
         libraryManagerMock
-            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite != true)))
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.Contains(BaseItemKind.Movie))))
             .Returns(watched);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.SequenceEqual(new[] { BaseItemKind.Series }))))
+            .Returns(watchedSeries ?? []);
         libraryManagerMock
             .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite == true)))
             .Returns(favorites);
@@ -36,9 +43,16 @@ public sealed class ScoringServiceTests
             .Setup(m => m.GetPeople(It.IsAny<BaseItem>()))
             .Returns((BaseItem item) => people(item));
 
+        // No LastPlayedDate mocked here: ComputeSnapshot falls back to DateTime.MinValue for every
+        // item in that case, so the stable OrderByDescending preserves the movies-then-series concat
+        // order below -- fine for tests that don't specifically exercise cross-type recency ordering
+        // (see the dedicated test for that).
+        var userDataManagerMock = new Mock<IUserDataManager>();
+
         return new ScoringService(
             userManagerMock.Object,
             libraryManagerMock.Object,
+            userDataManagerMock.Object,
             () => new PluginConfiguration());
     }
 
@@ -102,6 +116,27 @@ public sealed class ScoringServiceTests
     }
 
     [Fact]
+    public void GetTopGenres_SeriesContributeToTallyAlongsideMovies()
+    {
+        var user = new User("test", "Default", "Default");
+
+        var action1 = new Movie { Name = "Action Movie", Genres = ["Action"] };
+        var dramaSeries1 = new Series { Name = "Drama Series 1", Genres = ["Drama"] };
+        var dramaSeries2 = new Series { Name = "Drama Series 2", Genres = ["Drama"] };
+
+        var service = BuildService(
+            user,
+            watched: [action1],
+            favorites: [],
+            people: _ => [],
+            watchedSeries: [dramaSeries1, dramaSeries2]);
+
+        var result = service.GetTopGenres(user.Id, 5);
+
+        Assert.Equal("Drama", result[0].Value);
+    }
+
+    [Fact]
     public void GetTopGenres_UnknownUser_ReturnsEmpty()
     {
         var userManagerMock = new Mock<IUserManager>();
@@ -110,6 +145,7 @@ public sealed class ScoringServiceTests
         var service = new ScoringService(
             userManagerMock.Object,
             new Mock<ILibraryManager>().Object,
+            new Mock<IUserDataManager>().Object,
             () => new PluginConfiguration());
 
         var result = service.GetTopGenres(Guid.NewGuid(), 5);
@@ -191,6 +227,65 @@ public sealed class ScoringServiceTests
         var service = BuildService(user, watched: items, favorites: [], people: _ => []);
 
         var result = service.GetRecentlyWatched(user.Id, 2);
+
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public void GetRecentlyWatched_ScopeMovies_ExcludesSeries()
+    {
+        var user = new User("test", "Default", "Default");
+        var movie = new Movie { Name = "A Movie", Genres = [] };
+        var series = new Series { Name = "A Series", Genres = [] };
+
+        var service = BuildService(
+            user,
+            watched: [movie],
+            favorites: [],
+            people: _ => [],
+            watchedSeries: [series]);
+
+        var result = service.GetRecentlyWatched(user.Id, 5, BecauseYouWatchedScope.Movies);
+
+        var single = Assert.Single(result);
+        Assert.Equal("A Movie", single.Label);
+    }
+
+    [Fact]
+    public void GetRecentlyWatched_ScopeSeries_ExcludesMovies()
+    {
+        var user = new User("test", "Default", "Default");
+        var movie = new Movie { Name = "A Movie", Genres = [] };
+        var series = new Series { Name = "A Series", Genres = [] };
+
+        var service = BuildService(
+            user,
+            watched: [movie],
+            favorites: [],
+            people: _ => [],
+            watchedSeries: [series]);
+
+        var result = service.GetRecentlyWatched(user.Id, 5, BecauseYouWatchedScope.Series);
+
+        var single = Assert.Single(result);
+        Assert.Equal("A Series", single.Label);
+    }
+
+    [Fact]
+    public void GetRecentlyWatched_ScopeBoth_IncludesMoviesAndSeries()
+    {
+        var user = new User("test", "Default", "Default");
+        var movie = new Movie { Name = "A Movie", Genres = [] };
+        var series = new Series { Name = "A Series", Genres = [] };
+
+        var service = BuildService(
+            user,
+            watched: [movie],
+            favorites: [],
+            people: _ => [],
+            watchedSeries: [series]);
+
+        var result = service.GetRecentlyWatched(user.Id, 5, BecauseYouWatchedScope.Both);
 
         Assert.Equal(2, result.Count);
     }

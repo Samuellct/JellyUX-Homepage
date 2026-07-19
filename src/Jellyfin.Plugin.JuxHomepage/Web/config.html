@@ -223,6 +223,12 @@
                 return widgetType === this.REWARDS_TYPE;
             },
 
+            BECAUSE_YOU_WATCHED_TYPE: 'jux.personalized.because-you-watched',
+
+            isBecauseYouWatched: function (widgetType) {
+                return widgetType === this.BECAUSE_YOU_WATCHED_TYPE;
+            },
+
             // Per-field autocomplete cache for the Discover widget's person/keyword/company inputs.
             // Keyed by field name ("person"|"keyword"|"company"), each an array of {Value,Label}.
             _discoverSearchCache: { person: [], keyword: [], company: [] },
@@ -586,6 +592,24 @@
                             html += '</div>';
                         }
 
+                        if (self.isBecauseYouWatched(w.WidgetType)) {
+                            var scopeValue = self.getExtraParam(w, 'scope') || 'both';
+
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="widgetScope_' + i + '">' + self.escHtml(self.t('admin.byw.scope.label')) + '</label>';
+                            html += '<select id="widgetScope_' + i + '" class="emby-select-withcolor emby-select jux-admin-byw-scope">';
+                            [
+                                ['movies', self.t('admin.byw.scope.movies')],
+                                ['series', self.t('admin.byw.scope.series')],
+                                ['both', self.t('admin.byw.scope.both')]
+                            ].forEach(function (opt) {
+                                html += '<option value="' + opt[0] + '"' + (scopeValue === opt[0] ? ' selected' : '') + '>' + self.escHtml(opt[1]) + '</option>';
+                            });
+                            html += '</select>';
+                            html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.byw.scope.help')) + '</div>';
+                            html += '</div>';
+                        }
+
                         html += '</div>';
                     });
 
@@ -784,6 +808,12 @@
                     }
                     if (excludeWatchedEl) {
                         w.ExtraParams = [{ Key: 'excludeWatched', Value: excludeWatchedEl.checked ? 'true' : 'false' }];
+                    }
+                    if (self.isBecauseYouWatched(w.WidgetType)) {
+                        var scopeEl = card.querySelector('.jux-admin-byw-scope');
+                        if (scopeEl) {
+                            w.ExtraParams = (w.ExtraParams || []).concat([{ Key: 'scope', Value: scopeEl.value }]);
+                        }
                     }
                     if (self.isDiscover(w.WidgetType)) {
                         var genreEl = card.querySelector('.jux-discover-genre');

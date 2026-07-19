@@ -1,4 +1,5 @@
 using System.Threading;
+using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Localization;
@@ -182,12 +183,17 @@ public sealed class LoadTests
 
         var libraryManagerMock = new Mock<ILibraryManager>();
         libraryManagerMock
-            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite != true)))
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.Contains(BaseItemKind.Movie))))
             .Returns(() =>
             {
                 onCompute();
                 return [action1, action2, drama1];
             });
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.SequenceEqual(new[] { BaseItemKind.Series }))))
+            .Returns([]);
         libraryManagerMock
             .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite == true)))
             .Returns([]);
@@ -196,6 +202,7 @@ public sealed class LoadTests
         return new ScoringService(
             userManagerMock.Object,
             libraryManagerMock.Object,
+            new Mock<IUserDataManager>().Object,
             () => new PluginConfiguration { Cache = new CacheConfig { SessionTtlMinutes = 15 } });
     }
 }

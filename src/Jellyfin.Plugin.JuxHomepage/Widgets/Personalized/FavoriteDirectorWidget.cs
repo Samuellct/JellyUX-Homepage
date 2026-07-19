@@ -39,7 +39,7 @@ public sealed class FavoriteDirectorWidget : PersonalizedPersonWidgetBase
     protected override string PersonType => "Director";
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count) =>
+    protected override IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count, WidgetInstanceConfig config) =>
         ScoringService.GetTopDirectors(userId, count);
 
     /// <inheritdoc/>

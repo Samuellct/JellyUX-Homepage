@@ -86,6 +86,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
+            serviceProvider.GetRequiredService<IUserDataManager>(),
             () => Plugin.Instance?.Configuration));
         serviceCollection.AddSingleton<WidgetLayoutResolver>(serviceProvider => new WidgetLayoutResolver(
             serviceProvider.GetRequiredService<IWidgetRegistry>(),

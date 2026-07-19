@@ -38,7 +38,7 @@ public sealed class FavoriteActorWidget : PersonalizedPersonWidgetBase
     protected override string PersonType => "Actor";
 
     /// <inheritdoc/>
-    protected override IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count) =>
+    protected override IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count, WidgetInstanceConfig config) =>
         ScoringService.GetTopActors(userId, count);
 
     /// <inheritdoc/>

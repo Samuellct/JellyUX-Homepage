@@ -1,3 +1,4 @@
+using Jellyfin.Data.Enums;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Localization;
@@ -183,8 +184,13 @@ public sealed class WidgetLayoutResolverTests
 
         var libraryManagerMock = new Mock<ILibraryManager>();
         libraryManagerMock
-            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite != true)))
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.Contains(BaseItemKind.Movie))))
             .Returns(watched);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.SequenceEqual(new[] { BaseItemKind.Series }))))
+            .Returns([]);
         libraryManagerMock
             .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite == true)))
             .Returns([]);
@@ -210,6 +216,7 @@ public sealed class WidgetLayoutResolverTests
         var scoringService = new ScoringService(
             userManagerMock.Object,
             libraryManagerMock.Object,
+            new Mock<IUserDataManager>().Object,
             () => new PluginConfiguration());
 
         return new FavoriteGenreWidget(

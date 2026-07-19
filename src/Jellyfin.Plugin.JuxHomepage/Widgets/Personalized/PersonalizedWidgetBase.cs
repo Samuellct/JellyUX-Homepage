@@ -107,8 +107,12 @@ public abstract class PersonalizedWidgetBase : IWidget
     /// </summary>
     /// <param name="userId">The requesting user's identifier.</param>
     /// <param name="count">The maximum number of scored values to return.</param>
+    /// <param name="config">
+    /// The row's configuration, exposing <see cref="WidgetInstanceConfig.ExtraParams"/> for widgets
+    /// that read row-level admin settings (e.g. <see cref="BecauseYouWatchedWidget"/>'s scope).
+    /// </param>
     /// <returns>Up to <paramref name="count"/> scored values.</returns>
-    protected abstract IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count);
+    protected abstract IReadOnlyList<ScoredValue> GetScoredValues(Guid userId, int count, WidgetInstanceConfig config);
 
     /// <summary>
     /// Formats the section display name for a scored value's label (e.g. "More Action"), translated
@@ -142,7 +146,7 @@ public abstract class PersonalizedWidgetBase : IWidget
     public IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count)
     {
         var rank = count;
-        var scoredValues = GetScoredValues(userId, rank);
+        var scoredValues = GetScoredValues(userId, rank, config);
         if (scoredValues.Count < rank)
         {
             yield break;

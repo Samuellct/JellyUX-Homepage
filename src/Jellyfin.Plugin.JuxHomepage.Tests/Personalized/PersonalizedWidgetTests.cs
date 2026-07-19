@@ -7,6 +7,7 @@ using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Querying;
 using Moq;
@@ -33,15 +34,23 @@ public sealed class PersonalizedWidgetTests
 
     // Builds a real ScoringService backed by mocked Jellyfin services, so FavoriteGenreWidget's
     // fan-out (CreateInstances) exercises the real scoring pipeline with controlled watch history.
-    private static ScoringService BuildScoringService(User user, IReadOnlyList<BaseItem> watched)
+    private static ScoringService BuildScoringService(
+        User user,
+        IReadOnlyList<BaseItem> watched,
+        IReadOnlyList<BaseItem>? watchedSeries = null)
     {
         var userManagerMock = new Mock<IUserManager>();
         userManagerMock.Setup(m => m.GetUserById(It.IsAny<Guid>())).Returns(user);
 
         var libraryManagerMock = new Mock<ILibraryManager>();
         libraryManagerMock
-            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite != true)))
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.Contains(BaseItemKind.Movie))))
             .Returns(watched);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.SequenceEqual(new[] { BaseItemKind.Series }))))
+            .Returns(watchedSeries ?? []);
         libraryManagerMock
             .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite == true)))
             .Returns([]);
@@ -52,6 +61,7 @@ public sealed class PersonalizedWidgetTests
         return new ScoringService(
             userManagerMock.Object,
             libraryManagerMock.Object,
+            new Mock<IUserDataManager>().Object,
             () => new PluginConfiguration());
     }
 
@@ -344,8 +354,13 @@ public sealed class PersonalizedWidgetTests
 
         var libraryManagerMock = new Mock<ILibraryManager>();
         libraryManagerMock
-            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite != true)))
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.Contains(BaseItemKind.Movie))))
             .Returns([film1]);
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
+                q => q.IsFavorite != true && q.IncludeItemTypes.SequenceEqual(new[] { BaseItemKind.Series }))))
+            .Returns([]);
         libraryManagerMock
             .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IsFavorite == true)))
             .Returns([]);
@@ -356,6 +371,7 @@ public sealed class PersonalizedWidgetTests
         var scoringService = new ScoringService(
             userManagerMock.Object,
             libraryManagerMock.Object,
+            new Mock<IUserDataManager>().Object,
             () => new PluginConfiguration());
 
         var widget = new FavoriteDirectorWidget(
@@ -487,5 +503,71 @@ public sealed class PersonalizedWidgetTests
             CancellationToken.None);
 
         Assert.Equal(0, result.TotalRecordCount);
+    }
+
+    [Fact]
+    public async Task BecauseYouWatched_GetItemsAsync_SeriesReference_RecommendsOnlySeries()
+    {
+        var user = new User("test", "Default", "Default");
+        var reference = new Series { Id = Guid.NewGuid(), Name = "Breaking Bad", Genres = ["Drama"] };
+
+        var userManagerMock = new Mock<IUserManager>();
+        userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
+
+        InternalItemsQuery? capturedQuery = null;
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock.Setup(m => m.GetItemById(reference.Id)).Returns(reference);
+        libraryManagerMock
+            .Setup(m => m.GetItemsResult(It.IsAny<InternalItemsQuery>()))
+            .Callback<InternalItemsQuery>(q => capturedQuery = q)
+            .Returns(new QueryResult<BaseItem>([]));
+
+        var dtoServiceMock = new Mock<IDtoService>();
+        dtoServiceMock
+            .Setup(m => m.GetBaseItemDtos(
+                It.IsAny<IReadOnlyList<BaseItem>>(),
+                It.IsAny<DtoOptions>(),
+                It.IsAny<User>(),
+                It.IsAny<BaseItem>()))
+            .Returns([]);
+
+        var widget = new BecauseYouWatchedWidget(
+            userManagerMock.Object,
+            libraryManagerMock.Object,
+            dtoServiceMock.Object,
+            BuildScoringService(user, []),
+            TestLocalization);
+
+        await widget.GetItemsAsync(
+            new WidgetPayload { UserId = user.Id, AdditionalData = reference.Id.ToString() },
+            CancellationToken.None);
+
+        Assert.NotNull(capturedQuery);
+        Assert.Equal([BaseItemKind.Series], capturedQuery!.IncludeItemTypes);
+        Assert.Equal(reference.Genres, capturedQuery.Genres);
+    }
+
+    [Fact]
+    public void BecauseYouWatched_CreateInstances_ScopeMovies_ExcludesSeriesOnlyHistory()
+    {
+        var user = new User("test", "Default", "Default");
+        var series = new Series { Name = "A Series", Genres = ["Drama"] };
+
+        var scoringService = BuildScoringService(user, watched: [], watchedSeries: [series]);
+        var widget = new BecauseYouWatchedWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object,
+            scoringService,
+            TestLocalization);
+
+        var config = new WidgetInstanceConfig
+        {
+            ExtraParams = new Dictionary<string, string> { ["scope"] = "movies" }
+        };
+
+        var instances = widget.CreateInstances(user.Id, config, 1).ToList();
+
+        Assert.Empty(instances);
     }
 }
