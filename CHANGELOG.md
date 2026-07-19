@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.0...v2.0.1) (2026-07-19)
+
+### Bug Fixes
+
+* validate Wikidata Q-id format to prevent SPARQL injection ([5a6b236](https://github.com/Samuellct/JellyUX-Homepage/commit/5a6b236b7c95617fe946e4631417365f87dbc807))
+
 ## [2.0.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v1.8.2...v2.0.0) (2026-07-11)
 
 ### ⚠ BREAKING CHANGES

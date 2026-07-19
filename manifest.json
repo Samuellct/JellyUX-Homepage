@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.0.1.0",
+                "changelog": "### Bug Fixes\n\n* validate Wikidata Q-id format to prevent SPARQL injection ([5a6b236](https://github.com/Samuellct/JellyUX-Homepage/commit/5a6b236b7c95617fe946e4631417365f87dbc807))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.0.1/jellyux-homepage_2.0.1.0.zip",
+                "checksum": "57e01ea1e458e940255a1154151c3a37",
+                "timestamp": "2026-07-19T16:20:23Z"
+            },
+            {
                 "version": "2.0.0.0",
                 "changelog": "### ⚠ BREAKING CHANGES\n\n* the Personalized widget configuration schema changed -- MaxInstances is no\nlonger read by the widget engine for Personalized rows, replaced by a per-row rank\n(SchemaVersion 1->2, Plugin.MigrateConfiguration). Existing configurations are migrated\nautomatically on load; no manual action is required.\n\n### Features\n\n* complete V2 feature set ([d9f55bd](https://github.com/Samuellct/JellyUX-Homepage/commit/d9f55bd834a4425bc97c3adefc54451eab176f76))",
                 "targetAbi": "10.11.0.0",
