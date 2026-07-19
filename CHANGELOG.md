@@ -1,3 +1,11 @@
+## [2.0.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.1...v2.0.2) (2026-07-19)
+
+### Bug Fixes
+
+* handle JSON deserialization errors explicitly in TMDbApiClient ([47f3314](https://github.com/Samuellct/JellyUX-Homepage/commit/47f33149cf43539b9eb4d7ff7aa7826d610e88e0))
+* include series in Because You Watched scoring and recommendations ([a23b6ba](https://github.com/Samuellct/JellyUX-Homepage/commit/a23b6ba9a31a38cc6f821dad97161705c7ac87f0))
+* reject concurrent Rewards cache refresh requests ([c39aa99](https://github.com/Samuellct/JellyUX-Homepage/commit/c39aa992ed204825aac46225a576a505a9cf115f))
+
 ## [2.0.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.0...v2.0.1) (2026-07-19)
 
 ### Bug Fixes
