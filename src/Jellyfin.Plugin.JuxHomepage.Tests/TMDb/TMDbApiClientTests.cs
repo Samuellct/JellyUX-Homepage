@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
@@ -67,6 +68,28 @@ public sealed class TMDbApiClientTests
         var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
 
         Assert.Empty(result);
+        Assert.Equal(1, handler.CallCount);
+    }
+
+    // -------------------------------------------------------------------------
+    // Malformed JSON response (Phase 1.2 of TODO_V3.md)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTrendingMoviesAsync_MalformedJsonBody_ReturnsEmptyWithoutRetryOrThrowing()
+    {
+        var handler = new StubHttpMessageHandler(
+            () => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{ this is not valid json", Encoding.UTF8, "application/json")
+            });
+
+        var client = BuildClient(handler, V3Key);
+
+        var result = await client.GetTrendingMoviesAsync(1, CancellationToken.None);
+
+        Assert.Empty(result);
+        // Unlike a network failure, a schema/parse problem is not retried -- one attempt only.
         Assert.Equal(1, handler.CallCount);
     }
 

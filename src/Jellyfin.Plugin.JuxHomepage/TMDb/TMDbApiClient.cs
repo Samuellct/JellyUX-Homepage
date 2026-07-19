@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
@@ -19,8 +20,10 @@ namespace Jellyfin.Plugin.JuxHomepage.TMDb;
 /// </para>
 /// <para>
 /// Every public method degrades gracefully: a missing key results in a silent skip (debug log
-/// only), an invalid key (HTTP 401) is logged as an explicit error, and a network failure is
-/// retried once before being logged as an error. No public method throws.
+/// only), an invalid key (HTTP 401) is logged as an explicit error, a network failure is
+/// retried once before being logged as an error, and a response that fails to parse as the
+/// expected JSON shape is logged as an explicit error without a retry (a schema mismatch is not
+/// transient). No public method throws.
 /// </para>
 /// </summary>
 public sealed partial class TMDbApiClient : ITMDbApiClient
@@ -297,6 +300,14 @@ public sealed partial class TMDbApiClient : ITMDbApiClient
 
                 _logger.LogError(ex, "TMDb request to '{Path}' failed after retry.", path);
                 RecordSustainedFailure();
+                return null;
+            }
+            catch (JsonException ex)
+            {
+                // A schema/format problem in the response body is not a transient network issue --
+                // retrying won't help, and it must not count toward the circuit breaker (same
+                // reasoning already applied to HTTP 401 above: waiting doesn't fix it).
+                _logger.LogError(ex, "TMDb response for '{Path}' could not be parsed as JSON.", path);
                 return null;
             }
         }
