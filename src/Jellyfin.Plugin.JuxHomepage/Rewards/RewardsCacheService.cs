@@ -125,7 +125,7 @@ public sealed class RewardsCacheService : IRewardsCacheService, IDisposable
                 continue;
             }
 
-            var filter = RewardsFilter.FromExtraParams(extra);
+            var filter = RewardsFilter.FromExtraParams(extra, _logger, instanceId);
             await RefreshInstanceAsync(instanceId, filter, cancellationToken).ConfigureAwait(false);
         }
     }
