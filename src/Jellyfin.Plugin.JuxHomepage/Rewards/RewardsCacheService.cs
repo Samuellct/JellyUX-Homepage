@@ -27,6 +27,7 @@ public sealed class RewardsCacheService : IRewardsCacheService, IDisposable
     private readonly IWikidataApiClient _apiClient;
     private readonly Func<PluginConfiguration?> _getConfiguration;
     private readonly ILogger<RewardsCacheService> _logger;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
     private bool _disposed;
 
     /// <summary>
@@ -113,20 +114,42 @@ public sealed class RewardsCacheService : IRewardsCacheService, IDisposable
     /// <inheritdoc/>
     public async Task RefreshAllInstancesAsync(CancellationToken cancellationToken)
     {
-        var rows = _getConfiguration()?.Widgets?
-            .Where(c => c.WidgetType == RewardsWidgetTypes.Rewards)
-            .ToList() ?? [];
-
-        foreach (var row in rows)
+        if (!TryAcquireRefreshLock())
         {
-            var extra = row.GetExtraParamsDictionary();
-            if (!extra.TryGetValue("value", out var instanceId) || string.IsNullOrEmpty(instanceId))
-            {
-                continue;
-            }
+            _logger.LogInformation("Rewards refresh already in progress; skipping this request.");
+            return;
+        }
 
-            var filter = RewardsFilter.FromExtraParams(extra, _logger, instanceId);
-            await RefreshInstanceAsync(instanceId, filter, cancellationToken).ConfigureAwait(false);
+        await RunRefreshLockedAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc/>
+    public bool TryAcquireRefreshLock() => _refreshGate.Wait(0);
+
+    /// <inheritdoc/>
+    public async Task RunRefreshLockedAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var rows = _getConfiguration()?.Widgets?
+                .Where(c => c.WidgetType == RewardsWidgetTypes.Rewards)
+                .ToList() ?? [];
+
+            foreach (var row in rows)
+            {
+                var extra = row.GetExtraParamsDictionary();
+                if (!extra.TryGetValue("value", out var instanceId) || string.IsNullOrEmpty(instanceId))
+                {
+                    continue;
+                }
+
+                var filter = RewardsFilter.FromExtraParams(extra, _logger, instanceId);
+                await RefreshInstanceAsync(instanceId, filter, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _refreshGate.Release();
         }
     }
 
@@ -136,6 +159,7 @@ public sealed class RewardsCacheService : IRewardsCacheService, IDisposable
         if (!_disposed)
         {
             _cache.Dispose();
+            _refreshGate.Dispose();
             _disposed = true;
         }
     }

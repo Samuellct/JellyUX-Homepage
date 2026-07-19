@@ -173,6 +173,61 @@ public sealed class RewardsCacheServiceTests : IDisposable
         Assert.True(File.Exists(CacheFilePath(instanceId)));
     }
 
+    // -------------------------------------------------------------------------
+    // RefreshAllInstancesAsync: concurrency guard (Phase 1.1 of TODO_V3.md)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RefreshAllInstancesAsync_ConcurrentCalls_OnlyOneActuallyRuns()
+    {
+        var started = new ManualResetEventSlim(false);
+        var release = new ManualResetEventSlim(false);
+        var callCount = 0;
+
+        var apiClientMock = new Mock<IWikidataApiClient>();
+        apiClientMock
+            .Setup(c => c.GetAwardWinnersAsync(It.IsAny<RewardsFilter>(), It.IsAny<CancellationToken>()))
+            .Returns(async () =>
+            {
+                Interlocked.Increment(ref callCount);
+                started.Set();
+                await Task.Run(() => release.Wait(TimeSpan.FromSeconds(5)));
+                return (IReadOnlyList<RewardsWinner>)[];
+            });
+
+        var widgets = new[]
+        {
+            new WidgetConfig
+            {
+                WidgetType = RewardsWidgetTypes.Rewards,
+                ExtraParams =
+                [
+                    new WidgetExtraParam { Key = "value", Value = Guid.NewGuid().ToString() },
+                    new WidgetExtraParam { Key = "categoryQid", Value = "Q102427" }
+                ]
+            }
+        };
+
+        var service = BuildService(apiClientMock.Object, new Mock<ILibraryManager>().Object, widgets);
+
+        var firstCallTask = service.RefreshAllInstancesAsync(CancellationToken.None);
+
+        var reachedFetch = started.Wait(TimeSpan.FromSeconds(5));
+        Assert.True(reachedFetch, "First refresh did not reach the fetch step in time.");
+
+        // A second concurrent attempt must not be able to reserve the slot while the first is still
+        // in progress -- this must be true regardless of the caller (a second manual click on the
+        // combined TMDb+Rewards "Refresh now" button, or the weekly scheduled task firing at the same
+        // moment).
+        var secondAcquired = service.TryAcquireRefreshLock();
+        Assert.False(secondAcquired, "A second concurrent refresh should not acquire the lock.");
+
+        release.Set();
+        await firstCallTask;
+
+        Assert.Equal(1, callCount);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDir))
