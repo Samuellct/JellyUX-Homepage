@@ -1,3 +1,9 @@
+## [2.0.3](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.2...v2.0.3) (2026-07-20)
+
+### Bug Fixes
+
+* trigger release for Phase 3 cleanup batch ([94b25de](https://github.com/Samuellct/JellyUX-Homepage/commit/94b25dee6d41dddbb39b2a519a55f28c42b13e9a))
+
 ## [2.0.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.1...v2.0.2) (2026-07-19)
 
 ### Bug Fixes
