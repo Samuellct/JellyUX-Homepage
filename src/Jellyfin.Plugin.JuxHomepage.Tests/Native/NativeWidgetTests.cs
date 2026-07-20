@@ -102,21 +102,20 @@ public sealed class NativeWidgetTests
     }
 
     // -------------------------------------------------------------------------
-    // CreateInstances test
+    // Resolve test
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void ContinueWatching_CreateInstances_ReturnsSameInstance()
+    public void ContinueWatching_Resolve_ReturnsSameInstance()
     {
         var widget = new ContinueWatchingWidget(
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
 
-        var instances = widget.CreateInstances(Guid.NewGuid(), new WidgetInstanceConfig(), 1).ToList();
+        var resolved = widget.Resolve(Guid.NewGuid(), new WidgetInstanceConfig(), 1);
 
-        var single = Assert.Single(instances);
-        Assert.Same(widget, single);
+        Assert.Same(widget, resolved);
     }
 
     // -------------------------------------------------------------------------

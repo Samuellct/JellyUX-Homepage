@@ -56,13 +56,7 @@ public abstract class NativeWidgetBase : IWidget
     public virtual WidgetCategory Category => WidgetCategory.Native;
 
     /// <inheritdoc/>
-    public virtual int MaxInstances => 1;
-
-    /// <inheritdoc/>
-    public IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count)
-    {
-        yield return this;
-    }
+    public IWidget? Resolve(Guid userId, WidgetInstanceConfig config, int rank) => this;
 
     /// <inheritdoc/>
     public abstract Task<WidgetResult> GetItemsAsync(WidgetPayload payload, CancellationToken cancellationToken);

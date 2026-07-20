@@ -68,14 +68,13 @@ public sealed class ConnectedWidgetBaseTests
     }
 
     [Fact]
-    public void CreateInstances_ReturnsSameInstance()
+    public void Resolve_ReturnsSameInstance()
     {
         var widget = BuildWidget([]);
 
-        var instances = widget.CreateInstances(Guid.NewGuid(), new WidgetInstanceConfig(), 1).ToList();
+        var resolved = widget.Resolve(Guid.NewGuid(), new WidgetInstanceConfig(), 1);
 
-        var single = Assert.Single(instances);
-        Assert.Same(widget, single);
+        Assert.Same(widget, resolved);
     }
 
     // -------------------------------------------------------------------------

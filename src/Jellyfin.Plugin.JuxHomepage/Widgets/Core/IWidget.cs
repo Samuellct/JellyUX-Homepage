@@ -2,8 +2,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets;
 
 /// <summary>
 /// Contract that all JellyUX Homepage widgets must implement.
-/// Each widget type is registered once in <see cref="IWidgetRegistry"/>; instances are created
-/// per user session via <see cref="CreateInstances"/>.
+/// Each widget type is registered once in <see cref="IWidgetRegistry"/>; each configured row is
+/// resolved to at most one instance per user session via <see cref="Resolve"/>.
 /// </summary>
 public interface IWidget
 {
@@ -19,21 +19,24 @@ public interface IWidget
     /// <summary>Gets the category that classifies this widget's data source.</summary>
     WidgetCategory Category { get; }
 
-    /// <summary>Gets the maximum number of instances this widget may have on a single home screen.</summary>
-    int MaxInstances { get; }
-
     /// <summary>Gets the default minimum number of items required to display this widget.</summary>
     int DefaultMinItems { get; }
 
     /// <summary>
-    /// Creates configured instances of this widget for a given user session.
-    /// Single-instance widgets may return <c>this</c>; multi-instance widgets return distinct objects.
+    /// Resolves this widget's single instance for a given user and configuration row.
+    /// Single-instance widgets (Native/Admin/Connected) return <c>this</c> unconditionally.
+    /// Personalized widgets return null when <paramref name="rank"/> has no scored value for this
+    /// user (see <see cref="Personalized.PersonalizedWidgetBase.Resolve"/>).
     /// </summary>
     /// <param name="userId">The requesting user's identifier.</param>
     /// <param name="config">The resolved per-instance configuration.</param>
-    /// <param name="count">The number of instances to create.</param>
-    /// <returns>An enumerable of widget instances (length must not exceed <paramref name="count"/>).</returns>
-    IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count);
+    /// <param name="rank">
+    /// The 1-indexed rank of this row among rows sharing this widget's type (see
+    /// <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.WidgetLayoutResolver.BuildDescriptors"/>).
+    /// Ignored by every category except Personalized.
+    /// </param>
+    /// <returns>The resolved widget instance, or null if this row has nothing to show.</returns>
+    IWidget? Resolve(Guid userId, WidgetInstanceConfig config, int rank);
 
     /// <summary>
     /// Asynchronously fetches items for this widget instance.

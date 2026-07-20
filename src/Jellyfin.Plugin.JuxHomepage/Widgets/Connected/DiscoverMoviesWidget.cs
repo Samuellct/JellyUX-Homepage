@@ -46,9 +46,6 @@ public sealed class DiscoverMoviesWidget : ConnectedWidgetBase<TMDbMovie>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    public override int MaxInstances => 5;
-
-    /// <inheritdoc/>
     protected override IReadOnlyList<TMDbMovie> GetCachedItems(WidgetPayload payload) =>
         payload.AdditionalData is null ? [] : _cacheService.GetDiscoverMovies(payload.AdditionalData);
 }

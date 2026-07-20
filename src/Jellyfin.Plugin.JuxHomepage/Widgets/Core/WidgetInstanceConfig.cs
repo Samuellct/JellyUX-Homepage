@@ -1,7 +1,7 @@
 namespace Jellyfin.Plugin.JuxHomepage.Widgets;
 
 /// <summary>
-/// Resolved per-instance configuration passed to <see cref="IWidget.CreateInstances"/>.
+/// Resolved per-instance configuration passed to <see cref="IWidget.Resolve"/>.
 /// Carries the effective settings after merging global plugin configuration and user overrides.
 /// </summary>
 public sealed class WidgetInstanceConfig

@@ -83,9 +83,6 @@ public abstract class ConnectedWidgetBase<T> : IWidget
     /// <inheritdoc/>
     public virtual WidgetCategory Category => WidgetCategory.Connected;
 
-    /// <inheritdoc/>
-    public virtual int MaxInstances => 1;
-
     /// <summary>
     /// Returns the currently cached external items for this widget's data set (e.g. trending movies,
     /// or a Rewards instance's award winners).
@@ -99,10 +96,7 @@ public abstract class ConnectedWidgetBase<T> : IWidget
     protected abstract IReadOnlyList<T> GetCachedItems(WidgetPayload payload);
 
     /// <inheritdoc/>
-    public IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count)
-    {
-        yield return this;
-    }
+    public IWidget? Resolve(Guid userId, WidgetInstanceConfig config, int rank) => this;
 
     /// <inheritdoc/>
     public Task<WidgetResult> GetItemsAsync(WidgetPayload payload, CancellationToken cancellationToken)

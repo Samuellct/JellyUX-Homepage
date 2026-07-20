@@ -33,7 +33,7 @@ public sealed class PersonalizedWidgetTests
         });
 
     // Builds a real ScoringService backed by mocked Jellyfin services, so FavoriteGenreWidget's
-    // fan-out (CreateInstances) exercises the real scoring pipeline with controlled watch history.
+    // rank resolution (Resolve) exercises the real scoring pipeline with controlled watch history.
     private static ScoringService BuildScoringService(
         User user,
         IReadOnlyList<BaseItem> watched,
@@ -96,12 +96,12 @@ public sealed class PersonalizedWidgetTests
     }
 
     // -------------------------------------------------------------------------
-    // CreateInstances rank resolution (Phase 8 of TODO_V2.md -- replaces the old
+    // Resolve rank resolution (Phase 8 of TODO_V2.md -- replaces the old
     // fan-out-per-scored-value model: each call now resolves exactly one rank).
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void FavoriteGenre_CreateInstances_RankAvailable_AssignsCorrectValue()
+    public void FavoriteGenre_Resolve_RankAvailable_AssignsCorrectValue()
     {
         var user = new User("test", "Default", "Default");
         var action1 = new Movie { Id = Guid.NewGuid(), Name = "A1", Genres = ["Action"] };
@@ -110,43 +110,46 @@ public sealed class PersonalizedWidgetTests
 
         var widget = BuildWidget(BuildScoringService(user, [action1, action2, drama1]));
 
-        var rank1 = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
-        var rank2 = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 2).ToList();
+        var rank1 = widget.Resolve(user.Id, new WidgetInstanceConfig(), 1);
+        var rank2 = widget.Resolve(user.Id, new WidgetInstanceConfig(), 2);
 
-        var rank1Descriptor = Assert.Single(rank1).GetDescriptor();
+        Assert.NotNull(rank1);
+        Assert.NotNull(rank2);
+
+        var rank1Descriptor = rank1.GetDescriptor();
         Assert.Equal("Action", rank1Descriptor.AdditionalData);
         Assert.Equal("More Action", rank1Descriptor.DisplayName);
 
-        var rank2Descriptor = Assert.Single(rank2).GetDescriptor();
+        var rank2Descriptor = rank2.GetDescriptor();
         Assert.Equal("Drama", rank2Descriptor.AdditionalData);
         Assert.Equal("More Drama", rank2Descriptor.DisplayName);
     }
 
     [Fact]
-    public void FavoriteGenre_CreateInstances_RankBeyondAvailableValues_ReturnsNoInstances()
+    public void FavoriteGenre_Resolve_RankBeyondAvailableValues_ReturnsNull()
     {
         var user = new User("test", "Default", "Default");
         var action1 = new Movie { Id = Guid.NewGuid(), Name = "A1", Genres = ["Action"] };
         var drama1 = new Movie { Id = Guid.NewGuid(), Name = "D1", Genres = ["Drama"] };
 
-        // Only 2 distinct genres exist -- rank 3 must yield no instance, not fall back to the
+        // Only 2 distinct genres exist -- rank 3 must resolve to null, not fall back to the
         // last available genre (that would silently recreate the V1 duplicate-section bug).
         var widget = BuildWidget(BuildScoringService(user, [action1, drama1]));
 
-        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 3).ToList();
+        var resolved = widget.Resolve(user.Id, new WidgetInstanceConfig(), 3);
 
-        Assert.Empty(instances);
+        Assert.Null(resolved);
     }
 
     [Fact]
-    public void FavoriteGenre_CreateInstances_NoWatchHistory_ReturnsNoInstances()
+    public void FavoriteGenre_Resolve_NoWatchHistory_ReturnsNull()
     {
         var user = new User("test", "Default", "Default");
         var widget = BuildWidget(BuildScoringService(user, []));
 
-        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
+        var resolved = widget.Resolve(user.Id, new WidgetInstanceConfig(), 1);
 
-        Assert.Empty(instances);
+        Assert.Null(resolved);
     }
 
     // -------------------------------------------------------------------------
@@ -344,7 +347,7 @@ public sealed class PersonalizedWidgetTests
     }
 
     [Fact]
-    public void FavoriteDirector_CreateInstances_UsesTopDirectorsNotActors()
+    public void FavoriteDirector_Resolve_UsesTopDirectorsNotActors()
     {
         var user = new User("test", "Default", "Default");
         var film1 = new Movie { Id = Guid.NewGuid(), Name = "F1", Genres = [] };
@@ -381,10 +384,10 @@ public sealed class PersonalizedWidgetTests
             scoringService,
             TestLocalization);
 
-        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
+        var resolved = widget.Resolve(user.Id, new WidgetInstanceConfig(), 1);
 
-        var single = Assert.Single(instances);
-        var descriptor = single.GetDescriptor();
+        Assert.NotNull(resolved);
+        var descriptor = resolved.GetDescriptor();
         Assert.Equal("Christopher Nolan", descriptor.AdditionalData);
         Assert.Equal("Directed by Christopher Nolan", descriptor.DisplayName);
     }
@@ -412,7 +415,7 @@ public sealed class PersonalizedWidgetTests
     }
 
     [Fact]
-    public void BecauseYouWatched_CreateInstances_NoRecentHistory_ReturnsNoInstances()
+    public void BecauseYouWatched_Resolve_NoRecentHistory_ReturnsNull()
     {
         var user = new User("test", "Default", "Default");
         var widget = new BecauseYouWatchedWidget(
@@ -422,9 +425,9 @@ public sealed class PersonalizedWidgetTests
             BuildScoringService(user, []),
             TestLocalization);
 
-        var instances = widget.CreateInstances(user.Id, new WidgetInstanceConfig(), 1).ToList();
+        var resolved = widget.Resolve(user.Id, new WidgetInstanceConfig(), 1);
 
-        Assert.Empty(instances);
+        Assert.Null(resolved);
     }
 
     [Fact]
@@ -548,7 +551,7 @@ public sealed class PersonalizedWidgetTests
     }
 
     [Fact]
-    public void BecauseYouWatched_CreateInstances_ScopeMovies_ExcludesSeriesOnlyHistory()
+    public void BecauseYouWatched_Resolve_ScopeMovies_ExcludesSeriesOnlyHistory()
     {
         var user = new User("test", "Default", "Default");
         var series = new Series { Name = "A Series", Genres = ["Drama"] };
@@ -566,8 +569,8 @@ public sealed class PersonalizedWidgetTests
             ExtraParams = new Dictionary<string, string> { ["scope"] = "movies" }
         };
 
-        var instances = widget.CreateInstances(user.Id, config, 1).ToList();
+        var resolved = widget.Resolve(user.Id, config, 1);
 
-        Assert.Empty(instances);
+        Assert.Null(resolved);
     }
 }

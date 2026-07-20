@@ -32,19 +32,6 @@ public sealed class DiscoverMoviesWidgetTests
     }
 
     [Fact]
-    public void MaxInstances_IsFive()
-    {
-        var widget = new DiscoverMoviesWidget(
-            new Mock<IUserManager>().Object,
-            new Mock<ILibraryManager>().Object,
-            new Mock<IDtoService>().Object,
-            new Mock<ITMDbCacheService>().Object,
-            NullLogger<DiscoverMoviesWidget>.Instance);
-
-        Assert.Equal(5, widget.MaxInstances);
-    }
-
-    [Fact]
     public async Task GetItemsAsync_ReadsCacheForItsOwnInstanceId()
     {
         var instanceId = Guid.NewGuid().ToString();

@@ -46,9 +46,6 @@ public sealed class RewardsWidget : ConnectedWidgetBase<RewardsWinner>
     public override string DefaultViewMode => WidgetViewMode.Portrait;
 
     /// <inheritdoc/>
-    public override int MaxInstances => 5;
-
-    /// <inheritdoc/>
     protected override IReadOnlyList<RewardsWinner> GetCachedItems(WidgetPayload payload) =>
         payload.AdditionalData is null ? [] : _cacheService.GetRewards(payload.AdditionalData);
 }

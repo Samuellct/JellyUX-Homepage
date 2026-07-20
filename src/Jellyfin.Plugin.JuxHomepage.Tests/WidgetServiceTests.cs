@@ -216,51 +216,6 @@ public sealed class WidgetServiceTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
-    // Multi-instance fan-out (personalized widgets via CreateInstances)
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public async Task GetWidgetsForUser_WidgetFansOutViaCreateInstances_ProducesOneDescriptorPerInstance()
-    {
-        const string widgetType = "jux.personalized.favorite-genre";
-
-        // A single config row whose widget fans out into 3 self-identifying instances.
-        var widget = MakeFanOutWidget(
-            widgetType,
-            instances:
-            [
-                ("Action", "More Action", 10),
-                ("Comedy", "More Comedy", 10),
-                ("Drama", "More Drama", 2) // below MinItems, must be excluded
-            ]);
-
-        var service = BuildService(
-            registeredWidgets: [widget],
-            globalWidgets:
-            [
-                new WidgetConfig
-                {
-                    WidgetType = widgetType,
-                    Enabled = true,
-                    MinItems = 4,
-                    Order = 0,
-                    AllowUserOverride = false,
-                    MaxInstances = 3
-                }
-            ]);
-
-        var result = await service.GetWidgetsForUser(Guid.NewGuid(), page: 0, lang: "en", CancellationToken.None);
-
-        Assert.Equal(2, result.Count);
-        Assert.Equal("Action", result[0].AdditionalData);
-        Assert.Equal("More Action", result[0].DisplayName);
-        Assert.Equal(0, result[0].Order);
-        Assert.Equal("Comedy", result[1].AdditionalData);
-        Assert.Equal("More Comedy", result[1].DisplayName);
-        Assert.Equal(1, result[1].Order);
-    }
-
-    // -------------------------------------------------------------------------
     // GetWidgetItems
     // -------------------------------------------------------------------------
 
@@ -380,55 +335,16 @@ public sealed class WidgetServiceTests : IDisposable
         var mock = new Mock<IWidget>();
         mock.Setup(w => w.WidgetType).Returns(widgetType);
         mock.Setup(w => w.DefaultDisplayName).Returns(widgetType);
-        mock.Setup(w => w.MaxInstances).Returns(1);
 
-        mock.Setup(w => w.CreateInstances(
+        mock.Setup(w => w.Resolve(
                 It.IsAny<Guid>(),
                 It.IsAny<WidgetInstanceConfig>(),
                 It.IsAny<int>()))
-            .Returns(() => [mock.Object]);
+            .Returns(() => mock.Object);
 
         mock.Setup(w => w.GetItemsAsync(It.IsAny<WidgetPayload>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new WidgetResult([], totalRecordCount));
 
-        mock.Setup(w => w.GetDescriptor())
-            .Returns(new WidgetDescriptor { WidgetType = widgetType });
-
-        return mock.Object;
-    }
-
-    // Builds a widget whose CreateInstances fans out into several self-identifying instances,
-    // each with its own AdditionalData/DisplayName/TotalRecordCount — mirrors how personalized
-    // widgets produce one section per scored value.
-    private static IWidget MakeFanOutWidget(
-        string widgetType,
-        (string Value, string DisplayName, int TotalRecordCount)[] instances)
-    {
-        var instanceMocks = instances.Select(i =>
-        {
-            var instanceMock = new Mock<IWidget>();
-            instanceMock.Setup(w => w.WidgetType).Returns(widgetType);
-            instanceMock.Setup(w => w.GetDescriptor())
-                .Returns(new WidgetDescriptor
-                {
-                    WidgetType = widgetType,
-                    AdditionalData = i.Value,
-                    DisplayName = i.DisplayName
-                });
-            instanceMock.Setup(w => w.GetItemsAsync(It.IsAny<WidgetPayload>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new WidgetResult([], i.TotalRecordCount));
-            return instanceMock.Object;
-        }).ToList();
-
-        var mock = new Mock<IWidget>();
-        mock.Setup(w => w.WidgetType).Returns(widgetType);
-        mock.Setup(w => w.DefaultDisplayName).Returns(widgetType);
-        mock.Setup(w => w.MaxInstances).Returns(instances.Length);
-        mock.Setup(w => w.CreateInstances(
-                It.IsAny<Guid>(),
-                It.IsAny<WidgetInstanceConfig>(),
-                It.IsAny<int>()))
-            .Returns(() => instanceMocks);
         mock.Setup(w => w.GetDescriptor())
             .Returns(new WidgetDescriptor { WidgetType = widgetType });
 

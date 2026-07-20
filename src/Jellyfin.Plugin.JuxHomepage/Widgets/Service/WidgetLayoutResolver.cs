@@ -79,24 +79,23 @@ public sealed class WidgetLayoutResolver
 
         // Assign a 1-indexed rank to each row within its WidgetType group, ordered by Order --
         // replaces the old MaxInstances fan-out count (TODO_V2.md Phase 8.2). Every row gets a rank,
-        // not just Personalized ones: CreateInstances for every other category already ignores the
-        // "count" parameter entirely (yield return this), so this is a harmless no-op for them.
+        // not just Personalized ones: Resolve for every other category already ignores the "rank"
+        // parameter entirely (returns this unconditionally), so this is a harmless no-op for them.
         var ranks = effectiveConfigs
             .GroupBy(c => c.WidgetType)
             .SelectMany(g => g.OrderBy(c => c.Order).Select((c, i) => (Config: c, Rank: i + 1)))
             .ToDictionary(x => x.Config, x => x.Rank);
 
-        // Resolve widget instances for each enabled config entry
+        // Resolve a widget instance for each enabled config entry
         var tasks = effectiveConfigs
             .Select(config => ResolveAndFetch(userId, config, ranks[config], lang, cancellationToken))
             .ToList();
 
         var results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
-        // Flatten the per-config descriptor lists (a config row may fan out into several
-        // instances, e.g. personalized widgets), keeping the overall layout order.
+        // Each config row resolves to at most one descriptor (see ResolveAndFetch); drop the nulls.
         return results
-            .SelectMany(r => r)
+            .OfType<WidgetDescriptor>()
             .OrderBy(d => d.Order)
             .ToList()
             .AsReadOnly();
@@ -134,12 +133,12 @@ public sealed class WidgetLayoutResolver
     }
 
     /// <summary>
-    /// Resolves a single <see cref="WidgetConfig"/> row into zero or more descriptors.
-    /// Most widgets are single-instance and produce exactly one descriptor. Personalized widgets may
-    /// produce zero (the requested <paramref name="rank"/> has no scored value for this user) or one
-    /// (see <see cref="Personalized.PersonalizedWidgetBase.CreateInstances"/>).
+    /// Resolves a single <see cref="WidgetConfig"/> row into zero or one descriptor.
+    /// Most widgets are single-instance and always produce a descriptor. Personalized widgets may
+    /// resolve to null (the requested <paramref name="rank"/> has no scored value for this user, see
+    /// <see cref="Personalized.PersonalizedWidgetBase.Resolve"/>).
     /// </summary>
-    private async Task<IReadOnlyList<WidgetDescriptor>> ResolveAndFetch(
+    private async Task<WidgetDescriptor?> ResolveAndFetch(
         Guid userId,
         WidgetConfig config,
         int rank,
@@ -153,15 +152,15 @@ public sealed class WidgetLayoutResolver
                 "Widget type '{WidgetType}' is configured but not registered - skipping (user {UserId}).",
                 config.WidgetType,
                 userId);
-            return [];
+            return null;
         }
 
         var instanceConfig = BuildInstanceConfig(config, widget, lang, _localizationService);
 
-        List<IWidget> instances;
+        IWidget? instance;
         try
         {
-            instances = widget.CreateInstances(userId, instanceConfig, rank).ToList();
+            instance = widget.Resolve(userId, instanceConfig, rank);
         }
         catch (Exception ex)
         {
@@ -170,27 +169,20 @@ public sealed class WidgetLayoutResolver
                 "Widget '{WidgetType}' threw an exception during layout build for user {UserId} - skipping.",
                 config.WidgetType,
                 userId);
-            return [];
+            return null;
         }
 
-        var descriptors = new List<WidgetDescriptor>();
-        for (var i = 0; i < instances.Count; i++)
+        if (instance is null)
         {
-            var descriptor = await FetchInstanceDescriptor(
-                userId,
-                config,
-                instanceConfig,
-                instances[i],
-                i,
-                cancellationToken).ConfigureAwait(false);
-
-            if (descriptor is not null)
-            {
-                descriptors.Add(descriptor);
-            }
+            return null;
         }
 
-        return descriptors;
+        return await FetchInstanceDescriptor(
+            userId,
+            config,
+            instanceConfig,
+            instance,
+            cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<WidgetDescriptor?> FetchInstanceDescriptor(
@@ -198,7 +190,6 @@ public sealed class WidgetLayoutResolver
         WidgetConfig config,
         WidgetInstanceConfig instanceConfig,
         IWidget instance,
-        int index,
         CancellationToken cancellationToken)
     {
         var instanceDescriptor = instance.GetDescriptor();
@@ -255,7 +246,7 @@ public sealed class WidgetLayoutResolver
             ViewMode = config.ViewMode,
             Route = instanceDescriptor.Route,
             AdditionalData = additionalData,
-            Order = config.Order + index,
+            Order = config.Order,
             MinItems = config.MinItems
         };
     }

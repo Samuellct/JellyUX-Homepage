@@ -122,27 +122,6 @@ public sealed class AdminWidgetTests
     }
 
     // -------------------------------------------------------------------------
-    // MaxInstances tests
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void AdminWidgets_MaxInstancesIsAtLeastTwo()
-    {
-        IWidget[] widgets =
-        [
-            new GenreWidget(new Mock<IUserManager>().Object, new Mock<ILibraryManager>().Object, new Mock<IDtoService>().Object),
-            new ActorWidget(new Mock<IUserManager>().Object, new Mock<ILibraryManager>().Object, new Mock<IDtoService>().Object),
-            new DirectorWidget(new Mock<IUserManager>().Object, new Mock<ILibraryManager>().Object, new Mock<IDtoService>().Object),
-            new StudioWidget(new Mock<IUserManager>().Object, new Mock<ILibraryManager>().Object, new Mock<IDtoService>().Object),
-            new CollectionWidget(new Mock<IUserManager>().Object, new Mock<ILibraryManager>().Object, new Mock<IDtoService>().Object),
-            new TagWidget(new Mock<IUserManager>().Object, new Mock<ILibraryManager>().Object, new Mock<IDtoService>().Object),
-            new YearWidget(new Mock<IUserManager>().Object, new Mock<ILibraryManager>().Object, new Mock<IDtoService>().Object)
-        ];
-
-        Assert.All(widgets, w => Assert.True(w.MaxInstances >= 2));
-    }
-
-    // -------------------------------------------------------------------------
     // Early-out tests: null user and empty value
     // -------------------------------------------------------------------------
 
@@ -185,21 +164,20 @@ public sealed class AdminWidgetTests
     }
 
     // -------------------------------------------------------------------------
-    // CreateInstances test
+    // Resolve test
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Genre_CreateInstances_ReturnsSameInstance()
+    public void Genre_Resolve_ReturnsSameInstance()
     {
         var widget = new GenreWidget(
             new Mock<IUserManager>().Object,
             new Mock<ILibraryManager>().Object,
             new Mock<IDtoService>().Object);
 
-        var instances = widget.CreateInstances(Guid.NewGuid(), new WidgetInstanceConfig(), 3).ToList();
+        var resolved = widget.Resolve(Guid.NewGuid(), new WidgetInstanceConfig(), 3);
 
-        var single = Assert.Single(instances);
-        Assert.Same(widget, single);
+        Assert.Same(widget, resolved);
     }
 
     // -------------------------------------------------------------------------

@@ -65,12 +65,6 @@ public abstract class AdminWidgetBase : IWidget
     public virtual WidgetCategory Category => WidgetCategory.Admin;
 
     /// <summary>
-    /// Gets the maximum number of instances (rows) an administrator can create for this type.
-    /// Defaults to 5.
-    /// </summary>
-    public virtual int MaxInstances => 5;
-
-    /// <summary>
     /// Gets the item types to include in the query.
     /// Override and return <see langword="null"/> to include all item types (e.g. for collections,
     /// see <see cref="CollectionWidget"/>, whose items are filtered by ancestor/BoxSet linkage
@@ -82,10 +76,7 @@ public abstract class AdminWidgetBase : IWidget
     protected virtual BaseItemKind[]? IncludeItemTypes => [BaseItemKind.Movie, BaseItemKind.Series];
 
     /// <inheritdoc/>
-    public IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count)
-    {
-        yield return this;
-    }
+    public IWidget? Resolve(Guid userId, WidgetInstanceConfig config, int rank) => this;
 
     /// <summary>
     /// Applies the widget-specific filter to the query using the provided value.

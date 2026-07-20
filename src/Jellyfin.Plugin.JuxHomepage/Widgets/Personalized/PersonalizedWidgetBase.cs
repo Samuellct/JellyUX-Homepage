@@ -21,12 +21,12 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 /// "1 row = 1 section". Since a personalized value can't be picked by the administrator, each row
 /// is instead assigned a <b>rank</b> (1-indexed) among the rows sharing its <c>WidgetType</c>,
 /// computed by <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.WidgetLayoutResolver"/> from the rows'
-/// own <c>Order</c>. <see cref="CreateInstances"/> resolves that row's rank against
-/// <see cref="GetScoredValues"/>: if the user has a scored value at that rank, it produces exactly
-/// one instance carrying it; otherwise it produces none, so the row is naturally excluded from the
-/// layout (TODO_V2.md Phase 8 -- replaces the previous model where a single row fanned out into up
-/// to <see cref="IWidget.MaxInstances"/> instances via <c>MemberwiseClone</c> in a loop, one per
-/// scored value).
+/// own <c>Order</c>. <see cref="Resolve"/> resolves that row's rank against
+/// <see cref="GetScoredValues"/>: if the user has a scored value at that rank, it resolves to
+/// exactly one instance carrying it; otherwise it resolves to null, so the row is naturally excluded
+/// from the layout (TODO_V2.md Phase 8 -- replaces the previous model where a single row fanned out
+/// into up to <c>MaxInstances</c> instances via <c>MemberwiseClone</c> in a loop, one per scored
+/// value).
 /// </para>
 /// </summary>
 public abstract class PersonalizedWidgetBase : IWidget
@@ -87,12 +87,6 @@ public abstract class PersonalizedWidgetBase : IWidget
     public virtual WidgetCategory Category => WidgetCategory.Personalized;
 
     /// <summary>
-    /// Gets the default maximum number of sections (scored values) fanned out per user.
-    /// The administrator may configure a lower value via <see cref="WidgetConfig.MaxInstances"/>.
-    /// </summary>
-    public virtual int MaxInstances => 3;
-
-    /// <summary>
     /// Gets the item types to include in the recommendation query. Never null, unlike
     /// <see cref="Jellyfin.Plugin.JuxHomepage.Widgets.Admin.AdminWidgetBase.IncludeItemTypes"/> --
     /// a personalized recommendation always needs a concrete type constraint (there is no
@@ -102,7 +96,7 @@ public abstract class PersonalizedWidgetBase : IWidget
 
     /// <summary>
     /// Returns the user's scored values for this widget's preference dimension (e.g. top genres),
-    /// most relevant first. Used by <see cref="CreateInstances"/> to resolve the value at a given
+    /// most relevant first. Used by <see cref="Resolve"/> to resolve the value at a given
     /// rank (the <paramref name="count"/>-th element, 1-indexed).
     /// </summary>
     /// <param name="userId">The requesting user's identifier.</param>
@@ -132,31 +126,30 @@ public abstract class PersonalizedWidgetBase : IWidget
     protected abstract void ApplyFilter(InternalItemsQuery query, string value, User user);
 
     /// <remarks>
-    /// For this category, <paramref name="count"/> is not a fan-out cap -- it is the row's
-    /// 1-indexed rank among rows sharing this widget's <c>WidgetType</c> (see the class-level
-    /// remarks). Produces exactly one instance if the user has a scored value at that rank,
-    /// otherwise none. A single <c>MemberwiseClone()</c> per call keeps this safe under
-    /// concurrent requests -- <see cref="PersonalizedWidgetBase"/> instances are DI singletons
-    /// shared across every row/user, and <see cref="Widgets.WidgetLayoutResolver.BuildDescriptors"/>
-    /// may call this concurrently (once per configured row, via <c>Task.WhenAll</c>) for the very
-    /// same widget instance; each call produces its own private clone rather than mutating
-    /// <see langword="this"/> directly, so concurrent calls never race on shared state.
+    /// For this category, <paramref name="rank"/> is the row's 1-indexed rank among rows sharing
+    /// this widget's <c>WidgetType</c> (see the class-level remarks). Resolves to exactly one
+    /// instance if the user has a scored value at that rank, otherwise null. A single
+    /// <c>MemberwiseClone()</c> per call keeps this safe under concurrent requests --
+    /// <see cref="PersonalizedWidgetBase"/> instances are DI singletons shared across every row/user,
+    /// and <see cref="Widgets.WidgetLayoutResolver.BuildDescriptors"/> may call this concurrently
+    /// (once per configured row, via <c>Task.WhenAll</c>) for the very same widget instance; each
+    /// call produces its own private clone rather than mutating <see langword="this"/> directly, so
+    /// concurrent calls never race on shared state.
     /// </remarks>
     /// <inheritdoc/>
-    public IEnumerable<IWidget> CreateInstances(Guid userId, WidgetInstanceConfig config, int count)
+    public IWidget? Resolve(Guid userId, WidgetInstanceConfig config, int rank)
     {
-        var rank = count;
         var scoredValues = GetScoredValues(userId, rank, config);
         if (scoredValues.Count < rank)
         {
-            yield break;
+            return null;
         }
 
         var scored = scoredValues[rank - 1];
         var clone = (PersonalizedWidgetBase)MemberwiseClone();
         clone._value = scored.Value;
         clone._displayName = FormatDisplayName(scored.Label, config.Lang);
-        yield return clone;
+        return clone;
     }
 
     /// <inheritdoc/>

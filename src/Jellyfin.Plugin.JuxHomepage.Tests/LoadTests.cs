@@ -155,10 +155,9 @@ public sealed class LoadTests
         var mock = new Mock<IWidget>();
         mock.Setup(w => w.WidgetType).Returns(widgetType);
         mock.Setup(w => w.DefaultDisplayName).Returns(widgetType);
-        mock.Setup(w => w.MaxInstances).Returns(1);
 
-        mock.Setup(w => w.CreateInstances(It.IsAny<Guid>(), It.IsAny<WidgetInstanceConfig>(), It.IsAny<int>()))
-            .Returns(() => [mock.Object]);
+        mock.Setup(w => w.Resolve(It.IsAny<Guid>(), It.IsAny<WidgetInstanceConfig>(), It.IsAny<int>()))
+            .Returns(() => mock.Object);
 
         mock.Setup(w => w.GetItemsAsync(It.IsAny<WidgetPayload>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
