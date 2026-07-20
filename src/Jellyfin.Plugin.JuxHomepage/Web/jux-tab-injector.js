@@ -13,11 +13,16 @@
 // once at initial page load -- mirrors the re-arming strategy already used by jux-homepage.js.
 if (typeof window.juxTabInjector === 'undefined') {
     window.juxTabInjector = {
+        // buttonId is deliberately distinct from the content pane's id (jux-tab-* -- see
+        // Inject/TransformationPatches.cs's HomeTabIds, spliced server-side into the home-html
+        // chunk): reusing the same id for both caused document.getElementById(paneId) to always
+        // find the (always-present) pane and wrongly conclude the button already existed, so no
+        // button was ever created. Bug found by live DOM inspection on jellyux-test.
         tabs: [
-            { id: 'jux-tab-watchlist', dataIndex: 2, labelEn: 'Watchlist', labelFr: 'Watchlist' },
-            { id: 'jux-tab-progress', dataIndex: 3, labelEn: 'Progress', labelFr: 'Progression' },
-            { id: 'jux-tab-history', dataIndex: 4, labelEn: 'History', labelFr: 'Historique' },
-            { id: 'jux-tab-statistics', dataIndex: 5, labelEn: 'Statistics', labelFr: 'Statistiques' }
+            { buttonId: 'jux-tabbtn-watchlist', dataIndex: 2, labelEn: 'Watchlist', labelFr: 'Watchlist' },
+            { buttonId: 'jux-tabbtn-progress', dataIndex: 3, labelEn: 'Progress', labelFr: 'Progression' },
+            { buttonId: 'jux-tabbtn-history', dataIndex: 4, labelEn: 'History', labelFr: 'Historique' },
+            { buttonId: 'jux-tabbtn-statistics', dataIndex: 5, labelEn: 'Statistics', labelFr: 'Statistiques' }
         ],
 
         init: function () {
@@ -43,7 +48,7 @@ if (typeof window.juxTabInjector === 'undefined') {
                 return;
             }
 
-            if (tabsSlider.querySelector('#' + this.tabs[0].id)) {
+            if (tabsSlider.querySelector('#' + this.tabs[0].buttonId)) {
                 // Already created for this view mount.
                 return;
             }
@@ -51,7 +56,7 @@ if (typeof window.juxTabInjector === 'undefined') {
             var lang = (document.documentElement.lang || 'en').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en';
 
             this.tabs.forEach(function (tab) {
-                if (document.getElementById(tab.id)) {
+                if (document.getElementById(tab.buttonId)) {
                     return;
                 }
 
@@ -64,7 +69,7 @@ if (typeof window.juxTabInjector === 'undefined') {
                 button.setAttribute('is', 'emby-button');
                 button.className = 'emby-tab-button emby-button';
                 button.setAttribute('data-index', tab.dataIndex);
-                button.id = tab.id;
+                button.id = tab.buttonId;
                 button.appendChild(title);
 
                 tabsSlider.appendChild(button);
