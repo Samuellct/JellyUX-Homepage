@@ -96,8 +96,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         if (config.SchemaVersion < 2)
         {
             config.Widgets = ExplodePersonalizedFanOut(config.Widgets);
-            config.SchemaVersion = 2;
         }
+
+        // Add future migrations here as additional `if (config.SchemaVersion < N) { ... }` blocks,
+        // each gated on its own target version and never combined with `else if` -- an installation
+        // resuming from several versions behind must apply every intermediate transformation in
+        // order, not jump straight to the newest one. See CLAUDE.md "Configuration Schema Versioning".
+        config.SchemaVersion = CurrentSchemaVersion;
     }
 
     /// <summary>
@@ -112,8 +117,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         if (config.SchemaVersion < 2)
         {
             config.WidgetOverrides = ExplodePersonalizedFanOut(config.WidgetOverrides);
-            config.SchemaVersion = 2;
         }
+
+        // See MigrateConfiguration for the chain-extension pattern to follow for future tiers.
+        config.SchemaVersion = CurrentSchemaVersion;
     }
 
     /// <summary>
