@@ -1,3 +1,9 @@
+## [2.1.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.1.0...v2.1.1) (2026-07-20)
+
+### Bug Fixes
+
+* use distinct ids for JellyUX tab buttons and content panes ([17cc702](https://github.com/Samuellct/JellyUX-Homepage/commit/17cc7025c30b65cc4370fdc1db9ad89f3de9897c))
+
 ## [2.1.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.3...v2.1.0) (2026-07-20)
 
 ### Features
