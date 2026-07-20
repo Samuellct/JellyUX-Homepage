@@ -2,7 +2,9 @@ using System.Net;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Inject;
 using Jellyfin.Plugin.JuxHomepage.IO;
+using Jellyfin.Plugin.JuxHomepage.Library;
 using Jellyfin.Plugin.JuxHomepage.Localization;
+using Jellyfin.Plugin.JuxHomepage.Watchlist;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
@@ -83,6 +85,25 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<ILibraryManager>(),
             () => Plugin.Instance?.Configuration,
             serviceProvider.GetRequiredService<ILogger<RewardsCacheService>>()));
+        serviceCollection.AddSingleton<ISeriesProgressCacheService>(serviceProvider => new SeriesProgressCacheService(
+            serviceProvider.GetRequiredService<IApplicationPaths>(),
+            serviceProvider.GetRequiredService<IFileSystem>(),
+            serviceProvider.GetRequiredService<IUserManager>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            serviceProvider.GetRequiredService<IUserDataManager>(),
+            serviceProvider.GetRequiredService<ILogger<SeriesProgressCacheService>>()));
+        serviceCollection.AddSingleton<IMovieHistoryCacheService>(serviceProvider => new MovieHistoryCacheService(
+            serviceProvider.GetRequiredService<IApplicationPaths>(),
+            serviceProvider.GetRequiredService<IFileSystem>(),
+            serviceProvider.GetRequiredService<IUserManager>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            serviceProvider.GetRequiredService<IUserDataManager>(),
+            serviceProvider.GetRequiredService<ILogger<MovieHistoryCacheService>>()));
+        serviceCollection.AddSingleton<ICollectionsIndexCacheService>(serviceProvider => new CollectionsIndexCacheService(
+            serviceProvider.GetRequiredService<IApplicationPaths>(),
+            serviceProvider.GetRequiredService<IFileSystem>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            serviceProvider.GetRequiredService<ILogger<CollectionsIndexCacheService>>()));
         serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
