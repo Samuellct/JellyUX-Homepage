@@ -6,9 +6,13 @@ namespace Jellyfin.Plugin.JuxHomepage.Tests.Localization;
 
 public sealed class LocalizationServiceTests
 {
-    // Every WidgetType currently registered in the plugin (kept in sync manually; a new widget
-    // must add its translation key to fr.json/en.json AND to this list, so a forgotten key fails
-    // this test rather than silently showing raw keys in production).
+    // Every WidgetType currently registered in the plugin (kept in sync manually -- deliberately not
+    // generated from WidgetRegistry.GetAll(), since populating a real registry requires a full DI
+    // container with mocks for every widget's constructor dependencies; see TODO_V3.md Phase 3.6 for
+    // the trade-off). A new widget must add its translation key to fr.json/en.json AND to this list,
+    // so a forgotten key fails this test rather than silently showing a raw key in production --
+    // exactly the gap that let "jux.connected.rewards" go missing from both this list and the
+    // language files until this phase caught it.
     private static readonly string[] KnownWidgetTypes =
     [
         "jux.native.continue-watching",
@@ -23,6 +27,7 @@ public sealed class LocalizationServiceTests
         "jux.connected.airing-today",
         "jux.connected.now-playing-movies",
         "jux.connected.discover-movies",
+        "jux.connected.rewards",
         "jux.admin.genre",
         "jux.admin.actor",
         "jux.admin.director",
