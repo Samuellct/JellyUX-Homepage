@@ -7,6 +7,7 @@
 
 # Project files
 !.github/
+!.github/dependabot.yml
 !.github/workflows/
 !.github/workflows/ci.yml
 !.github/workflows/jellyfin-web-drift.yml
