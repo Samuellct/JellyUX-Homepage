@@ -6,7 +6,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 
 /// <summary>
 /// Displays movies featuring the requesting user's favorite actors, derived from their watch
-/// history. Fans out into one section per top-scored actor (see <see cref="ScoringService.GetTopActors"/>).
+/// history. Each configured row resolves to at most one top-scored actor, by rank (see
+/// <see cref="ScoringService.GetTopActors"/> and <see cref="PersonalizedWidgetBase"/>).
 /// </summary>
 public sealed class FavoriteActorWidget : PersonalizedPersonWidgetBase
 {

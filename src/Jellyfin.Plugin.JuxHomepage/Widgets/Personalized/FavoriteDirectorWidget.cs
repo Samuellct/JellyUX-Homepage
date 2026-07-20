@@ -6,8 +6,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 
 /// <summary>
 /// Displays movies directed by the requesting user's favorite directors, derived from their watch
-/// history. Fans out into one section per top-scored director (see
-/// <see cref="ScoringService.GetTopDirectors"/>).
+/// history. Each configured row resolves to at most one top-scored director, by rank (see
+/// <see cref="ScoringService.GetTopDirectors"/> and <see cref="PersonalizedWidgetBase"/>).
 /// </summary>
 public sealed class FavoriteDirectorWidget : PersonalizedPersonWidgetBase
 {

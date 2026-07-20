@@ -8,7 +8,8 @@ namespace Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 
 /// <summary>
 /// Displays items from the requesting user's favorite genres, derived from their watch history.
-/// Fans out into one section per top-scored genre (see <see cref="ScoringService.GetTopGenres"/>).
+/// Each configured row resolves to at most one top-scored genre, by rank (see
+/// <see cref="ScoringService.GetTopGenres"/> and <see cref="PersonalizedWidgetBase"/>).
 /// </summary>
 public sealed class FavoriteGenreWidget : PersonalizedWidgetBase
 {

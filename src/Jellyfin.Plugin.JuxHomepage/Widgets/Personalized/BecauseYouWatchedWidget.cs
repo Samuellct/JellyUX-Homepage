@@ -10,9 +10,10 @@ using MediaBrowser.Controller.Library;
 namespace Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 
 /// <summary>
-/// Displays movies related to films the requesting user recently watched, sharing at least one
-/// genre with the reference film. Fans out into one section per recently watched film (see
-/// <see cref="ScoringService.GetRecentlyWatched"/>).
+/// Displays items related to a movie or series the requesting user recently watched, sharing at
+/// least one genre with the reference item. Each configured row resolves to at most one recently
+/// watched reference item, by rank (see <see cref="ScoringService.GetRecentlyWatched"/> and
+/// <see cref="PersonalizedWidgetBase"/>).
 /// </summary>
 public sealed class BecauseYouWatchedWidget : PersonalizedWidgetBase
 {
