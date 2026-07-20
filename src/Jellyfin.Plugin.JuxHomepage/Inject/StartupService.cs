@@ -100,6 +100,7 @@ public sealed class StartupService : IHostedService
 
         RegisterIndexHtmlTransformation();
         RegisterLoadSectionsTransformations();
+        RegisterHomeHtmlTransformation();
     }
 
     /// <summary>
@@ -175,6 +176,28 @@ public sealed class StartupService : IHostedService
 
         _detector.RegisterTransformation(payload);
         _logger.LogInformation("Registered index.html transformation for JellyUX Homepage.");
+    }
+
+    /// <summary>
+    /// Registers the home-html chunk transformation that splices in the 4 JellyUX tab content panes
+    /// (Watchlist/Progress/History/Statistics, TODO_V3.md Phase 4.1). Unlike loadSections, this chunk
+    /// is identified by a stable filename prefix ("home-html") that does not change between Jellyfin
+    /// Web builds -- only the content hash does -- so no dynamic discovery is needed, matching the
+    /// approach already validated by the published jellyfin-plugin-custom-tabs plugin.
+    /// </summary>
+    private void RegisterHomeHtmlTransformation()
+    {
+        var payload = new JObject
+        {
+            ["id"] = Guid.NewGuid().ToString(),
+            ["fileNamePattern"] = "home-html\\.[^.]+\\.chunk\\.js",
+            ["callbackAssembly"] = GetType().Assembly.FullName,
+            ["callbackClass"] = typeof(TransformationPatches).FullName,
+            ["callbackMethod"] = nameof(TransformationPatches.HomeHtmlChunk)
+        };
+
+        _detector.RegisterTransformation(payload);
+        _logger.LogInformation("Registered home-html chunk transformation for JellyUX Homepage tabs.");
     }
 
     private void RegisterLoadSectionsTransformations()

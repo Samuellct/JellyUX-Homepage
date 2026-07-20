@@ -25,6 +25,18 @@ internal enum LoadSectionsOutcome
 }
 
 /// <summary>
+/// Outcome of attempting to splice the JellyUX tab content panes into the home-html chunk.
+/// </summary>
+internal enum HomeHtmlOutcome
+{
+    /// <summary>The chunk does not contain the "favoritesTab" anchor at all.</summary>
+    NoMarker,
+
+    /// <summary>The tab panes were spliced in successfully.</summary>
+    Patched
+}
+
+/// <summary>
 /// Static transformation callbacks invoked by the FileTransformation plugin via reflection.
 /// Each method receives a <see cref="PatchRequestPayload"/> and returns the transformed content.
 /// </summary>
@@ -45,6 +57,18 @@ public static class TransformationPatches
 
     private const string InjectResourceSuffix = "Web.jux-loadsections-inject.js";
 
+    // The exact literal anchor confirmed by extracting the real Jellyfin Web bundle (home-html
+    // chunk) deployed on jellyux-test, and independently confirmed against the published
+    // jellyfin-plugin-custom-tabs source (Helpers/TransformationPatches.cs), which targets this
+    // exact same string. Marks the end of the native tab content container (index 1, "Favorites").
+    private const string HomeHtmlAnchor = "id=\"favoritesTab\" data-index=\"1\"> <div class=\"sections\"></div> </div>";
+
+    // The 4 JellyUX tab panes, in DOM order. Order matters: the native tab-switch mechanism toggles
+    // visibility by DOM position within the full .tabContent list (not by data-index attribute
+    // matching alone -- confirmed by reading the compiled home.js tab-switch handler), so these must
+    // stay in the same order as the buttons created by jux-tab-injector.js (data-index 2..5).
+    private static readonly string[] HomeTabIds = ["jux-tab-watchlist", "jux-tab-progress", "jux-tab-history", "jux-tab-statistics"];
+
     /// <summary>
     /// Injects the JellyUX CSS link and JS script tags into Jellyfin's index.html.
     /// Called by FileTransformation via reflection - must remain public and static.
@@ -58,10 +82,46 @@ public static class TransformationPatches
 
         var linkTag = $"<link rel=\"stylesheet\" href=\"/JuxHomepage/jux-homepage.css{cacheParam}\" />";
         var scriptTag = $"<script src=\"/JuxHomepage/jux-homepage.js{cacheParam}\" defer></script>";
+        var tabInjectorScriptTag = $"<script src=\"/JuxHomepage/jux-tab-injector.js{cacheParam}\" defer></script>";
 
         return (content.Contents ?? string.Empty)
             .Replace("</head>", $"{linkTag}\n</head>", StringComparison.OrdinalIgnoreCase)
-            .Replace("</body>", $"{scriptTag}\n</body>", StringComparison.OrdinalIgnoreCase);
+            .Replace("</body>", $"{scriptTag}\n{tabInjectorScriptTag}\n</body>", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Patches the Jellyfin home-html chunk.js to splice in 4 empty JellyUX tab content panes
+    /// (Watchlist/Progress/History/Statistics -- populated by later phases), right after the native
+    /// "Favorites" tab pane. Called by FileTransformation via reflection - must remain public and
+    /// static.
+    /// </summary>
+    /// <param name="content">Payload containing the raw home-html chunk.js contents.</param>
+    /// <returns>Transformed JS with the JellyUX tab panes spliced in.</returns>
+    public static string HomeHtmlChunk(PatchRequestPayload content)
+    {
+        var raw = content.Contents ?? string.Empty;
+        return TryPatchHomeHtmlChunk(raw).Content;
+    }
+
+    /// <summary>
+    /// Pure splicing logic, decoupled from reflection: attempts to insert the JellyUX tab content
+    /// panes right after the native "Favorites" tab pane.
+    /// </summary>
+    /// <param name="raw">The raw home-html chunk.js contents.</param>
+    /// <returns>The (possibly transformed) content, and which outcome produced it.</returns>
+    internal static (string Content, HomeHtmlOutcome Outcome) TryPatchHomeHtmlChunk(string raw)
+    {
+        if (!raw.Contains(HomeHtmlAnchor, StringComparison.Ordinal))
+        {
+            return (raw, HomeHtmlOutcome.NoMarker);
+        }
+
+        // data-index starts at 2: 0 and 1 are already taken by the native "Home"/"Favorites" tabs.
+        var panes = string.Concat(HomeTabIds.Select((id, i) =>
+            $" <div class=\"tabContent pageTabContent\" id=\"{id}\" data-index=\"{i + 2}\"> <div class=\"sections\"></div> </div>"));
+
+        var patched = raw.Replace(HomeHtmlAnchor, HomeHtmlAnchor + panes, StringComparison.Ordinal);
+        return (patched, HomeHtmlOutcome.Patched);
     }
 
     /// <summary>

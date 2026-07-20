@@ -102,6 +102,28 @@ public class JuxHomepageController : ControllerBase
     }
 
     /// <summary>
+    /// Serves the JellyUX tab injector script (Watchlist/Progress/History/Statistics tab buttons).
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-tab-injector.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetTabInjectorScript()
+    {
+        var stream = GetEmbeddedResource("jux-tab-injector.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
     /// Serves the JellyUX Homepage CSS stylesheet.
     /// Anonymous - loaded by a link tag injected into index.html.
     /// </summary>

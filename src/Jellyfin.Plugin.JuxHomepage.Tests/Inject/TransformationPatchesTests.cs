@@ -53,4 +53,47 @@ public sealed class TransformationPatchesTests
         Assert.Equal(LoadSectionsOutcome.HookNotFound, outcome);
         Assert.Equal(raw, content);
     }
+
+    // -------------------------------------------------------------------------
+    // TryPatchHomeHtmlChunk (TODO_V3.md Phase 4.1)
+    // -------------------------------------------------------------------------
+
+    // Short representative stand-in for the real minified chunk -- the anchor text itself is the
+    // exact literal string confirmed against the real Jellyfin Web bundle deployed on jellyux-test
+    // (home-html.*.chunk.js) and independently against jellyfin-plugin-custom-tabs' own source.
+    private const string HomeHtmlAnchor = "id=\"favoritesTab\" data-index=\"1\"> <div class=\"sections\"></div> </div>";
+
+    [Fact]
+    public void TryPatchHomeHtmlChunk_AnchorPresent_SplicesFourTabPanesInOrderRightAfterAnchor()
+    {
+        var raw = $"<div class=\"tabContent pageTabContent\" id=\"homeTab\" data-index=\"0\"> <div class=\"sections\"></div> </div> <div class=\"tabContent pageTabContent\" {HomeHtmlAnchor} </div>";
+
+        var (content, outcome) = TransformationPatches.TryPatchHomeHtmlChunk(raw);
+
+        Assert.Equal(HomeHtmlOutcome.Patched, outcome);
+
+        // The 4 panes must appear in this exact order (DOM position drives the native tab-switch
+        // visibility toggle, see TransformationPatches.cs comments), each with the matching
+        // data-index (2..5) immediately following the native anchor.
+        var watchlistIndex = content.IndexOf("id=\"jux-tab-watchlist\" data-index=\"2\"", StringComparison.Ordinal);
+        var progressIndex = content.IndexOf("id=\"jux-tab-progress\" data-index=\"3\"", StringComparison.Ordinal);
+        var historyIndex = content.IndexOf("id=\"jux-tab-history\" data-index=\"4\"", StringComparison.Ordinal);
+        var statisticsIndex = content.IndexOf("id=\"jux-tab-statistics\" data-index=\"5\"", StringComparison.Ordinal);
+
+        Assert.True(watchlistIndex >= 0);
+        Assert.True(watchlistIndex < progressIndex);
+        Assert.True(progressIndex < historyIndex);
+        Assert.True(historyIndex < statisticsIndex);
+    }
+
+    [Fact]
+    public void TryPatchHomeHtmlChunk_AnchorMissing_ReturnsContentUnchanged()
+    {
+        const string raw = "<div class=\"tabContent pageTabContent\" id=\"homeTab\" data-index=\"0\"> <div class=\"sections\"></div> </div>";
+
+        var (content, outcome) = TransformationPatches.TryPatchHomeHtmlChunk(raw);
+
+        Assert.Equal(HomeHtmlOutcome.NoMarker, outcome);
+        Assert.Equal(raw, content);
+    }
 }
