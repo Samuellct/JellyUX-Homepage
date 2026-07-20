@@ -1,3 +1,10 @@
+## [2.1.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.3...v2.1.0) (2026-07-20)
+
+### Features
+
+* add generic server-side caches for exhaustive watch-history views ([ee7095e](https://github.com/Samuellct/JellyUX-Homepage/commit/ee7095e107a24b212aaa1f13aaffb93a5d23aabe))
+* add internal tab injection mechanism for Watchlist and related screens ([bece83e](https://github.com/Samuellct/JellyUX-Homepage/commit/bece83ef85cd10c3df640a4567b402a58515d243))
+
 ## [2.0.3](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.0.2...v2.0.3) (2026-07-20)
 
 ### Bug Fixes

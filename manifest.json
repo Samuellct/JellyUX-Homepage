@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.1.0.0",
+                "changelog": "### Features\n\n* add generic server-side caches for exhaustive watch-history views ([ee7095e](https://github.com/Samuellct/JellyUX-Homepage/commit/ee7095e107a24b212aaa1f13aaffb93a5d23aabe))\n* add internal tab injection mechanism for Watchlist and related screens ([bece83e](https://github.com/Samuellct/JellyUX-Homepage/commit/bece83ef85cd10c3df640a4567b402a58515d243))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.1.0/jellyux-homepage_2.1.0.0.zip",
+                "checksum": "5293f0d8321f09115156f96adf9bd6ed",
+                "timestamp": "2026-07-20T19:34:05Z"
+            },
+            {
                 "version": "2.0.3.0",
                 "changelog": "### Bug Fixes\n\n* trigger release for Phase 3 cleanup batch ([94b25de](https://github.com/Samuellct/JellyUX-Homepage/commit/94b25dee6d41dddbb39b2a519a55f28c42b13e9a))",
                 "targetAbi": "10.11.0.0",
