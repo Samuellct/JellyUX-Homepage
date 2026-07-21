@@ -1,3 +1,9 @@
+## [2.3.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.3.1...v2.3.2) (2026-07-21)
+
+### Bug Fixes
+
+* show the watchlist button on the item detail page ([bc77bde](https://github.com/Samuellct/JellyUX-Homepage/commit/bc77bde2b3d6b3237cc7d1dd0883c3428a10bc8b))
+
 ## [2.3.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.3.0...v2.3.1) (2026-07-21)
 
 ### Bug Fixes

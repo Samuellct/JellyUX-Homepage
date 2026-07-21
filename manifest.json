@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.3.2.0",
+                "changelog": "### Bug Fixes\n\n* show the watchlist button on the item detail page ([bc77bde](https://github.com/Samuellct/JellyUX-Homepage/commit/bc77bde2b3d6b3237cc7d1dd0883c3428a10bc8b))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.3.2/jellyux-homepage_2.3.2.0.zip",
+                "checksum": "8cd2ea6df935d23613df64f01b293c70",
+                "timestamp": "2026-07-21T20:41:54Z"
+            },
+            {
                 "version": "2.3.1.0",
                 "changelog": "### Bug Fixes\n\n* revert to setAttribute for the injected tab buttons' is attribute ([c059504](https://github.com/Samuellct/JellyUX-Homepage/commit/c05950472d73421f6c0846fe7386c92ef6b4ed57))",
                 "targetAbi": "10.11.0.0",
