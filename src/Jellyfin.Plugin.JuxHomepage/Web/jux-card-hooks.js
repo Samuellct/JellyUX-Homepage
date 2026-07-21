@@ -212,7 +212,11 @@
         var button = document.createElement('button');
         button.type = 'button';
         button.setAttribute('is', 'emby-button');
-        button.className = heart.className.replace(/\bbtnUserRating\b/, '').replace(/\s+/g, ' ').trim() + ' jux-watchlist-detail-toggle';
+        // Built explicitly rather than cloning heart.className: the native heart button can carry
+        // a transient "hide" class (removed by Jellyfin's own controller once its data/capability
+        // check resolves) -- confirmed live that cloning it at the wrong instant baked "hide" in
+        // permanently, since this button's class is only ever set once, here, and never revisited.
+        button.className = 'button-flat detailButton emby-button jux-watchlist-detail-toggle';
         button.setAttribute('data-jux-item-id', itemId);
 
         var icon = document.createElement('span');
