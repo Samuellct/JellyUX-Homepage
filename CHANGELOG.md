@@ -1,3 +1,14 @@
+## [2.3.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.2.0...v2.3.0) (2026-07-21)
+
+### Features
+
+* add watchlist toggle to the item detail page and the More menu ([fb9616f](https://github.com/Samuellct/JellyUX-Homepage/commit/fb9616ffb235a921ac57c0d864e610bab7719b74))
+
+### Bug Fixes
+
+* reliably switch to injected home tabs on the first click ([e4cad1f](https://github.com/Samuellct/JellyUX-Homepage/commit/e4cad1feb868517e76d4f0fef1b33fb2d297cd8d))
+* render cover art in the Watchlist tab ([a23d1b9](https://github.com/Samuellct/JellyUX-Homepage/commit/a23d1b934c94c580a655587dbde88be3af8f22d5))
+
 ## [2.2.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.1.1...v2.2.0) (2026-07-21)
 
 ### Features
