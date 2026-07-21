@@ -22,6 +22,7 @@
     <EmbeddedResource Include="Web\jux-homepage.js" />
     <EmbeddedResource Include="Web\jux-tab-injector.js" />
     <EmbeddedResource Include="Web\jux-watchlist.js" />
+    <EmbeddedResource Include="Web\jux-card-hooks.js" />
     <EmbeddedResource Include="Web\jux-homepage.css" />
     <EmbeddedResource Include="Web\jux-loadsections-inject.js" />
     <EmbeddedResource Include="Web\config.html" />

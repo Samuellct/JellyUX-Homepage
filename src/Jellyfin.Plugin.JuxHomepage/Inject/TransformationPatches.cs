@@ -84,12 +84,13 @@ public static class TransformationPatches
         var scriptTag = $"<script src=\"/JuxHomepage/jux-homepage.js{cacheParam}\" defer></script>";
         var tabInjectorScriptTag = $"<script src=\"/JuxHomepage/jux-tab-injector.js{cacheParam}\" defer></script>";
         var watchlistScriptTag = $"<script src=\"/JuxHomepage/jux-watchlist.js{cacheParam}\" defer></script>";
+        var cardHooksScriptTag = $"<script src=\"/JuxHomepage/jux-card-hooks.js{cacheParam}\" defer></script>";
 
         return (content.Contents ?? string.Empty)
             .Replace("</head>", $"{linkTag}\n</head>", StringComparison.OrdinalIgnoreCase)
             .Replace(
                 "</body>",
-                $"{scriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n</body>",
+                $"{scriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n{cardHooksScriptTag}\n</body>",
                 StringComparison.OrdinalIgnoreCase);
     }
 
