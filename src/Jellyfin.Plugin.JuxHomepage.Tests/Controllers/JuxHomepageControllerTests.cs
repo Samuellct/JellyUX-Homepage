@@ -5,6 +5,7 @@ using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
+using Jellyfin.Plugin.JuxHomepage.Watchlist;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Controller.Library;
@@ -158,6 +159,7 @@ public sealed class JuxHomepageControllerTests
         Mock<IUserManager>? userManagerMock = null,
         Mock<ITMDbCacheService>? tmdbCacheServiceMock = null,
         Mock<ITMDbApiClient>? tmdbApiClientMock = null,
+        Mock<IWatchlistService>? watchlistServiceMock = null,
         ILogger<JuxHomepageController>? logger = null)
     {
         var registry = new WidgetRegistry();
@@ -182,6 +184,7 @@ public sealed class JuxHomepageControllerTests
             Mock.Of<IRewardsCacheService>(),
             Mock.Of<IWikidataApiClient>(),
             new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>()),
+            (watchlistServiceMock ?? new Mock<IWatchlistService>()).Object,
             Mock.Of<IAuthorizationContext>(),
             logger ?? NullLogger<JuxHomepageController>.Instance);
     }

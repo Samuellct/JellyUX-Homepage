@@ -5,6 +5,7 @@ using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
+using Jellyfin.Plugin.JuxHomepage.Watchlist;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Common.Api;
@@ -35,6 +36,7 @@ public class JuxHomepageController : ControllerBase
     private readonly IRewardsCacheService _rewardsCacheService;
     private readonly IWikidataApiClient _wikidataApiClient;
     private readonly ILocalizationService _localizationService;
+    private readonly IWatchlistService _watchlistService;
     private readonly IAuthorizationContext _authContext;
     private readonly ILogger<JuxHomepageController> _logger;
 
@@ -49,6 +51,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="rewardsCacheService">Rewards disk cache service.</param>
     /// <param name="wikidataApiClient">Wikidata HTTP API client.</param>
     /// <param name="localizationService">Widget/admin-UI translation service.</param>
+    /// <param name="watchlistService">Watchlist query service.</param>
     /// <param name="authContext">Jellyfin request authorization context.</param>
     /// <param name="logger">Logger.</param>
     public JuxHomepageController(
@@ -60,6 +63,7 @@ public class JuxHomepageController : ControllerBase
         IRewardsCacheService rewardsCacheService,
         IWikidataApiClient wikidataApiClient,
         ILocalizationService localizationService,
+        IWatchlistService watchlistService,
         IAuthorizationContext authContext,
         ILogger<JuxHomepageController> logger)
     {
@@ -71,6 +75,7 @@ public class JuxHomepageController : ControllerBase
         _rewardsCacheService = rewardsCacheService;
         _wikidataApiClient = wikidataApiClient;
         _localizationService = localizationService;
+        _watchlistService = watchlistService;
         _authContext = authContext;
         _logger = logger;
     }
@@ -114,6 +119,50 @@ public class JuxHomepageController : ControllerBase
     public IActionResult GetTabInjectorScript()
     {
         var stream = GetEmbeddedResource("jux-tab-injector.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Serves the JellyUX Watchlist tab rendering script.
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-watchlist.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetWatchlistScript()
+    {
+        var stream = GetEmbeddedResource("jux-watchlist.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Serves the JellyUX card-overlay watchlist toggle button script.
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-card-hooks.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetCardHooksScript()
+    {
+        var stream = GetEmbeddedResource("jux-card-hooks.js");
         if (stream is null)
         {
             return NotFound();
@@ -280,6 +329,68 @@ public class JuxHomepageController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    // -------------------------------------------------------------------------
+    // Watchlist (authenticated user)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns a filtered, sorted, paginated page of the user's Watchlist items (every item with
+    /// <c>UserData.Likes == true</c>). TODO_V3.md Phase 5.1.
+    /// </summary>
+    /// <param name="userId">The requesting user's Jellyfin identifier.</param>
+    /// <param name="sortBy">One of "Name", "DateAdded", "ReleaseDate", "CommunityRating". Defaults to "DateAdded".</param>
+    /// <param name="sortOrder">"Ascending" or "Descending". Defaults to "Descending".</param>
+    /// <param name="includeItemTypes">One of "Movie", "Series", "All". Defaults to "All".</param>
+    /// <param name="startIndex">Zero-based start index for pagination.</param>
+    /// <param name="limit">Maximum number of items to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="WidgetResult"/> with items and total count.</returns>
+    [HttpGet("Watchlist/Items")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<WidgetResult>> GetWatchlistItems(
+        [FromQuery] Guid userId,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortOrder = null,
+        [FromQuery] string? includeItemTypes = null,
+        [FromQuery] int startIndex = 0,
+        [FromQuery] int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await IsRequestAuthorizedForUserAsync(userId).ConfigureAwait(false))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var result = _watchlistService.GetItems(userId, sortBy, sortOrder, includeItemTypes, startIndex, limit, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns every item id currently in the user's Watchlist, with no image/metadata fields --
+    /// a lightweight payload for <c>jux-card-hooks.js</c> to pre-load once per page so each card can
+    /// immediately show the correct toggle icon. TODO_V3.md Phase 5.2.
+    /// </summary>
+    /// <param name="userId">The requesting user's Jellyfin identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Every item id currently liked by this user.</returns>
+    [HttpGet("Watchlist/Ids")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<Guid>>> GetWatchlistIds(
+        [FromQuery] Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await IsRequestAuthorizedForUserAsync(userId).ConfigureAwait(false))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        return Ok(_watchlistService.GetLikedItemIds(userId, cancellationToken));
     }
 
     // -------------------------------------------------------------------------

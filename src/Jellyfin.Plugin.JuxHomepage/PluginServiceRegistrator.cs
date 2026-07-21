@@ -104,6 +104,10 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<IFileSystem>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
             serviceProvider.GetRequiredService<ILogger<CollectionsIndexCacheService>>()));
+        serviceCollection.AddSingleton<IWatchlistService>(serviceProvider => new WatchlistService(
+            serviceProvider.GetRequiredService<IUserManager>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            serviceProvider.GetRequiredService<MediaBrowser.Controller.Dto.IDtoService>()));
         serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
