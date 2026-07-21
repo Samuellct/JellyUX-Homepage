@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.2.0.0",
+                "changelog": "### Features\n\n* add Watchlist tab with server-side filtering and sorting ([d184bd0](https://github.com/Samuellct/JellyUX-Homepage/commit/d184bd0d51a705bad90b15d75c69d4854af02594))\n* add watchlist toggle button to card overlays ([f67b81c](https://github.com/Samuellct/JellyUX-Homepage/commit/f67b81c700a8dc26488d321dde4b5cacfe7ff8ae))\n* automatically remove watched items from the watchlist ([2d66853](https://github.com/Samuellct/JellyUX-Homepage/commit/2d668531532e388a8fb9cb03290f177a92e4a04a))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.2.0/jellyux-homepage_2.2.0.0.zip",
+                "checksum": "680cb0f5d08972ad44b51bed17ea5c30",
+                "timestamp": "2026-07-21T14:40:01Z"
+            },
+            {
                 "version": "2.1.1.0",
                 "changelog": "### Bug Fixes\n\n* use distinct ids for JellyUX tab buttons and content panes ([17cc702](https://github.com/Samuellct/JellyUX-Homepage/commit/17cc7025c30b65cc4370fdc1db9ad89f3de9897c))",
                 "targetAbi": "10.11.0.0",

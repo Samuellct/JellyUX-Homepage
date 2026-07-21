@@ -1,3 +1,11 @@
+## [2.2.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.1.1...v2.2.0) (2026-07-21)
+
+### Features
+
+* add Watchlist tab with server-side filtering and sorting ([d184bd0](https://github.com/Samuellct/JellyUX-Homepage/commit/d184bd0d51a705bad90b15d75c69d4854af02594))
+* add watchlist toggle button to card overlays ([f67b81c](https://github.com/Samuellct/JellyUX-Homepage/commit/f67b81c700a8dc26488d321dde4b5cacfe7ff8ae))
+* automatically remove watched items from the watchlist ([2d66853](https://github.com/Samuellct/JellyUX-Homepage/commit/2d668531532e388a8fb9cb03290f177a92e4a04a))
+
 ## [2.1.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.1.0...v2.1.1) (2026-07-20)
 
 ### Bug Fixes
