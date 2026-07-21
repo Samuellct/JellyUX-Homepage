@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import juxCardHooks from '../src/Jellyfin.Plugin.JuxHomepage/Web/jux-card-hooks.js';
 
-const { _iconName, _readCardItemInfo } = juxCardHooks;
+const { _iconName, _readCardItemInfo, _currentDetailItemId, _escHtml } = juxCardHooks;
 
 describe('_iconName', () => {
     it('returns the filled bookmark icon when liked', () => {
@@ -26,5 +26,28 @@ describe('_readCardItemInfo', () => {
         const card = document.querySelector('.card');
 
         expect(_readCardItemInfo(card)).toBeNull();
+    });
+});
+
+describe('_currentDetailItemId', () => {
+    it('extracts the item id from a details page hash', () => {
+        window.location.hash = '#/details?id=abc123def456';
+        expect(_currentDetailItemId()).toBe('abc123def456');
+    });
+
+    it('returns null when the hash has no id', () => {
+        window.location.hash = '#/home';
+        expect(_currentDetailItemId()).toBeNull();
+    });
+});
+
+describe('_escHtml', () => {
+    it('escapes HTML special characters', () => {
+        expect(_escHtml('<b>"Tom & Jerry"</b>')).toBe('&lt;b&gt;&quot;Tom &amp; Jerry&quot;&lt;/b&gt;');
+    });
+
+    it('returns an empty string for falsy input', () => {
+        expect(_escHtml('')).toBe('');
+        expect(_escHtml(null)).toBe('');
     });
 });
