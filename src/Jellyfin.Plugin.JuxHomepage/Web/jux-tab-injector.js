@@ -64,8 +64,17 @@ if (typeof window.juxTabInjector === 'undefined') {
                 title.className = 'emby-button-foreground';
                 title.textContent = lang === 'fr' ? tab.labelFr : tab.labelEn;
 
-                var button = document.createElement('button', { is: 'emby-button' });
+                // NOT document.createElement('button', { is: 'emby-button' }): confirmed live on
+                // jellyux-test that this second-argument form throws ("t.toLowerCase is not a
+                // function") on this Jellyfin Web build, aborting the whole forEach before any
+                // button is appended -- the exact cause of a real regression (v2.3.0.0) where the
+                // entire custom tab bar silently disappeared. setAttribute after creation is inert
+                // for real customized-built-in upgrade, but harmless here since the click routing
+                // is delegation-based on the slider/tabs controller, not on this button being a
+                // real emby-button instance (confirmed working before and after this revert).
+                var button = document.createElement('button');
                 button.type = 'button';
+                button.setAttribute('is', 'emby-button');
                 button.className = 'emby-tab-button emby-button';
                 button.setAttribute('data-index', tab.dataIndex);
                 button.id = tab.buttonId;
