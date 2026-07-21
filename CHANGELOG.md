@@ -1,3 +1,9 @@
+## [2.3.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.3.0...v2.3.1) (2026-07-21)
+
+### Bug Fixes
+
+* revert to setAttribute for the injected tab buttons' is attribute ([c059504](https://github.com/Samuellct/JellyUX-Homepage/commit/c05950472d73421f6c0846fe7386c92ef6b4ed57))
+
 ## [2.3.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.2.0...v2.3.0) (2026-07-21)
 
 ### Features
