@@ -64,18 +64,72 @@ if (typeof window.juxTabInjector === 'undefined') {
                 title.className = 'emby-button-foreground';
                 title.textContent = lang === 'fr' ? tab.labelFr : tab.labelEn;
 
-                var button = document.createElement('button');
+                var button = document.createElement('button', { is: 'emby-button' });
                 button.type = 'button';
-                button.setAttribute('is', 'emby-button');
                 button.className = 'emby-tab-button emby-button';
                 button.setAttribute('data-index', tab.dataIndex);
                 button.id = tab.buttonId;
                 button.appendChild(title);
 
+                // Belt-and-suspenders pane switch: confirmed live on jellyux-test that the very
+                // first click on a freshly-injected tab (right after a page load/reload) can leave
+                // the tab bar's own selection state unresolved for a beat -- the MutationObserver
+                // below reacts as soon as Jellyfin's controller does settle it, but a fixed short
+                // delay after our own button's click guarantees the pane switches immediately
+                // regardless of that timing, without needing to fully reverse-engineer the
+                // minified controller's internal warm-up behavior.
+                button.addEventListener('click', function () {
+                    setTimeout(function () { _activatePane(tab.dataIndex); }, 50);
+                });
+
                 tabsSlider.appendChild(button);
             });
+
+            _watchActiveTabButton(tabsSlider);
         }
     };
+
+    // Manual pane activation for our own tabs. Confirmed by live DOM inspection on jellyux-test:
+    // clicking a freshly-injected tab can leave the corresponding ".tabContent.is-active" pane
+    // unswitched even though the tab bar's own visual selection looks right (TODO_V3.md Phase 5
+    // manual test report -- "obligé de rafraîchir plusieurs fois avant de voir les médias"). Every
+    // click afterwards works fine, so this isn't a permanent break, just an unreliable first switch.
+    // Rather than depend on fully reverse-engineering Jellyfin's minified tab controller to find
+    // the exact cause, two independent, idempotent mechanisms guarantee the pane switches anyway:
+    // a MutationObserver reacting to the button's own "emby-tab-button-active" class (below), and a
+    // fixed-delay fallback on each button's own click handler (see createTabs above). Whichever
+    // fires first wins; the other is a harmless no-op repeat.
+    var _tabBarObserver = null;
+    var _observedSlider = null;
+
+    function _activatePane(index) {
+        var panes = document.querySelectorAll('.tabContent');
+        Array.prototype.forEach.call(panes, function (pane, paneIndex) {
+            pane.classList.toggle('is-active', paneIndex === index);
+        });
+    }
+
+    function _watchActiveTabButton(tabsSlider) {
+        if (_observedSlider === tabsSlider) {
+            return;
+        }
+
+        if (_tabBarObserver) {
+            _tabBarObserver.disconnect();
+        }
+
+        _observedSlider = tabsSlider;
+        _tabBarObserver = new MutationObserver(function (mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                var button = mutations[i].target;
+                if (button.id && button.id.indexOf('jux-tabbtn-') === 0 && button.classList.contains('emby-tab-button-active')) {
+                    _activatePane(parseInt(button.getAttribute('data-index'), 10));
+                }
+            }
+        });
+
+        _tabBarObserver.observe(tabsSlider, { attributes: true, attributeFilter: ['class'], subtree: true });
+    }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () { window.juxTabInjector.init(); });
