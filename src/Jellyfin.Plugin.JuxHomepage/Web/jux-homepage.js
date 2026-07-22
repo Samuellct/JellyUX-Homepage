@@ -96,7 +96,6 @@
         if (isFirstActivation) {
             elem.innerHTML = '';
             elem.classList.add('homeSectionsContainer', 'jux-homepage-active');
-            _setupLazyLoader(elem, apiClient, userId, userSettings);
         }
 
         // Only the very first page load falls back to native rendering on failure: at that point
@@ -106,7 +105,20 @@
         return _loadPage(elem, apiClient, userId, userSettings, 0, isFirstActivation ? function () {
             elem.classList.remove('jux-homepage-active', 'homeSectionsContainer');
             return _fallback(self, elem, apiClient, user, userSettings);
-        } : undefined);
+        } : undefined).then(function (result) {
+            // TODO_V3.md Phase 7.3 fix: the lazy loader used to be armed above, before this first page
+            // had actually rendered anything -- on a short layout its sentinel sat in a still-empty
+            // container and intersected almost immediately, firing page=1 in a near-simultaneous race
+            // with page=0. Arming it only here, after page 0 has resolved, removes that race; a short
+            // (but non-empty) first page still correctly triggering an immediate page=1 fill afterward
+            // is the intended lazy-fill-viewport behavior, not a bug. The isFirstActivation re-check
+            // guards against arming it when page 0 failed and fell back to native rendering above
+            // (that failure path strips the "jux-homepage-active" class).
+            if (isFirstActivation && elem.classList.contains('jux-homepage-active')) {
+                _setupLazyLoader(elem, apiClient, userId, userSettings);
+            }
+            return result;
+        });
     }
 
     function _loadPage(elem, apiClient, userId, userSettings, page, onFirstPageFailure) {

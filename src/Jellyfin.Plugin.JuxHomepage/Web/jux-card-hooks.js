@@ -11,9 +11,9 @@
 // button row, and action sheets) without needing window.JellyfinAPI (only populated after a Home
 // visit) or any chunk-level patch of cardBuilder itself.
 //
-// TODO_V3.md Phase 7.3 (Infinite Scroll) is expected to extend this same file with its own card-level
-// hook, rather than introducing a second, competing MutationObserver -- keep that in mind before
-// adding a second observer here.
+// TODO_V3.md Phase 7.3 (Infinite Scroll) extends this same file with its own card-level hook (see
+// _initInfiniteScroll below) rather than introducing a second, competing MutationObserver -- it
+// reuses the same _observe() body-level MutationObserver already running here.
 (function () {
     if (typeof window.juxCardHooks !== 'undefined') {
         return;
@@ -41,6 +41,7 @@
             _observe(self.likedIds);
             _watchMenuTriggers();
             _watchNavigation(self);
+            _tryInitLibraryInfiniteScroll();
 
             // Preloads the full liked-id set in one call (TODO_V3.md Phase 5.2's confirmed design:
             // pre-fetch once at load rather than a per-card request). Confirmed live on
@@ -104,6 +105,7 @@
             if (mightHaveNewActionSheet) {
                 _addWatchlistMenuItem(likedIds);
             }
+            _tryInitLibraryInfiniteScroll();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
@@ -323,7 +325,11 @@
 
     function _watchNavigation(state) {
         window.addEventListener('hashchange', function () {
-            setTimeout(function () { _hookDetailButton(state.likedIds); }, 400);
+            setTimeout(function () {
+                _hookDetailButton(state.likedIds);
+                _resetLibraryInfiniteScroll();
+                _tryInitLibraryInfiniteScroll();
+            }, 400);
         });
     }
 
@@ -390,6 +396,251 @@
         });
     }
 
+    // -------------------------------------------------------------------------
+    // Library page infinite scroll (TODO_V3.md Phase 7.3)
+    //
+    // Extends this file's existing body-level MutationObserver (see the header comment) instead of
+    // adding a second one. Scoped to the Movies/Series library listing pages only (TODO_V3.md's own
+    // stated scope) -- confirmed live on jellyux-test that this Jellyfin Web build shows classic native
+    // pagination (.paging with .btnPreviousPage/.btnNextPage) on these pages, which is hidden once
+    // infinite scroll takes over. Reads the user's currently active native sort/filter/alpha-picker
+    // choice (localStorage keys ${userId}-${parentId}-${mediaType}[-filter], confirmed live to hold
+    // exactly {"SortBy":...,"SortOrder":...} / {"Filters":...} shapes) so appended pages respect it,
+    // the same way KefinTweaks' infiniteScroll.js does -- but using an IntersectionObserver sentinel
+    // (consistent with the home lazy-loader fix above) rather than a throttled scroll listener.
+    // -------------------------------------------------------------------------
+
+    var _libraryScroll = null;
+
+    function _infiniteScrollMediaType(hash) {
+        hash = (hash || '').toLowerCase();
+        if (/^#\/movies(\.html)?([/?]|$)/.test(hash)) { return 'movies'; }
+        if (/^#\/tv(\.html)?([/?]|$)/.test(hash)) { return 'series'; }
+        return null;
+    }
+
+    function _parseSortSettings(rawSortJson, rawFilterJson) {
+        var sort = {};
+        var filter = {};
+        try { sort = rawSortJson ? JSON.parse(rawSortJson) : {}; } catch (e) { sort = {}; }
+        try { filter = rawFilterJson ? JSON.parse(rawFilterJson) : {}; } catch (e) { filter = {}; }
+
+        return {
+            sortBy: sort.SortBy || 'SortName,ProductionYear',
+            sortOrder: sort.SortOrder || 'Ascending',
+            filters: filter.Filters || '',
+            years: filter.Years || '',
+            genres: filter.Genres || '',
+            tags: filter.Tags || ''
+        };
+    }
+
+    function _buildItemsQuery(params) {
+        var query = {
+            ParentId: params.parentId,
+            IncludeItemTypes: params.includeItemTypes,
+            Recursive: true,
+            SortBy: params.sortBy,
+            SortOrder: params.sortOrder,
+            StartIndex: params.startIndex,
+            Limit: params.limit || 100,
+            Fields: 'PrimaryImageAspectRatio'
+        };
+        if (params.filters) { query.Filters = params.filters; }
+        if (params.years) { query.Years = params.years; }
+        if (params.genres) { query.Genres = params.genres; }
+        if (params.tags) { query.Tags = params.tags; }
+        if (params.nameStartsWith) { query.NameStartsWith = params.nameStartsWith; }
+        return query;
+    }
+
+    function _hasMoreItems(startIndex, totalRecordCount) {
+        return startIndex < totalRecordCount;
+    }
+
+    function _activeLibraryTab() {
+        var moviesTab = document.querySelector('#moviesTab.is-active');
+        if (moviesTab) { return { tab: moviesTab, mediaType: 'movies', includeItemTypes: 'Movie' }; }
+        var seriesTab = document.querySelector('#seriesTab.is-active');
+        if (seriesTab) { return { tab: seriesTab, mediaType: 'series', includeItemTypes: 'Series' }; }
+        return null;
+    }
+
+    function _tryInitLibraryInfiniteScroll() {
+        // Called unconditionally on every body mutation (see _observe above), so this must never
+        // throw even in edge environments where the global location/document may be momentarily
+        // unavailable (observed in Vitest/jsdom: a mutation queued just before test teardown can have
+        // its MutationObserver callback fire after the environment's globals are torn down).
+        if (typeof location === 'undefined' || typeof document === 'undefined') {
+            return;
+        }
+
+        var mediaType = _infiniteScrollMediaType(location.hash);
+        if (!mediaType) {
+            return;
+        }
+
+        if (_libraryScroll && _libraryScroll.mediaType === mediaType && document.body.contains(_libraryScroll.container)) {
+            return;
+        }
+
+        var active = _activeLibraryTab();
+        if (!active || active.mediaType !== mediaType) {
+            return;
+        }
+
+        var container = active.tab.querySelector('.itemsContainer');
+        if (!container || container.children.length === 0) {
+            // Native rendering hasn't produced the first page yet -- the body MutationObserver will
+            // call this again once it has.
+            return;
+        }
+
+        var parentIdMatch = /[?&]topParentId=([a-f0-9-]+)/i.exec(location.hash);
+        var parentId = parentIdMatch ? parentIdMatch[1] : null;
+        if (!parentId || !window.ApiClient) {
+            return;
+        }
+
+        _resetLibraryInfiniteScroll();
+
+        var paging = active.tab.querySelector('.paging');
+        if (paging) {
+            paging.style.display = 'none';
+        }
+
+        var sentinel = document.createElement('div');
+        sentinel.className = 'jux-infinite-sentinel';
+        sentinel.style.height = '1px';
+        container.parentNode.appendChild(sentinel);
+
+        var observer = new IntersectionObserver(function (entries) {
+            if (entries[0].isIntersecting) {
+                _loadMoreLibraryItems();
+            }
+        }, { rootMargin: '400px' });
+        observer.observe(sentinel);
+
+        _libraryScroll = {
+            observer: observer,
+            sentinel: sentinel,
+            container: container,
+            mediaType: mediaType,
+            parentId: parentId,
+            includeItemTypes: active.includeItemTypes,
+            startIndex: container.children.length,
+            totalRecordCount: null,
+            loading: false,
+            finished: false
+        };
+    }
+
+    function _resetLibraryInfiniteScroll() {
+        if (_libraryScroll) {
+            if (_libraryScroll.observer) { _libraryScroll.observer.disconnect(); }
+            if (_libraryScroll.sentinel && _libraryScroll.sentinel.parentNode) {
+                _libraryScroll.sentinel.parentNode.removeChild(_libraryScroll.sentinel);
+            }
+            _libraryScroll = null;
+        }
+    }
+
+    function _loadMoreLibraryItems() {
+        var state = _libraryScroll;
+        if (!state || state.loading || state.finished) {
+            return;
+        }
+
+        var api = window.JellyfinAPI;
+        if (!api || !api.cardBuilder) {
+            // No replacement rendering path available -- leave the native pagination controls alone
+            // (they were already left in place since this setup never got this far without cardBuilder
+            // present at init time, but guard here too in case it disappears mid-session).
+            _resetLibraryInfiniteScroll();
+            return;
+        }
+
+        var userId = window.ApiClient.getCurrentUserId();
+        var sortRaw = localStorage.getItem(userId + '-' + state.parentId + '-' + state.mediaType);
+        var filterRaw = localStorage.getItem(userId + '-' + state.parentId + '-' + state.mediaType + '-filter');
+        var settings = _parseSortSettings(sortRaw, filterRaw);
+
+        var alphaSelected = document.querySelector('.alphaPickerButton-selected');
+        var nameStartsWith = alphaSelected ? alphaSelected.getAttribute('data-value') : null;
+
+        state.loading = true;
+
+        var query = _buildItemsQuery({
+            parentId: state.parentId,
+            includeItemTypes: state.includeItemTypes,
+            sortBy: settings.sortBy,
+            sortOrder: settings.sortOrder,
+            filters: settings.filters,
+            years: settings.years,
+            genres: settings.genres,
+            tags: settings.tags,
+            nameStartsWith: nameStartsWith,
+            startIndex: state.startIndex,
+            limit: 100
+        });
+
+        var url = window.ApiClient.getUrl('Users/' + userId + '/Items', query);
+
+        window.ApiClient.getJSON(url).then(function (result) {
+            state.loading = false;
+            var items = (result && result.Items) || [];
+            state.totalRecordCount = (result && result.TotalRecordCount) || 0;
+
+            if (items.length === 0) {
+                state.finished = true;
+                _resetLibraryInfiniteScroll();
+                return;
+            }
+
+            var html = api.cardBuilder.getCardsHtml({
+                items: items,
+                shape: api.getPortraitShape(false),
+                showTitle: true,
+                overlayText: false,
+                overlayPlayButton: true,
+                centerText: true,
+                showYear: true,
+                lazy: true,
+                lines: 2
+            });
+
+            state.container.insertAdjacentHTML('beforeend', html);
+            _loadCardImages(state.container);
+
+            state.startIndex += items.length;
+
+            if (!_hasMoreItems(state.startIndex, state.totalRecordCount)) {
+                state.finished = true;
+                _resetLibraryInfiniteScroll();
+                return;
+            }
+
+            // Keep the sentinel last so continued scrolling keeps triggering the observer.
+            state.sentinel.parentNode.appendChild(state.sentinel);
+        }).catch(function (err) {
+            console.error('[JellyUX] Library infinite scroll fetch failed:', err);
+            state.loading = false;
+        });
+    }
+
+    // See jux-watchlist.js -- a card grid appended by hand never gets Jellyfin's native lazy-image
+    // loading, so the background image has to be applied manually.
+    function _loadCardImages(container) {
+        var lazyImages = container.querySelectorAll('.cardImageContainer.lazy[data-src]');
+        Array.prototype.forEach.call(lazyImages, function (el) {
+            var src = el.getAttribute('data-src');
+            if (!src) { return; }
+            el.style.backgroundImage = 'url(\'' + src + '\')';
+            el.classList.remove('lazy');
+            el.classList.add('lazy-image-fadein-fast');
+        });
+    }
+
     function _escHtml(str) {
         if (!str) { return ''; }
         return String(str)
@@ -408,7 +659,11 @@
             _iconName: _iconName,
             _readCardItemInfo: _readCardItemInfo,
             _currentDetailItemId: _currentDetailItemId,
-            _escHtml: _escHtml
+            _escHtml: _escHtml,
+            _infiniteScrollMediaType: _infiniteScrollMediaType,
+            _parseSortSettings: _parseSortSettings,
+            _buildItemsQuery: _buildItemsQuery,
+            _hasMoreItems: _hasMoreItems
         };
     }
 })();
