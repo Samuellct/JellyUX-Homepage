@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Web\jux-homepage.js" />
+    <EmbeddedResource Include="Web\jux-ui.js" />
+    <EmbeddedResource Include="Web\jux-ui.css" />
     <EmbeddedResource Include="Web\jux-tab-injector.js" />
     <EmbeddedResource Include="Web\jux-watchlist.js" />
     <EmbeddedResource Include="Web\jux-card-hooks.js" />

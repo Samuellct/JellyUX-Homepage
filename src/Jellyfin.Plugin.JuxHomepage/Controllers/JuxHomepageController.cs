@@ -120,6 +120,51 @@ public class JuxHomepageController : ControllerBase
     }
 
     /// <summary>
+    /// Serves the JellyUX shared UI helpers script (empty state, loading spinner, progress bar, stat
+    /// card, native sort dialog -- TODO_V3.md Phase 6 bis). Anonymous - loaded by a script tag
+    /// injected into index.html, before the tab-rendering scripts that consume it.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-ui.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetUiScript()
+    {
+        var stream = GetEmbeddedResource("jux-ui.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Serves the JellyUX shared UI helpers stylesheet (TODO_V3.md Phase 6 bis).
+    /// Anonymous - loaded by a link tag injected into index.html.
+    /// </summary>
+    /// <returns>CSS file contents.</returns>
+    [HttpGet("jux-ui.css")]
+    [AllowAnonymous]
+    [Produces("text/css")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetUiStylesheet()
+    {
+        var stream = GetEmbeddedResource("jux-ui.css");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "text/css");
+    }
+
+    /// <summary>
     /// Serves the JellyUX tab injector script (Watchlist/Progress/History/Statistics tab buttons).
     /// Anonymous - loaded by a script tag injected into index.html.
     /// </summary>
