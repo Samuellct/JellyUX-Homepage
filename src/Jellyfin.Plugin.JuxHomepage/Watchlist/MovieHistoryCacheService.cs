@@ -75,7 +75,7 @@ public sealed class MovieHistoryCacheService : IMovieHistoryCacheService, IDispo
     {
         try
         {
-            var users = _userManager.Users.ToList();
+            var users = _userManager.GetUsers().ToList();
             var refreshed = 0;
 
             foreach (var user in users)

@@ -43,7 +43,7 @@ public sealed class SeriesProgressCacheServiceTests : IDisposable
         var episode2 = new Episode { Id = Guid.NewGuid(), Name = "E2", SeriesId = seriesId, SeriesName = "My Show" };
 
         var userManagerMock = new Mock<IUserManager>();
-        userManagerMock.Setup(m => m.Users).Returns([user]);
+        userManagerMock.Setup(m => m.GetUsers()).Returns([user]);
         userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
 
         var libraryManagerMock = new Mock<ILibraryManager>();
@@ -82,7 +82,7 @@ public sealed class SeriesProgressCacheServiceTests : IDisposable
         var episode = new Episode { Id = Guid.NewGuid(), Name = "E1", SeriesId = seriesId, SeriesName = "Unwatched Show" };
 
         var userManagerMock = new Mock<IUserManager>();
-        userManagerMock.Setup(m => m.Users).Returns([user]);
+        userManagerMock.Setup(m => m.GetUsers()).Returns([user]);
         userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
 
         var libraryManagerMock = new Mock<ILibraryManager>();
@@ -118,7 +118,7 @@ public sealed class SeriesProgressCacheServiceTests : IDisposable
         var release = new ManualResetEventSlim(false);
 
         var userManagerMock = new Mock<IUserManager>();
-        userManagerMock.Setup(m => m.Users).Returns(() =>
+        userManagerMock.Setup(m => m.GetUsers()).Returns(() =>
         {
             started.Set();
             release.Wait(TimeSpan.FromSeconds(5));

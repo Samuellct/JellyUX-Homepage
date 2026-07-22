@@ -41,7 +41,7 @@ public sealed class MovieHistoryCacheServiceTests : IDisposable
         var movie2 = new Movie { Id = Guid.NewGuid(), Name = "Movie 2" };
 
         var userManagerMock = new Mock<IUserManager>();
-        userManagerMock.Setup(m => m.Users).Returns([user]);
+        userManagerMock.Setup(m => m.GetUsers()).Returns([user]);
         userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
 
         var libraryManagerMock = new Mock<ILibraryManager>();
@@ -98,7 +98,7 @@ public sealed class MovieHistoryCacheServiceTests : IDisposable
         var release = new ManualResetEventSlim(false);
 
         var userManagerMock = new Mock<IUserManager>();
-        userManagerMock.Setup(m => m.Users).Returns(() =>
+        userManagerMock.Setup(m => m.GetUsers()).Returns(() =>
         {
             started.Set();
             release.Wait(TimeSpan.FromSeconds(5));
