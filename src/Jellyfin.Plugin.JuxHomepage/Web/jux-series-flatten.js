@@ -84,7 +84,9 @@
             return;
         }
 
-        if (activePage.dataset.juxFlattenedSeriesId === itemId || activePage.querySelector('.jux-flattened-season-section')) {
+        if (activePage.dataset.juxFlattenedSeriesId === itemId ||
+            activePage.dataset.juxFlattenPending === itemId ||
+            activePage.querySelector('.jux-flattened-season-section')) {
             return;
         }
 
@@ -97,8 +99,19 @@
             return;
         }
 
+        // Marked synchronously, before any async call -- the MutationObserver this runs from fires
+        // repeatedly while the DOM settles, well before the async chain below resolves. Without this,
+        // several concurrent calls all pass the existence checks above (the section doesn't exist yet)
+        // and each build/insert their own flattened section -- confirmed live as the same duplicate-
+        // section bug found and fixed in jux-collections.js's _tryIncludedIn. Cleared in .finally() so
+        // a genuine retry (e.g. cardBuilder becoming available later) isn't permanently blocked.
+        activePage.dataset.juxFlattenPending = itemId;
+
         window.ApiClient.getItem(userId, itemId).then(function (item) {
             if (!_shouldFlatten(item)) {
+                // Final: an item's Type/ChildCount never changes, so there's no point re-checking on
+                // every future mutation for this same item id.
+                activePage.dataset.juxFlattenedSeriesId = itemId;
                 return;
             }
 
@@ -149,6 +162,10 @@
             });
         }).catch(function (err) {
             console.error('[JellyUX] Series flatten check failed:', err);
+        }).finally(function () {
+            if (activePage.dataset.juxFlattenPending === itemId) {
+                delete activePage.dataset.juxFlattenPending;
+            }
         });
     }
 

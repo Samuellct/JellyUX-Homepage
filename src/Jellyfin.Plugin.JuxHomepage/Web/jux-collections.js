@@ -113,7 +113,9 @@
             return;
         }
 
-        if (activePage.dataset.juxCollectionsChecked === itemId || activePage.querySelector('.jux-collections-section')) {
+        if (activePage.dataset.juxCollectionsChecked === itemId ||
+            activePage.dataset.juxCollectionsPending === itemId ||
+            activePage.querySelector('.jux-collections-section')) {
             return;
         }
 
@@ -126,27 +128,45 @@
             return;
         }
 
+        // Marked synchronously, before any async call -- the MutationObserver this is called from
+        // fires many times in quick succession while the DOM settles, and each of those calls this
+        // function again well before the first one's async chain below resolves. Without a
+        // synchronous in-flight guard, several concurrent calls would all pass the checks above and
+        // each build/insert their own "Included In" section (confirmed live: produced 2 duplicate
+        // sections). Cleared on failure so a later retry isn't permanently blocked.
+        activePage.dataset.juxCollectionsPending = itemId;
+
         window.ApiClient.getItem(userId, itemId).then(function (item) {
             if (!_isSupportedForCollections(item)) {
+                // Final: an item's Type never changes, so there's no point re-checking on every
+                // future mutation for this same item id.
+                activePage.dataset.juxCollectionsChecked = itemId;
                 return;
             }
 
             var url = window.ApiClient.getUrl('JuxHomepage/Collections/IncludedIn/' + itemId);
             return window.ApiClient.getJSON(url).then(function (refs) {
-                activePage.dataset.juxCollectionsChecked = itemId;
-
                 if (!refs || refs.length === 0) {
+                    // Genuinely final: this item belongs to no collection. Safe to mark checked --
+                    // this can't change to a different, non-empty answer without a full cache refresh.
+                    activePage.dataset.juxCollectionsChecked = itemId;
                     return;
                 }
 
                 var api = window.JellyfinAPI;
                 if (!api || !api.cardBuilder) {
+                    // Not final -- cardBuilder may only become available after a later Home visit
+                    // this session. Deliberately does NOT set juxCollectionsChecked, so the next
+                    // MutationObserver tick/hashchange retries instead of leaving this permanently
+                    // unrendered (confirmed live: without this, a page reached via direct link before
+                    // any Home visit would never show "Included In" even after visiting Home later).
                     return;
                 }
 
                 var ids = refs.map(function (r) { return r.CollectionId; }).join(',');
                 return window.ApiClient.getItems(userId, { Ids: ids, Fields: 'PrimaryImageAspectRatio' }).then(function (result) {
                     var boxSets = (result && result.Items) || [];
+                    activePage.dataset.juxCollectionsChecked = itemId;
                     if (boxSets.length === 0) {
                         return;
                     }
@@ -177,6 +197,10 @@
             });
         }).catch(function (err) {
             console.error('[JellyUX] Included In check failed:', err);
+        }).finally(function () {
+            if (activePage.dataset.juxCollectionsPending === itemId) {
+                delete activePage.dataset.juxCollectionsPending;
+            }
         });
     }
 
@@ -209,7 +233,7 @@
             return;
         }
 
-        if (activePage.querySelector('.jux-collection-sort-btn')) {
+        if (activePage.querySelector('.jux-collection-sort-btn') || activePage.dataset.juxCollectionSortPending === itemId) {
             return;
         }
 
@@ -221,6 +245,11 @@
         if (!userId) {
             return;
         }
+
+        // See the matching comment in _tryIncludedIn above -- same synchronous in-flight guard,
+        // needed for the same reason (the button-existence check above can't see a button that
+        // hasn't been created yet by a still-pending earlier call).
+        activePage.dataset.juxCollectionSortPending = itemId;
 
         window.ApiClient.getItem(userId, itemId).then(function (item) {
             if (!_isBoxSet(item)) {
@@ -272,7 +301,8 @@
                         localStorage.setItem(keys.sort, sortBy);
                         localStorage.setItem(keys.order, sortOrder);
                         button.querySelector('.jux-sort-button-label').textContent = _labelFor(_sortFields(), sortBy);
-                        _resortCollection(itemId, itemsContainer, state);
+                        var liveItemsContainer = activePage.querySelector('.itemsContainer.collectionItemsContainer') || itemsContainer;
+                        _resortCollection(itemId, liveItemsContainer, state);
                     }
                 });
             });
@@ -280,10 +310,25 @@
             titleContainer.appendChild(button);
 
             if (state.sortBy !== 'SortName' || state.sortOrder !== 'Ascending') {
-                _resortCollection(itemId, itemsContainer, state);
+                // Delayed: confirmed live that resorting immediately here can race Jellyfin's own
+                // native fetch/render of this same collection page, which replaces the .itemsContainer
+                // element with a fresh one once its own async items fetch completes -- if that happens
+                // after our resort, our sorted cards render into a node that's already been detached
+                // from the document, invisibly. A short delay gives native rendering time to settle
+                // first, and the container is re-queried fresh below (rather than reusing the possibly
+                // now-detached `itemsContainer` captured above) so a resort scheduled just before a
+                // native replacement still targets the live element.
+                setTimeout(function () {
+                    var liveItemsContainer = activePage.querySelector('.itemsContainer.collectionItemsContainer') || itemsContainer;
+                    _resortCollection(itemId, liveItemsContainer, state);
+                }, 1000);
             }
         }).catch(function (err) {
             console.error('[JellyUX] Collection sort setup failed:', err);
+        }).finally(function () {
+            if (activePage.dataset.juxCollectionSortPending === itemId) {
+                delete activePage.dataset.juxCollectionSortPending;
+            }
         });
     }
 
