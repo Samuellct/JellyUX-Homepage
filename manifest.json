@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.4.0.0",
+                "changelog": "### Features\n\n* add native Watchlist widget to the home screen ([cf0d211](https://github.com/Samuellct/JellyUX-Homepage/commit/cf0d211d56639be9980c34d2e9500b3982a939bf))\n* add Series Progress, Movie History, and Statistics views ([cbb9f09](https://github.com/Samuellct/JellyUX-Homepage/commit/cbb9f09b7343c5c33f16cc5a3d0b83addd190a07))\n* add shared UI helpers (empty state, loading spinner, progress bar, stat card, native sort dialog) ([0308376](https://github.com/Samuellct/JellyUX-Homepage/commit/0308376e8fec0a1e2a74fb14bec5ddd25fdb3946))\n* replace inline-styled controls with native-style sort dialogs and visual polish across all tabs ([1a96ce4](https://github.com/Samuellct/JellyUX-Homepage/commit/1a96ce463bc207c785e0bcd14fc571f64b9a046d)), closes [#00a4dc](https://github.com/Samuellct/JellyUX-Homepage/issues/00a4dc) [#00a4dc](https://github.com/Samuellct/JellyUX-Homepage/issues/00a4dc)\n\n### Bug Fixes\n\n* switch to IUserManager.GetUsers()/GetUsersIds() and align SDK versions ([7b70732](https://github.com/Samuellct/JellyUX-Homepage/commit/7b707326b77aa531dd169a8d2b6ada955d612047))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.4.0/jellyux-homepage_2.4.0.0.zip",
+                "checksum": "2b580e75c3dc27ea5ee1edb381b30c40",
+                "timestamp": "2026-07-22T15:25:03Z"
+            },
+            {
                 "version": "2.3.2.0",
                 "changelog": "### Bug Fixes\n\n* show the watchlist button on the item detail page ([bc77bde](https://github.com/Samuellct/JellyUX-Homepage/commit/bc77bde2b3d6b3237cc7d1dd0883c3428a10bc8b))",
                 "targetAbi": "10.11.0.0",

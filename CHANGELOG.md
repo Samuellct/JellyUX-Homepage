@@ -1,3 +1,16 @@
+## [2.4.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.3.2...v2.4.0) (2026-07-22)
+
+### Features
+
+* add native Watchlist widget to the home screen ([cf0d211](https://github.com/Samuellct/JellyUX-Homepage/commit/cf0d211d56639be9980c34d2e9500b3982a939bf))
+* add Series Progress, Movie History, and Statistics views ([cbb9f09](https://github.com/Samuellct/JellyUX-Homepage/commit/cbb9f09b7343c5c33f16cc5a3d0b83addd190a07))
+* add shared UI helpers (empty state, loading spinner, progress bar, stat card, native sort dialog) ([0308376](https://github.com/Samuellct/JellyUX-Homepage/commit/0308376e8fec0a1e2a74fb14bec5ddd25fdb3946))
+* replace inline-styled controls with native-style sort dialogs and visual polish across all tabs ([1a96ce4](https://github.com/Samuellct/JellyUX-Homepage/commit/1a96ce463bc207c785e0bcd14fc571f64b9a046d)), closes [#00a4dc](https://github.com/Samuellct/JellyUX-Homepage/issues/00a4dc) [#00a4dc](https://github.com/Samuellct/JellyUX-Homepage/issues/00a4dc)
+
+### Bug Fixes
+
+* switch to IUserManager.GetUsers()/GetUsersIds() and align SDK versions ([7b70732](https://github.com/Samuellct/JellyUX-Homepage/commit/7b707326b77aa531dd169a8d2b6ada955d612047))
+
 ## [2.3.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.3.1...v2.3.2) (2026-07-21)
 
 ### Bug Fixes
