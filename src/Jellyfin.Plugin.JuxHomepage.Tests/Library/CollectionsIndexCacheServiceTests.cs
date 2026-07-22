@@ -32,15 +32,17 @@ public sealed class CollectionsIndexCacheServiceTests : IDisposable
     {
         var boxSet = new BoxSet { Id = Guid.NewGuid(), Name = "Trilogy" };
         var movie = new Movie { Id = Guid.NewGuid(), Name = "Part One" };
+        boxSet.LinkedChildren = [new LinkedChild { ItemId = movie.Id }];
 
         var libraryManagerMock = new Mock<ILibraryManager>();
         libraryManagerMock
             .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IncludeItemTypes.Contains(BaseItemKind.BoxSet))))
             .Returns([boxSet]);
         libraryManagerMock
-            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(
-                q => q.AncestorIds != null && q.AncestorIds.Contains(boxSet.Id))))
-            .Returns([movie]);
+            .Setup(m => m.GetItemById(movie.Id))
+            .Returns(movie);
+
+        BaseItem.LibraryManager = libraryManagerMock.Object;
 
         var service = BuildService(libraryManagerMock.Object);
 

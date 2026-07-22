@@ -4,6 +4,8 @@ using Jellyfin.Plugin.JuxHomepage.Library.Models;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using Microsoft.Extensions.Logging;
 
@@ -112,9 +114,14 @@ public sealed class CollectionsIndexCacheService : ICollectionsIndexCacheService
 
     /// <summary>
     /// Builds the reverse index by enumerating every BoxSet in the library and, for each, its member
-    /// items (via <see cref="InternalItemsQuery.AncestorIds"/> -- the same parent/collection linkage
-    /// Jellyfin's own Items API uses to browse a collection's contents, avoiding any dependency on a
-    /// specific requesting user since this index is global).
+    /// items via <c>Folder.GetLinkedChildren</c> -- BoxSet membership is a many-to-many
+    /// association (an item's real physical parent is its own library folder, not the BoxSet), so
+    /// <see cref="InternalItemsQuery.AncestorIds"/> (which follows physical/virtual folder ancestry)
+    /// never matches a BoxSet's members -- confirmed live on jellyux-test: the original
+    /// AncestorIds-based query found all BoxSets correctly but always resolved 0 members for every one
+    /// of them. <c>GetLinkedChildren</c> is the same API <c>Widgets/Admin/CollectionWidget.cs</c> (an
+    /// already-working feature) uses for the same reason; <c>null</c> is passed for the user since this
+    /// index is deliberately global/not user-scoped.
     /// </summary>
     private IReadOnlyList<CollectionMembership> ComputeIndex(CancellationToken cancellationToken)
     {
@@ -131,13 +138,12 @@ public sealed class CollectionsIndexCacheService : ICollectionsIndexCacheService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var members = _libraryManager.GetItemList(new InternalItemsQuery
+            if (boxSet is not Folder boxSetFolder)
             {
-                AncestorIds = [boxSet.Id],
-                IncludeItemTypes = [BaseItemKind.Movie, BaseItemKind.Series],
-                Recursive = true,
-                DtoOptions = new MediaBrowser.Controller.Dto.DtoOptions { Fields = [] }
-            });
+                continue;
+            }
+
+            var members = boxSetFolder.GetLinkedChildren(null).Where(m => m is Movie or Series);
 
             var collectionRef = new CollectionRef { CollectionId = boxSet.Id, CollectionName = boxSet.Name };
 
