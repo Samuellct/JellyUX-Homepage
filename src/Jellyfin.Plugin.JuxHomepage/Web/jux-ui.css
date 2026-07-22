@@ -71,7 +71,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     text-align: center;
+    width: 100%;
+    min-height: 60vh;
     padding: 4em 2em;
     gap: 0.5em;
 }
@@ -196,10 +199,56 @@
 }
 
 /* -------------------------------------------------------------------------
- * Sort dialog content (dialog chrome itself is entirely native classes —
- * dialogBackdrop / focuscontainer dialog formDialog centeredDialog / formDialogHeader —
- * only the radio-group layout inside is JellyUX-specific)
+ * Sort dialog (dialogBackdrop is native and works standalone; the dialog box
+ * itself, its centering wrapper, and the radio-circle sizing below are
+ * self-hosted rather than relying on native .centeredDialog/.mdl-radio__*
+ * CSS — live inspection found that CSS only exists in a lazily-loaded
+ * webpack chunk Jellyfin fetches for its own native sort dialog, which our
+ * tabs never trigger, so the classes were present with no matching styles.
+ * Values below are copied from that native dialog's real computed styles
+ * (Movies > sort icon, live on jellyux-test) so this matches Jellyfin's own
+ * look without depending on that chunk ever loading.
  * ------------------------------------------------------------------------- */
+
+.jux-sort-dialog-container {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jux-sort-dialog {
+    position: relative;
+    width: max-content;
+    max-width: min(90vw, 22em);
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: rgb(16, 16, 16);
+    border-radius: 4px;
+    box-shadow: rgba(0, 0, 0, 0.14) 0 16px 24px 2px, rgba(0, 0, 0, 0.12) 0 6px 30px 5px, rgba(0, 0, 0, 0.4) 0 8px 10px -5px;
+}
+
+.jux-sort-dialog .mdl-radio__circles {
+    width: 1.1em;
+    height: 1.1em;
+    margin: 0 0.5em 0 0;
+    flex-shrink: 0;
+}
+
+.jux-sort-dialog .mdl-radio__circles svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.jux-sort-dialog .mdl-radio {
+    display: flex;
+    align-items: center;
+    padding: 0.3em 0;
+    cursor: pointer;
+}
 
 .jux-sort-dialog-content {
     padding: 0.5em 1.5em 1.5em;

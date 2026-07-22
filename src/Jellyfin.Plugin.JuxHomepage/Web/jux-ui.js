@@ -12,6 +12,21 @@
 // reference plugin in Sources/ calls a native `dialogHelper`/`Loading`/`ActionSheet` module off
 // `window` -- every one of them hand-builds this DOM with the native class names instead, which is
 // the approach followed here too).
+//
+// Live verification on jellyux-test (Phase 6 bis manual test 1) found this dialog rendering fully
+// broken: no dialog box, no dimensions, and giant unstyled radio SVGs. Root cause, confirmed by
+// inspecting Jellyfin's own native library sort dialog (Movies > sort icon) live: the CSS for
+// .centeredDialog/.mdl-radio__* genuinely exists in this Jellyfin Web build, but only inside a
+// lazily-loaded webpack CSS chunk that Jellyfin fetches on demand when its own native sort dialog
+// component renders -- our tabs never trigger that chunk to load, so the classes are present in our
+// markup but have no matching CSS anywhere in the page. Same class of fragility as the loadSections
+// chunk-hash risk documented in CLAUDE.md, just for a CSS chunk instead of a JS one. Depending on a
+// second unstable chunk hash would only compound that risk, so instead of trying to force-load it,
+// the small set of rules actually needed (dialog box sizing/background/shadow, a fixed+flex centering
+// wrapper, and radio-circle sizing) are self-hosted in jux-ui.css under our own
+// .jux-sort-dialog/.jux-sort-dialog-container classes -- copied from the real computed values of
+// Jellyfin's native dialog during that same live inspection, so this renders correctly regardless of
+// whether Jellyfin's own chunk happens to be loaded.
 (function () {
     if (typeof window.JuxUI !== 'undefined') {
         return;
@@ -131,8 +146,11 @@
         var backdrop = document.createElement('div');
         backdrop.className = 'dialogBackdrop dialogBackdropOpened';
 
+        var container = document.createElement('div');
+        container.className = 'jux-sort-dialog-container';
+
         var dialog = document.createElement('div');
-        dialog.className = 'focuscontainer dialog formDialog centeredDialog opened';
+        dialog.className = 'focuscontainer dialog formDialog centeredDialog opened jux-sort-dialog';
         dialog.setAttribute('role', 'dialog');
 
         var sortGroupHtml = _buildRadioGroup(sortOptions, options.currentSortBy, 'jux-sort-by');
@@ -150,12 +168,13 @@
             orderGroupHtml +
             '</div>';
 
+        container.appendChild(dialog);
         document.body.appendChild(backdrop);
-        document.body.appendChild(dialog);
+        document.body.appendChild(container);
 
         function close() {
             backdrop.remove();
-            dialog.remove();
+            container.remove();
             document.removeEventListener('keydown', onKeyDown);
         }
 
@@ -166,6 +185,11 @@
         }
 
         backdrop.addEventListener('click', close);
+        container.addEventListener('click', function (event) {
+            if (event.target === container) {
+                close();
+            }
+        });
         dialog.querySelector('.btnCloseDialog').addEventListener('click', close);
         document.addEventListener('keydown', onKeyDown);
 
