@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.JuxHomepage.Watchlist;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Controller.Dto;
@@ -101,6 +102,24 @@ public sealed class NativeWidgetTests
         Assert.Null(d.Route);
     }
 
+    [Fact]
+    public void Watchlist_GetDescriptor_HasExpectedProperties()
+    {
+        var widget = new WatchlistWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object,
+            new Mock<IWatchlistService>().Object);
+
+        var d = widget.GetDescriptor();
+
+        Assert.Equal("jux.native.watchlist", d.WidgetType);
+        Assert.Equal(WidgetCategory.Native, d.Category);
+        Assert.Equal(WidgetViewMode.Portrait, d.ViewMode);
+        Assert.Equal(1, d.MinItems);
+        Assert.Null(d.Route);
+    }
+
     // -------------------------------------------------------------------------
     // Resolve test
     // -------------------------------------------------------------------------
@@ -192,15 +211,40 @@ public sealed class NativeWidgetTests
         Assert.Empty(result.Items);
     }
 
+    [Fact]
+    public async Task Watchlist_GetItemsAsync_DelegatesToWatchlistService()
+    {
+        var watchlistServiceMock = new Mock<IWatchlistService>();
+        watchlistServiceMock
+            .Setup(m => m.GetItems(It.IsAny<Guid>(), null, null, null, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(new Widgets.WidgetResult([], 3));
+
+        var widget = new WatchlistWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object,
+            watchlistServiceMock.Object);
+
+        var userId = Guid.NewGuid();
+        var result = await widget.GetItemsAsync(
+            new WidgetPayload { UserId = userId, StartIndex = 0, Limit = 20 },
+            CancellationToken.None);
+
+        Assert.Equal(3, result.TotalRecordCount);
+        watchlistServiceMock.Verify(
+            m => m.GetItems(userId, null, null, null, 0, 20, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
     // -------------------------------------------------------------------------
     // NativeWidgetDefaults tests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void NativeWidgetDefaults_Build_ReturnsFiveEntries()
+    public void NativeWidgetDefaults_Build_ReturnsSixEntries()
     {
         var configs = NativeWidgetDefaults.Build();
-        Assert.Equal(5, configs.Length);
+        Assert.Equal(6, configs.Length);
     }
 
     [Fact]
@@ -228,5 +272,6 @@ public sealed class NativeWidgetTests
         Assert.Equal(4, configs.Single(c => c.WidgetType == "jux.native.recently-added-movies").MinItems);
         Assert.Equal(4, configs.Single(c => c.WidgetType == "jux.native.recently-added-shows").MinItems);
         Assert.Equal(1, configs.Single(c => c.WidgetType == "jux.native.my-media").MinItems);
+        Assert.Equal(1, configs.Single(c => c.WidgetType == "jux.native.watchlist").MinItems);
     }
 }

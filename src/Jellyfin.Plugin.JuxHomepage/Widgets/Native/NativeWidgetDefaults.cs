@@ -12,7 +12,7 @@ public static class NativeWidgetDefaults
     /// Each entry is enabled, ordered with a gap of 10 between widgets, and configured
     /// with the widget's own <see cref="IWidget.DefaultMinItems"/> and view mode.
     /// </summary>
-    /// <returns>A fixed-order array of five <see cref="WidgetConfig"/> entries.</returns>
+    /// <returns>A fixed-order array of six <see cref="WidgetConfig"/> entries.</returns>
     public static WidgetConfig[] Build() =>
     [
         new WidgetConfig
@@ -71,6 +71,18 @@ public static class NativeWidgetDefaults
             MinItems = 1,
             MaxItems = 20,
             ViewMode = WidgetViewMode.Landscape,
+            MinInstances = 1,
+            MaxInstances = 1,
+            AllowUserOverride = true
+        },
+        new WidgetConfig
+        {
+            WidgetType = "jux.native.watchlist",
+            Enabled = true,
+            Order = 50,
+            MinItems = 1,
+            MaxItems = 20,
+            ViewMode = WidgetViewMode.Portrait,
             MinInstances = 1,
             MaxInstances = 1,
             AllowUserOverride = true

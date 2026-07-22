@@ -155,6 +155,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterWidget<RecentlyAddedMoviesWidget>(registry, serviceProvider, logger);
             RegisterWidget<RecentlyAddedShowsWidget>(registry, serviceProvider, logger);
             RegisterWidget<MyMediaWidget>(registry, serviceProvider, logger);
+            RegisterWidget<WatchlistWidget>(registry, serviceProvider, logger);
 
             // Register admin widgets. These have no default WidgetConfig rows; the admin
             // adds instances explicitly via the configuration page.

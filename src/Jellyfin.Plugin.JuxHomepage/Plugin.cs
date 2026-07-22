@@ -17,7 +17,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     /// The current configuration schema version. See the "Configuration Schema Versioning" section
     /// in CLAUDE.md for the migration policy.
     /// </summary>
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -98,6 +98,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
             config.Widgets = ExplodePersonalizedFanOut(config.Widgets);
         }
 
+        if (config.SchemaVersion < 3)
+        {
+            config.Widgets = AppendWatchlistWidgetIfMissing(config.Widgets);
+        }
+
         // Add future migrations here as additional `if (config.SchemaVersion < N) { ... }` blocks,
         // each gated on its own target version and never combined with `else if` -- an installation
         // resuming from several versions behind must apply every intermediate transformation in
@@ -164,6 +169,45 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
                 });
             }
         }
+
+        return result.ToArray();
+    }
+
+    /// <summary>
+    /// V2-to-V3 migration step (TODO_V3.md Phase 6.4): appends the new native Watchlist widget's
+    /// default <see cref="WidgetConfig"/> row (see <see cref="Widgets.Native.NativeWidgetDefaults"/>)
+    /// to an existing, already-populated <see cref="Configuration.PluginConfiguration.Widgets"/> array
+    /// -- <see cref="Inject.StartupService"/> only seeds the full default list when the array is
+    /// empty (brand-new installs), so an existing installation would otherwise never see the new
+    /// widget. Idempotent: a no-op if a row for this widget type already exists (defensive, in case
+    /// this migration ever runs twice against the same configuration).
+    /// </summary>
+    /// <param name="widgets">The widget configuration rows to migrate.</param>
+    /// <returns>The migrated array of rows, with the Watchlist row appended if it was missing.</returns>
+    private static WidgetConfig[] AppendWatchlistWidgetIfMissing(WidgetConfig[] widgets)
+    {
+        const string WatchlistWidgetType = "jux.native.watchlist";
+
+        if (widgets.Any(w => w.WidgetType == WatchlistWidgetType))
+        {
+            return widgets;
+        }
+
+        var result = new List<WidgetConfig>(widgets)
+        {
+            new()
+            {
+                WidgetType = WatchlistWidgetType,
+                Enabled = true,
+                Order = 50,
+                MinItems = 1,
+                MaxItems = 20,
+                ViewMode = WidgetViewMode.Portrait,
+                MinInstances = 1,
+                MaxInstances = 1,
+                AllowUserOverride = true
+            }
+        };
 
         return result.ToArray();
     }

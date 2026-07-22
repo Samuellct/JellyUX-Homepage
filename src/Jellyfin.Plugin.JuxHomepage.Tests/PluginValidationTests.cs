@@ -106,12 +106,12 @@ public sealed class PluginValidationTests
     [Fact]
     public void MigrateConfiguration_NoOpForCurrentSchemaVersion_DoesNotThrow()
     {
-        var config = new PluginConfiguration { SchemaVersion = 2 };
+        var config = new PluginConfiguration { SchemaVersion = 3 };
 
         var exception = Record.Exception(() => Plugin.MigrateConfiguration(config));
 
         Assert.Null(exception);
-        Assert.Equal(2, config.SchemaVersion);
+        Assert.Equal(3, config.SchemaVersion);
     }
 
     [Fact]
@@ -135,8 +135,11 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(2, config.SchemaVersion);
-        Assert.Equal(3, config.Widgets.Length);
+        // Starting below both the V1->V2 (fan-out) and V2->V3 (append Watchlist widget) thresholds,
+        // both migrations apply in order -- the fan-out first (3 rows), then the Watchlist widget
+        // row appended on top (4 rows total).
+        Assert.Equal(3, config.SchemaVersion);
+        Assert.Equal(4, config.Widgets.Length);
 
         Assert.Equal("jux.personalized.favorite-genre", config.Widgets[0].WidgetType);
         Assert.Equal("My Genres", config.Widgets[0].CustomDisplayName);
@@ -154,6 +157,8 @@ public sealed class PluginValidationTests
         Assert.Null(config.Widgets[2].CustomDisplayName);
         Assert.Equal(40, config.Widgets[2].Order);
         Assert.Equal(1, config.Widgets[2].MaxInstances);
+
+        Assert.Equal("jux.native.watchlist", config.Widgets[3].WidgetType);
     }
 
     [Fact]
@@ -167,9 +172,56 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(2, config.SchemaVersion);
-        var widget = Assert.Single(config.Widgets);
-        Assert.Equal("jux.admin.genre", widget.WidgetType);
+        Assert.Equal(3, config.SchemaVersion);
+
+        // The original row passes through the V1->V2 fan-out untouched (not Personalized), then the
+        // V2->V3 migration appends the new native Watchlist widget row alongside it.
+        Assert.Equal(2, config.Widgets.Length);
+        var widget = config.Widgets.Single(w => w.WidgetType == "jux.admin.genre");
         Assert.Equal(5, widget.MaxInstances);
+        Assert.Contains(config.Widgets, w => w.WidgetType == "jux.native.watchlist");
+    }
+
+    [Fact]
+    public void MigrateConfiguration_SchemaVersionTwo_AppendsWatchlistWidgetRow()
+    {
+        var config = new PluginConfiguration
+        {
+            SchemaVersion = 2,
+            Widgets = [new WidgetConfig { WidgetType = "jux.native.continue-watching", Order = 0 }]
+        };
+
+        Plugin.MigrateConfiguration(config);
+
+        Assert.Equal(3, config.SchemaVersion);
+        Assert.Equal(2, config.Widgets.Length);
+        var watchlistWidget = config.Widgets.Single(w => w.WidgetType == "jux.native.watchlist");
+        Assert.True(watchlistWidget.Enabled);
+        Assert.Equal(50, watchlistWidget.Order);
+    }
+
+    [Fact]
+    public void MigrateConfiguration_WatchlistWidgetRowAlreadyPresent_DoesNotDuplicateIt()
+    {
+        var config = new PluginConfiguration
+        {
+            SchemaVersion = 2,
+            Widgets =
+            [
+                new WidgetConfig { WidgetType = "jux.native.continue-watching", Order = 0 },
+                new WidgetConfig { WidgetType = "jux.native.watchlist", Order = 99, Enabled = false }
+            ]
+        };
+
+        Plugin.MigrateConfiguration(config);
+
+        Assert.Equal(3, config.SchemaVersion);
+        Assert.Equal(2, config.Widgets.Length);
+        var watchlistWidget = config.Widgets.Single(w => w.WidgetType == "jux.native.watchlist");
+
+        // Untouched -- the migration must not overwrite an existing row (e.g. one the admin has
+        // already customized), only append one when the type is entirely absent.
+        Assert.Equal(99, watchlistWidget.Order);
+        Assert.False(watchlistWidget.Enabled);
     }
 }
