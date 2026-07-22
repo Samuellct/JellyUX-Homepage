@@ -85,20 +85,23 @@ public static class TransformationPatches
         var tabInjectorScriptTag = $"<script src=\"/JuxHomepage/jux-tab-injector.js{cacheParam}\" defer></script>";
         var watchlistScriptTag = $"<script src=\"/JuxHomepage/jux-watchlist.js{cacheParam}\" defer></script>";
         var cardHooksScriptTag = $"<script src=\"/JuxHomepage/jux-card-hooks.js{cacheParam}\" defer></script>";
+        var progressScriptTag = $"<script src=\"/JuxHomepage/jux-progress.js{cacheParam}\" defer></script>";
+        var historyScriptTag = $"<script src=\"/JuxHomepage/jux-history.js{cacheParam}\" defer></script>";
+        var statisticsScriptTag = $"<script src=\"/JuxHomepage/jux-statistics.js{cacheParam}\" defer></script>";
 
         return (content.Contents ?? string.Empty)
             .Replace("</head>", $"{linkTag}\n</head>", StringComparison.OrdinalIgnoreCase)
             .Replace(
                 "</body>",
-                $"{scriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n{cardHooksScriptTag}\n</body>",
+                $"{scriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n{cardHooksScriptTag}\n{progressScriptTag}\n{historyScriptTag}\n{statisticsScriptTag}\n</body>",
                 StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
     /// Patches the Jellyfin home-html chunk.js to splice in 4 empty JellyUX tab content panes
-    /// (Watchlist/Progress/History/Statistics -- populated by later phases), right after the native
-    /// "Favorites" tab pane. Called by FileTransformation via reflection - must remain public and
-    /// static.
+    /// (Watchlist, populated in Phase 5; Progress/History/Statistics, populated in Phase 6), right
+    /// after the native "Favorites" tab pane. Called by FileTransformation via reflection - must
+    /// remain public and static.
     /// </summary>
     /// <param name="content">Payload containing the raw home-html chunk.js contents.</param>
     /// <returns>Transformed JS with the JellyUX tab panes spliced in.</returns>

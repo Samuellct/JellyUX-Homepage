@@ -23,4 +23,21 @@ public sealed class SeriesProgressEntry
     /// none have a recorded play date.
     /// </summary>
     public DateTime? LastPlayedDate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the item identifier of the episode with the most recent
+    /// <see cref="LastPlayedDate"/> among this series' watched episodes -- the "last episode watched"
+    /// the Series Progress view (TODO_V3.md Phase 6.1) shows per series. Null if no watched episode
+    /// has a recorded play date.
+    /// </summary>
+    public Guid? LastEpisodeId { get; set; }
+
+    /// <summary>Gets or sets the display name of <see cref="LastEpisodeId"/>'s episode.</summary>
+    public string? LastEpisodeName { get; set; }
+
+    /// <summary>Gets or sets the season number (<c>Episode.ParentIndexNumber</c>) of <see cref="LastEpisodeId"/>'s episode.</summary>
+    public int? LastEpisodeSeasonNumber { get; set; }
+
+    /// <summary>Gets or sets the episode number (<c>Episode.IndexNumber</c>) of <see cref="LastEpisodeId"/>'s episode.</summary>
+    public int? LastEpisodeIndexNumber { get; set; }
 }

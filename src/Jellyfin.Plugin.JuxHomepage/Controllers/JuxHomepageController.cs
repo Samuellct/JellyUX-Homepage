@@ -6,6 +6,7 @@ using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
 using Jellyfin.Plugin.JuxHomepage.TMDb.Models;
 using Jellyfin.Plugin.JuxHomepage.Watchlist;
+using Jellyfin.Plugin.JuxHomepage.Watchlist.Models;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Admin;
 using MediaBrowser.Common.Api;
@@ -37,6 +38,9 @@ public class JuxHomepageController : ControllerBase
     private readonly IWikidataApiClient _wikidataApiClient;
     private readonly ILocalizationService _localizationService;
     private readonly IWatchlistService _watchlistService;
+    private readonly ISeriesProgressViewService _seriesProgressViewService;
+    private readonly IMovieHistoryViewService _movieHistoryViewService;
+    private readonly IStatisticsService _statisticsService;
     private readonly IAuthorizationContext _authContext;
     private readonly ILogger<JuxHomepageController> _logger;
 
@@ -52,6 +56,9 @@ public class JuxHomepageController : ControllerBase
     /// <param name="wikidataApiClient">Wikidata HTTP API client.</param>
     /// <param name="localizationService">Widget/admin-UI translation service.</param>
     /// <param name="watchlistService">Watchlist query service.</param>
+    /// <param name="seriesProgressViewService">Series Progress view service.</param>
+    /// <param name="movieHistoryViewService">Movie History view service.</param>
+    /// <param name="statisticsService">Watch-history statistics service.</param>
     /// <param name="authContext">Jellyfin request authorization context.</param>
     /// <param name="logger">Logger.</param>
     public JuxHomepageController(
@@ -64,6 +71,9 @@ public class JuxHomepageController : ControllerBase
         IWikidataApiClient wikidataApiClient,
         ILocalizationService localizationService,
         IWatchlistService watchlistService,
+        ISeriesProgressViewService seriesProgressViewService,
+        IMovieHistoryViewService movieHistoryViewService,
+        IStatisticsService statisticsService,
         IAuthorizationContext authContext,
         ILogger<JuxHomepageController> logger)
     {
@@ -76,6 +86,9 @@ public class JuxHomepageController : ControllerBase
         _wikidataApiClient = wikidataApiClient;
         _localizationService = localizationService;
         _watchlistService = watchlistService;
+        _seriesProgressViewService = seriesProgressViewService;
+        _movieHistoryViewService = movieHistoryViewService;
+        _statisticsService = statisticsService;
         _authContext = authContext;
         _logger = logger;
     }
@@ -163,6 +176,72 @@ public class JuxHomepageController : ControllerBase
     public IActionResult GetCardHooksScript()
     {
         var stream = GetEmbeddedResource("jux-card-hooks.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Serves the JellyUX Series Progress tab rendering script.
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-progress.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetProgressScript()
+    {
+        var stream = GetEmbeddedResource("jux-progress.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Serves the JellyUX Movie History tab rendering script.
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-history.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetHistoryScript()
+    {
+        var stream = GetEmbeddedResource("jux-history.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Serves the JellyUX Statistics tab rendering script.
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-statistics.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetStatisticsScript()
+    {
+        var stream = GetEmbeddedResource("jux-statistics.js");
         if (stream is null)
         {
             return NotFound();
@@ -391,6 +470,90 @@ public class JuxHomepageController : ControllerBase
         }
 
         return Ok(_watchlistService.GetLikedItemIds(userId, cancellationToken));
+    }
+
+    /// <summary>
+    /// Returns a page of the user's in-progress series (Series Progress view, TODO_V3.md Phase 6.1),
+    /// each hydrated with a poster/name and the watched/total episode counts and last-watched episode.
+    /// </summary>
+    /// <param name="userId">The requesting user's Jellyfin identifier.</param>
+    /// <param name="sortBy">"Name" or "LastPlayed". Defaults to "LastPlayed".</param>
+    /// <param name="sortOrder">"Ascending" or "Descending". Defaults to "Descending".</param>
+    /// <param name="startIndex">Zero-based start index for pagination.</param>
+    /// <param name="limit">Maximum number of items to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="SeriesProgressResult"/> with items and total count.</returns>
+    [HttpGet("SeriesProgress/Items")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<SeriesProgressResult>> GetSeriesProgressItems(
+        [FromQuery] Guid userId,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortOrder = null,
+        [FromQuery] int startIndex = 0,
+        [FromQuery] int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await IsRequestAuthorizedForUserAsync(userId).ConfigureAwait(false))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var result = _seriesProgressViewService.GetItems(userId, sortBy, sortOrder, startIndex, limit, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns a page of the user's watched movies (Movie History view, TODO_V3.md Phase 6.2), each
+    /// hydrated with a poster/name and last-played date.
+    /// </summary>
+    /// <param name="userId">The requesting user's Jellyfin identifier.</param>
+    /// <param name="sortBy">"Name" or "LastPlayed". Defaults to "LastPlayed".</param>
+    /// <param name="sortOrder">"Ascending" or "Descending". Defaults to "Descending".</param>
+    /// <param name="startIndex">Zero-based start index for pagination.</param>
+    /// <param name="limit">Maximum number of items to return.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="WidgetResult"/> with items and total count.</returns>
+    [HttpGet("MovieHistory/Items")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<WidgetResult>> GetMovieHistoryItems(
+        [FromQuery] Guid userId,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortOrder = null,
+        [FromQuery] int startIndex = 0,
+        [FromQuery] int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await IsRequestAuthorizedForUserAsync(userId).ConfigureAwait(false))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var result = _movieHistoryViewService.GetItems(userId, sortBy, sortOrder, startIndex, limit, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns the user's aggregate watch-history counters (Statistics view, TODO_V3.md Phase 6.3),
+    /// derived entirely from the Series Progress / Movie History caches -- no new library scan.
+    /// </summary>
+    /// <param name="userId">The requesting user's Jellyfin identifier.</param>
+    /// <returns>The aggregate counters.</returns>
+    [HttpGet("Statistics")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<WatchingStatistics>> GetStatistics([FromQuery] Guid userId)
+    {
+        if (!await IsRequestAuthorizedForUserAsync(userId).ConfigureAwait(false))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        return Ok(_statisticsService.GetStatistics(userId));
     }
 
     // -------------------------------------------------------------------------

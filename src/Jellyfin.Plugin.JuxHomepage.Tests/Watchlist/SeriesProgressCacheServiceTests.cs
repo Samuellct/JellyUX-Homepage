@@ -39,7 +39,7 @@ public sealed class SeriesProgressCacheServiceTests : IDisposable
         var user = new User("test", "Default", "Default");
         var seriesId = Guid.NewGuid();
 
-        var episode1 = new Episode { Id = Guid.NewGuid(), Name = "E1", SeriesId = seriesId, SeriesName = "My Show" };
+        var episode1 = new Episode { Id = Guid.NewGuid(), Name = "E1", SeriesId = seriesId, SeriesName = "My Show", ParentIndexNumber = 1, IndexNumber = 3 };
         var episode2 = new Episode { Id = Guid.NewGuid(), Name = "E2", SeriesId = seriesId, SeriesName = "My Show" };
 
         var userManagerMock = new Mock<IUserManager>();
@@ -72,6 +72,50 @@ public sealed class SeriesProgressCacheServiceTests : IDisposable
         Assert.Equal(1, entry.WatchedEpisodes);
         Assert.Equal(2, entry.TotalEpisodes);
         Assert.Equal(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), entry.LastPlayedDate);
+        Assert.Equal(episode1.Id, entry.LastEpisodeId);
+        Assert.Equal("E1", entry.LastEpisodeName);
+        Assert.Equal(1, entry.LastEpisodeSeasonNumber);
+        Assert.Equal(3, entry.LastEpisodeIndexNumber);
+    }
+
+    [Fact]
+    public async Task RefreshAllAsync_MultipleWatchedEpisodes_LastEpisodeMatchesMostRecentPlayDate()
+    {
+        var user = new User("test", "Default", "Default");
+        var seriesId = Guid.NewGuid();
+
+        // Deliberately out of chronological order in the source list, to prove the "last episode" is
+        // picked by comparing LastPlayedDate, not by list/insertion order.
+        var episodeOld = new Episode { Id = Guid.NewGuid(), Name = "Old", SeriesId = seriesId, SeriesName = "My Show", ParentIndexNumber = 1, IndexNumber = 1 };
+        var episodeNewest = new Episode { Id = Guid.NewGuid(), Name = "Newest", SeriesId = seriesId, SeriesName = "My Show", ParentIndexNumber = 2, IndexNumber = 5 };
+        var episodeMiddle = new Episode { Id = Guid.NewGuid(), Name = "Middle", SeriesId = seriesId, SeriesName = "My Show", ParentIndexNumber = 1, IndexNumber = 2 };
+
+        var userManagerMock = new Mock<IUserManager>();
+        userManagerMock.Setup(m => m.GetUsers()).Returns([user]);
+        userManagerMock.Setup(m => m.GetUserById(user.Id)).Returns(user);
+
+        var libraryManagerMock = new Mock<ILibraryManager>();
+        libraryManagerMock
+            .Setup(m => m.GetItemList(It.Is<InternalItemsQuery>(q => q.IncludeItemTypes.Contains(BaseItemKind.Episode))))
+            .Returns([episodeOld, episodeNewest, episodeMiddle]);
+
+        var userDataManagerMock = new Mock<IUserDataManager>();
+        userDataManagerMock.Setup(m => m.GetUserData(user, episodeOld))
+            .Returns(new UserItemData { Key = "k1", Played = true, LastPlayedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) });
+        userDataManagerMock.Setup(m => m.GetUserData(user, episodeNewest))
+            .Returns(new UserItemData { Key = "k2", Played = true, LastPlayedDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc) });
+        userDataManagerMock.Setup(m => m.GetUserData(user, episodeMiddle))
+            .Returns(new UserItemData { Key = "k3", Played = true, LastPlayedDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc) });
+
+        var service = BuildService(userManagerMock.Object, libraryManagerMock.Object, userDataManagerMock.Object);
+
+        await service.RefreshAllAsync(CancellationToken.None);
+
+        var entry = Assert.Single(service.GetProgress(user.Id));
+        Assert.Equal(episodeNewest.Id, entry.LastEpisodeId);
+        Assert.Equal("Newest", entry.LastEpisodeName);
+        Assert.Equal(2, entry.LastEpisodeSeasonNumber);
+        Assert.Equal(5, entry.LastEpisodeIndexNumber);
     }
 
     [Fact]

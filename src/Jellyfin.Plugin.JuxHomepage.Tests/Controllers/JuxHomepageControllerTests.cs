@@ -160,6 +160,9 @@ public sealed class JuxHomepageControllerTests
         Mock<ITMDbCacheService>? tmdbCacheServiceMock = null,
         Mock<ITMDbApiClient>? tmdbApiClientMock = null,
         Mock<IWatchlistService>? watchlistServiceMock = null,
+        Mock<ISeriesProgressViewService>? seriesProgressViewServiceMock = null,
+        Mock<IMovieHistoryViewService>? movieHistoryViewServiceMock = null,
+        Mock<IStatisticsService>? statisticsServiceMock = null,
         ILogger<JuxHomepageController>? logger = null)
     {
         var registry = new WidgetRegistry();
@@ -185,6 +188,9 @@ public sealed class JuxHomepageControllerTests
             Mock.Of<IWikidataApiClient>(),
             new LocalizationService(new Dictionary<string, IReadOnlyDictionary<string, string>>()),
             (watchlistServiceMock ?? new Mock<IWatchlistService>()).Object,
+            (seriesProgressViewServiceMock ?? new Mock<ISeriesProgressViewService>()).Object,
+            (movieHistoryViewServiceMock ?? new Mock<IMovieHistoryViewService>()).Object,
+            (statisticsServiceMock ?? new Mock<IStatisticsService>()).Object,
             Mock.Of<IAuthorizationContext>(),
             logger ?? NullLogger<JuxHomepageController>.Instance);
     }

@@ -151,7 +151,7 @@ public sealed class SeriesProgressCacheService : ISeriesProgressCacheService, ID
             DtoOptions = new MediaBrowser.Controller.Dto.DtoOptions { Fields = [] }
         });
 
-        var bySeries = new Dictionary<Guid, (string Name, int Watched, int Total, DateTime? LastPlayed)>();
+        var bySeries = new Dictionary<Guid, (string Name, int Watched, int Total, DateTime? LastPlayed, Episode? LastEpisode)>();
 
         foreach (var item in episodes)
         {
@@ -168,16 +168,19 @@ public sealed class SeriesProgressCacheService : ISeriesProgressCacheService, ID
             var lastPlayed = played?.LastPlayedDate;
 
             var newLastPlayed = current.LastPlayed;
+            var newLastEpisode = current.LastEpisode;
             if (lastPlayed.HasValue && (!newLastPlayed.HasValue || lastPlayed > newLastPlayed))
             {
                 newLastPlayed = lastPlayed;
+                newLastEpisode = episode;
             }
 
             bySeries[seriesId] = (
                 string.IsNullOrEmpty(current.Name) ? episode.SeriesName ?? string.Empty : current.Name,
                 current.Watched + (isWatched ? 1 : 0),
                 current.Total + 1,
-                newLastPlayed);
+                newLastPlayed,
+                newLastEpisode);
         }
 
         return bySeries
@@ -188,7 +191,11 @@ public sealed class SeriesProgressCacheService : ISeriesProgressCacheService, ID
                 SeriesName = kv.Value.Name,
                 WatchedEpisodes = kv.Value.Watched,
                 TotalEpisodes = kv.Value.Total,
-                LastPlayedDate = kv.Value.LastPlayed
+                LastPlayedDate = kv.Value.LastPlayed,
+                LastEpisodeId = kv.Value.LastEpisode?.Id,
+                LastEpisodeName = kv.Value.LastEpisode?.Name,
+                LastEpisodeSeasonNumber = kv.Value.LastEpisode?.ParentIndexNumber,
+                LastEpisodeIndexNumber = kv.Value.LastEpisode?.IndexNumber
             })
             .OrderByDescending(e => e.LastPlayedDate ?? DateTime.MinValue)
             .ToList();

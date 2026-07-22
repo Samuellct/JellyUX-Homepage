@@ -109,6 +109,21 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             serviceProvider.GetRequiredService<ILibraryManager>(),
             serviceProvider.GetRequiredService<MediaBrowser.Controller.Dto.IDtoService>()));
         serviceCollection.AddHostedService<WatchlistAutoRemoveService>();
+        serviceCollection.AddSingleton<ISeriesProgressViewService>(serviceProvider => new SeriesProgressViewService(
+            serviceProvider.GetRequiredService<ISeriesProgressCacheService>(),
+            serviceProvider.GetRequiredService<IUserManager>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            serviceProvider.GetRequiredService<MediaBrowser.Controller.Dto.IDtoService>(),
+            serviceProvider.GetRequiredService<ILogger<SeriesProgressViewService>>()));
+        serviceCollection.AddSingleton<IMovieHistoryViewService>(serviceProvider => new MovieHistoryViewService(
+            serviceProvider.GetRequiredService<IMovieHistoryCacheService>(),
+            serviceProvider.GetRequiredService<IUserManager>(),
+            serviceProvider.GetRequiredService<ILibraryManager>(),
+            serviceProvider.GetRequiredService<MediaBrowser.Controller.Dto.IDtoService>(),
+            serviceProvider.GetRequiredService<ILogger<MovieHistoryViewService>>()));
+        serviceCollection.AddSingleton<IStatisticsService>(serviceProvider => new StatisticsService(
+            serviceProvider.GetRequiredService<ISeriesProgressCacheService>(),
+            serviceProvider.GetRequiredService<IMovieHistoryCacheService>()));
         serviceCollection.AddSingleton<ScoringService>(serviceProvider => new ScoringService(
             serviceProvider.GetRequiredService<IUserManager>(),
             serviceProvider.GetRequiredService<ILibraryManager>(),
