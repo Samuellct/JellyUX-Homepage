@@ -90,15 +90,16 @@ public static class TransformationPatches
         var progressScriptTag = $"<script src=\"/JuxHomepage/jux-progress.js{cacheParam}\" defer></script>";
         var historyScriptTag = $"<script src=\"/JuxHomepage/jux-history.js{cacheParam}\" defer></script>";
         var statisticsScriptTag = $"<script src=\"/JuxHomepage/jux-statistics.js{cacheParam}\" defer></script>";
+        var seriesFlattenScriptTag = $"<script src=\"/JuxHomepage/jux-series-flatten.js{cacheParam}\" defer></script>";
 
-        // jux-ui.js must appear (in source order) before the 4 tab-rendering scripts that consume
+        // jux-ui.js must appear (in source order) before the tab-rendering scripts that consume
         // window.JuxUI -- deferred scripts execute in document order, so this ordering is what
-        // guarantees JuxUI exists by the time jux-watchlist.js etc. run their own top-level init().
+        // guarantees JuxUI exists by the time those scripts run their own top-level init().
         return (content.Contents ?? string.Empty)
             .Replace("</head>", $"{linkTag}\n{uiLinkTag}\n</head>", StringComparison.OrdinalIgnoreCase)
             .Replace(
                 "</body>",
-                $"{scriptTag}\n{uiScriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n{cardHooksScriptTag}\n{progressScriptTag}\n{historyScriptTag}\n{statisticsScriptTag}\n</body>",
+                $"{scriptTag}\n{uiScriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n{cardHooksScriptTag}\n{progressScriptTag}\n{historyScriptTag}\n{statisticsScriptTag}\n{seriesFlattenScriptTag}\n</body>",
                 StringComparison.OrdinalIgnoreCase);
     }
 
