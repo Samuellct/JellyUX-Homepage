@@ -1,3 +1,16 @@
+## [2.5.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.4.1...v2.5.0) (2026-07-22)
+
+### Features
+
+* add infinite scroll to library pages and fix eager lazy-load fetch ([c4e5f35](https://github.com/Samuellct/JellyUX-Homepage/commit/c4e5f35533de504f0694457c72bc9b2e28bb1912))
+* flatten single-season shows and show episodes on the series page ([908fc7d](https://github.com/Samuellct/JellyUX-Homepage/commit/908fc7dc8340171eb471a1453c5dc7ad42fa0155)), closes [#listChildrenCollapsible](https://github.com/Samuellct/JellyUX-Homepage/issues/listChildrenCollapsible) [#childrenCollapsible](https://github.com/Samuellct/JellyUX-Homepage/issues/childrenCollapsible)
+* show parent collections on the details page and add collection sorting ([b62ee90](https://github.com/Samuellct/JellyUX-Homepage/commit/b62ee908703e3a1c49f9909eb584ed940be9b09b))
+
+### Bug Fixes
+
+* prevent duplicate sections and a resort race in Phase 7.1/7.2 scripts ([48123b7](https://github.com/Samuellct/JellyUX-Homepage/commit/48123b7e0a79a53535cee6b198f8ca76e75a8071))
+* resolve BoxSet member resolution in the collections index ([0f3fe8f](https://github.com/Samuellct/JellyUX-Homepage/commit/0f3fe8ff60e5ee8728e42cc7f28457058baa6e5d))
+
 ## [2.4.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.4.0...v2.4.1) (2026-07-22)
 
 ### Bug Fixes
