@@ -1,9 +1,13 @@
 'use strict';
 
 // JellyUX Movie History tab rendering.
-// TODO_V3.md Phase 6.2. Same conventions as jux-watchlist.js/jux-progress.js: click listener
-// delegated on `document`, rendered via window.JellyfinAPI.cardBuilder.getCardsHtml + the same manual
-// _loadCardImages workaround.
+// TODO_V3.md Phase 6.2, visually reworked in Phase 6 bis to use the shared window.JuxUI helpers
+// (Web/jux-ui.js) instead of a bare <select> and inline styles: a native-look sort dialog, a loading
+// spinner, and an icon-based empty state.
+//
+// Same conventions as jux-watchlist.js/jux-progress.js: click listener delegated on `document`,
+// rendered via window.JellyfinAPI.cardBuilder.getCardsHtml + the same manual _loadCardImages
+// workaround.
 //
 // Unlike Series Progress, each row here is a plain BaseItemDto (see
 // Watchlist/MovieHistoryViewService.cs -- history rows need no extra per-item fields, the last-played
@@ -17,23 +21,29 @@
 
     var _labels = {
         en: {
-            empty: 'No watched movies yet.',
+            title: 'History',
+            empty: 'No watched movies yet',
+            emptySubtitle: 'Movies you finish watching show up here.',
             sortLastPlayed: 'Last Watched',
             sortName: 'Name',
+            sortDialogTitle: 'Sort History',
             addFavorite: 'Add to favorites',
             removeFavorite: 'Remove from favorites'
         },
         fr: {
-            empty: 'Aucun film vu pour le moment.',
+            title: 'Historique',
+            empty: 'Aucun film vu pour le moment',
+            emptySubtitle: 'Les films que tu termines apparaissent ici.',
             sortLastPlayed: 'Dernier vu',
             sortName: 'Nom',
+            sortDialogTitle: 'Trier l’historique',
             addFavorite: 'Ajouter aux favoris',
             removeFavorite: 'Retirer des favoris'
         }
     };
 
     window.juxHistory = {
-        state: { sortBy: 'LastPlayed' },
+        state: { sortBy: 'LastPlayed', sortOrder: 'Descending' },
 
         init: function () {
             var self = this;
@@ -62,24 +72,25 @@
                 return;
             }
 
-            sections.innerHTML = _buildControlsHtml(lang, self.state);
-            _wireControls(sections, self.state, function () {
-                self.render();
-            });
+            sections.innerHTML = _buildShellHtml(lang, self.state);
+            var itemsContainer = sections.querySelector('.jux-history-items');
+            _wireControls(sections, self, lang);
+
+            if (window.JuxUI) { window.JuxUI.showLoading(itemsContainer); }
 
             var url = window.ApiClient.getUrl('JuxHomepage/MovieHistory/Items', {
                 userId: userId,
                 sortBy: self.state.sortBy,
-                sortOrder: 'Descending',
+                sortOrder: self.state.sortOrder,
                 startIndex: 0,
                 limit: 100
             });
 
             window.ApiClient.getJSON(url).then(function (result) {
-                _renderItems(sections, result, lang);
+                _renderItems(itemsContainer, result, lang);
             }).catch(function (err) {
                 console.error('[JellyUX] Movie History fetch failed:', err);
-                _renderItems(sections, { Items: [], TotalRecordCount: 0 }, lang);
+                _renderItems(itemsContainer, { Items: [], TotalRecordCount: 0 }, lang);
             });
         }
     };
@@ -88,47 +99,71 @@
         return (document.documentElement.lang || 'en').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en';
     }
 
-    function _buildControlsHtml(lang, state) {
+    function _sortOptions(t) {
+        return [
+            { value: 'LastPlayed', label: t.sortLastPlayed },
+            { value: 'Name', label: t.sortName }
+        ];
+    }
+
+    function _labelFor(options, value) {
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].value === value) { return options[i].label; }
+        }
+        return options[0] && options[0].label;
+    }
+
+    function _buildShellHtml(lang, state) {
         var t = _labels[lang];
-        return '<div class="jux-history-controls" style="display:flex;gap:1em;padding:0 2em 1em;">' +
-            '<select id="jux-history-sort" is="emby-select" class="emby-select">' +
-            _option('LastPlayed', t.sortLastPlayed, state.sortBy) +
-            _option('Name', t.sortName, state.sortBy) +
-            '</select>' +
+        return '<h2 class="sectionTitle sectionTitle-cards jux-section-title-container">' + _escHtml(t.title) + '</h2>' +
+            '<div class="jux-view-controls">' +
+            '<button type="button" class="jux-sort-button" id="jux-history-sort-btn">' +
+            '<span class="material-icons sort" aria-hidden="true"></span>' +
+            '<span class="jux-sort-button-label">' + _escHtml(_labelFor(_sortOptions(t), state.sortBy)) + '</span>' +
+            '<span class="material-icons arrow_drop_down" aria-hidden="true"></span>' +
+            '</button>' +
             '</div>' +
-            '<div class="jux-history-items itemsContainer vertical-wrap padded-left padded-right"></div>' +
-            '<div class="jux-history-empty" style="display:none;padding:0 2em;">' + _escHtml(t.empty) + '</div>';
+            '<div class="jux-history-items itemsContainer vertical-wrap padded-left padded-right"></div>';
     }
 
-    function _option(value, label, current) {
-        return '<option value="' + _escHtml(value) + '"' + (value === current ? ' selected' : '') + '>' + _escHtml(label) + '</option>';
-    }
-
-    function _wireControls(sections, state, onChange) {
-        var sortEl = sections.querySelector('#jux-history-sort');
-        if (sortEl) {
-            sortEl.addEventListener('change', function () {
-                state.sortBy = sortEl.value;
-                onChange();
+    function _wireControls(sections, self, lang) {
+        var t = _labels[lang];
+        var sortBtn = sections.querySelector('#jux-history-sort-btn');
+        if (sortBtn && window.JuxUI) {
+            sortBtn.addEventListener('click', function () {
+                window.JuxUI.openSortDialog({
+                    title: t.sortDialogTitle,
+                    sortOptions: _sortOptions(t),
+                    currentSortBy: self.state.sortBy,
+                    currentSortOrder: self.state.sortOrder,
+                    onChange: function (sortBy, sortOrder) {
+                        self.state.sortBy = sortBy;
+                        self.state.sortOrder = sortOrder;
+                        self.render();
+                    }
+                });
             });
         }
     }
 
-    function _renderItems(sections, result, lang) {
-        var itemsContainer = sections.querySelector('.jux-history-items');
-        var emptyEl = sections.querySelector('.jux-history-empty');
-        if (!itemsContainer || !emptyEl) {
+    function _renderItems(itemsContainer, result, lang) {
+        if (!itemsContainer) {
             return;
         }
 
         var items = (result && result.Items) || [];
         if (items.length === 0) {
-            itemsContainer.innerHTML = '';
-            emptyEl.style.display = '';
+            if (window.JuxUI) {
+                window.JuxUI.showEmpty(itemsContainer, {
+                    icon: 'movie',
+                    title: _labels[lang].empty,
+                    subtitle: _labels[lang].emptySubtitle
+                });
+            } else {
+                itemsContainer.innerHTML = '';
+            }
             return;
         }
-
-        emptyEl.style.display = 'none';
 
         var api = window.JellyfinAPI;
         if (!api || !api.cardBuilder) {
@@ -232,8 +267,9 @@
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
             _escHtml: _escHtml,
-            _option: _option,
-            _buildControlsHtml: _buildControlsHtml
+            _sortOptions: _sortOptions,
+            _labelFor: _labelFor,
+            _buildShellHtml: _buildShellHtml
         };
     }
 })();

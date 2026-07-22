@@ -1,10 +1,15 @@
 'use strict';
 
 // JellyUX Statistics tab rendering.
-// TODO_V3.md Phase 6.3. Same click-delegation convention as jux-watchlist.js/jux-progress.js/
-// jux-history.js, but this view is not a card grid -- just a handful of number tiles built from
-// GET JuxHomepage/Statistics (Watchlist/StatisticsService.cs, purely derived from the already-cached
-// Series Progress / Movie History data, no new library scan).
+// TODO_V3.md Phase 6.3, visually reworked in Phase 6 bis to use the shared window.JuxUI helpers
+// (Web/jux-ui.js) instead of bare inline-styled text tiles: a real section title, a loading spinner,
+// and window.JuxUI.buildStatCard for each counter (icon, big value, label -- styled card, not plain
+// stacked text).
+//
+// Same click-delegation convention as jux-watchlist.js/jux-progress.js/jux-history.js, but this view
+// is not a card grid -- just a handful of stat tiles built from GET JuxHomepage/Statistics
+// (Watchlist/StatisticsService.cs, purely derived from the already-cached Series Progress / Movie
+// History data, no new library scan).
 (function () {
     if (typeof window.juxStatistics !== 'undefined') {
         return;
@@ -12,12 +17,14 @@
 
     var _labels = {
         en: {
+            title: 'Statistics',
             moviesWatched: 'Movies watched',
             seriesTracked: 'Series tracked',
             seriesCompleted: 'Series completed',
             episodesWatched: 'Episodes watched'
         },
         fr: {
+            title: 'Statistiques',
             moviesWatched: 'Films vus',
             seriesTracked: 'Séries suivies',
             seriesCompleted: 'Séries terminées',
@@ -52,13 +59,17 @@
                 return;
             }
 
+            sections.innerHTML = _buildTitleHtml(lang) + '<div class="jux-statistics-body"></div>';
+            var body = sections.querySelector('.jux-statistics-body');
+            if (window.JuxUI) { window.JuxUI.showLoading(body); }
+
             var url = window.ApiClient.getUrl('JuxHomepage/Statistics', { userId: userId });
 
             window.ApiClient.getJSON(url).then(function (stats) {
-                sections.innerHTML = _buildTilesHtml(stats, lang);
+                body.innerHTML = _buildTilesHtml(stats, lang);
             }).catch(function (err) {
                 console.error('[JellyUX] Statistics fetch failed:', err);
-                sections.innerHTML = _buildTilesHtml(
+                body.innerHTML = _buildTilesHtml(
                     { MoviesWatched: 0, SeriesTracked: 0, SeriesCompleted: 0, EpisodesWatched: 0 },
                     lang);
             });
@@ -69,21 +80,26 @@
         return (document.documentElement.lang || 'en').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en';
     }
 
+    function _buildTitleHtml(lang) {
+        return '<h2 class="sectionTitle sectionTitle-cards jux-section-title-container">' + _escHtml(_labels[lang].title) + '</h2>';
+    }
+
     function _buildTilesHtml(stats, lang) {
         var t = _labels[lang];
-        return '<div class="jux-statistics-tiles" style="display:flex;flex-wrap:wrap;gap:1.5em;padding:0 2em;">' +
-            _tile(stats.MoviesWatched, t.moviesWatched) +
-            _tile(stats.SeriesTracked, t.seriesTracked) +
-            _tile(stats.SeriesCompleted, t.seriesCompleted) +
-            _tile(stats.EpisodesWatched, t.episodesWatched) +
+        var buildCard = (typeof window !== 'undefined' && window.JuxUI) ? window.JuxUI.buildStatCard : _fallbackTile;
+
+        return '<div class="jux-statistics-tiles">' +
+            buildCard('movie', stats.MoviesWatched, t.moviesWatched) +
+            buildCard('live_tv', stats.SeriesTracked, t.seriesTracked) +
+            buildCard('check_circle', stats.SeriesCompleted, t.seriesCompleted) +
+            buildCard('playlist_play', stats.EpisodesWatched, t.episodesWatched) +
             '</div>';
     }
 
-    function _tile(value, label) {
-        return '<div class="jux-statistics-tile" style="min-width:10em;">' +
-            '<div class="jux-statistics-value" style="font-size:2.2em;font-weight:600;">' + _escHtml(String(value)) + '</div>' +
-            '<div class="jux-statistics-label">' + _escHtml(label) + '</div>' +
-            '</div>';
+    // Only reached if jux-ui.js somehow failed to load -- keeps the tab from rendering nothing.
+    function _fallbackTile(icon, value, label) {
+        return '<div class="jux-stat-card"><div class="jux-stat-value">' + _escHtml(String(value)) + '</div>' +
+            '<div class="jux-stat-label">' + _escHtml(label) + '</div></div>';
     }
 
     function _escHtml(str) {
@@ -102,7 +118,7 @@
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
             _escHtml: _escHtml,
-            _tile: _tile,
+            _buildTitleHtml: _buildTitleHtml,
             _buildTilesHtml: _buildTilesHtml
         };
     }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import juxStatistics from '../src/Jellyfin.Plugin.JuxHomepage/Web/jux-statistics.js';
 
-const { _escHtml, _tile, _buildTilesHtml } = juxStatistics;
+const { _escHtml, _buildTitleHtml, _buildTilesHtml } = juxStatistics;
 
 describe('_escHtml', () => {
     it('escapes HTML special characters', () => {
@@ -9,19 +9,16 @@ describe('_escHtml', () => {
     });
 });
 
-describe('_tile', () => {
-    it('renders the value and label, escaped', () => {
-        const html = _tile(12, 'Films vus');
-        expect(html).toContain('12');
-        expect(html).toContain('Films vus');
-    });
-
-    it('escapes an unsafe label', () => {
-        expect(_tile(1, '<script>')).toContain('&lt;script&gt;');
+describe('_buildTitleHtml', () => {
+    it('renders the localized section title', () => {
+        expect(_buildTitleHtml('en')).toContain('Statistics');
+        expect(_buildTitleHtml('fr')).toContain('Statistiques');
     });
 });
 
 describe('_buildTilesHtml', () => {
+    // window.JuxUI is not loaded in this test environment, so this exercises the built-in fallback
+    // tile renderer -- the JuxUI.buildStatCard path itself is covered by test/jux-ui.test.js.
     it('renders all four counters with localized labels', () => {
         const stats = { MoviesWatched: 5, SeriesTracked: 3, SeriesCompleted: 1, EpisodesWatched: 42 };
 

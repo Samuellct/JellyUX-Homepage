@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import juxWatchlist from '../src/Jellyfin.Plugin.JuxHomepage/Web/jux-watchlist.js';
 
-const { _escHtml, _option, _buildControlsHtml } = juxWatchlist;
+const { _escHtml, _sortOptions, _typeOptions, _labelFor, _buildShellHtml } = juxWatchlist;
 
 describe('_escHtml', () => {
     it('escapes ampersands, angle brackets, and quotes', () => {
@@ -15,35 +15,41 @@ describe('_escHtml', () => {
     });
 });
 
-describe('_option', () => {
-    it('marks the option matching the current value as selected', () => {
-        expect(_option('Name', 'Nom', 'Name')).toBe('<option value="Name" selected>Nom</option>');
+describe('_labelFor', () => {
+    const options = [{ value: 'A', label: 'Alpha' }, { value: 'B', label: 'Beta' }];
+
+    it('returns the label matching the current value', () => {
+        expect(_labelFor(options, 'B')).toBe('Beta');
     });
 
-    it('does not mark an option that does not match the current value', () => {
-        expect(_option('Name', 'Nom', 'DateAdded')).toBe('<option value="Name">Nom</option>');
-    });
-
-    it('escapes both value and label', () => {
-        expect(_option('<x>', '<y>', 'z')).toBe('<option value="&lt;x&gt;">&lt;y&gt;</option>');
+    it('falls back to the first option when the value is unknown', () => {
+        expect(_labelFor(options, 'Z')).toBe('Alpha');
     });
 });
 
-describe('_buildControlsHtml', () => {
-    it('renders both select controls with the current state pre-selected', () => {
-        const html = _buildControlsHtml('en', { sortBy: 'Name', includeItemTypes: 'Movie' });
+describe('_sortOptions / _typeOptions', () => {
+    it('returns 4 sort options and 3 type options in English', () => {
+        const t = { sortName: 'Name', sortDateAdded: 'Date Added', sortReleaseDate: 'Release Date', sortCommunityRating: 'Community Rating', typeAll: 'All', typeMovie: 'Movies', typeSeries: 'Series' };
+        expect(_sortOptions(t)).toHaveLength(4);
+        expect(_typeOptions(t)).toHaveLength(3);
+    });
+});
 
-        expect(html).toContain('id="jux-watchlist-sort"');
-        expect(html).toContain('id="jux-watchlist-type"');
-        expect(html).toContain('value="Name" selected');
-        expect(html).toContain('value="Movie" selected');
+describe('_buildShellHtml', () => {
+    it('renders the section title and both sort/filter buttons with the current labels', () => {
+        const html = _buildShellHtml('en', { sortBy: 'Name', sortOrder: 'Ascending', includeItemTypes: 'Movie' });
+
+        expect(html).toContain('Watchlist');
+        expect(html).toContain('id="jux-watchlist-sort-btn"');
+        expect(html).toContain('id="jux-watchlist-type-btn"');
+        expect(html).toContain('>Name<');
+        expect(html).toContain('>Movies<');
     });
 
-    it('includes the localized empty-state message', () => {
-        const htmlEn = _buildControlsHtml('en', { sortBy: 'DateAdded', includeItemTypes: 'All' });
-        const htmlFr = _buildControlsHtml('fr', { sortBy: 'DateAdded', includeItemTypes: 'All' });
+    it('renders localized labels for French', () => {
+        const html = _buildShellHtml('fr', { sortBy: 'DateAdded', sortOrder: 'Descending', includeItemTypes: 'All' });
 
-        expect(htmlEn).toContain('Your watchlist is empty.');
-        expect(htmlFr).toContain('Ta watchlist est vide.');
+        expect(html).toContain('Date d’ajout');
+        expect(html).toContain('Tous');
     });
 });

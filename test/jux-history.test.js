@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import juxHistory from '../src/Jellyfin.Plugin.JuxHomepage/Web/jux-history.js';
 
-const { _escHtml, _option, _buildControlsHtml } = juxHistory;
+const { _escHtml, _sortOptions, _labelFor, _buildShellHtml } = juxHistory;
 
 describe('_escHtml', () => {
     it('escapes HTML special characters', () => {
@@ -14,29 +14,38 @@ describe('_escHtml', () => {
     });
 });
 
-describe('_option', () => {
-    it('marks the option matching the current value as selected', () => {
-        expect(_option('LastPlayed', 'Dernier vu', 'LastPlayed')).toBe('<option value="LastPlayed" selected>Dernier vu</option>');
+describe('_labelFor', () => {
+    it('returns the label matching the current value', () => {
+        const options = [{ value: 'LastPlayed', label: 'Last Watched' }, { value: 'Name', label: 'Name' }];
+        expect(_labelFor(options, 'Name')).toBe('Name');
     });
 
-    it('does not mark an option that does not match the current value', () => {
-        expect(_option('Name', 'Nom', 'LastPlayed')).toBe('<option value="Name">Nom</option>');
+    it('falls back to the first option when the value is unknown', () => {
+        const options = [{ value: 'LastPlayed', label: 'Last Watched' }, { value: 'Name', label: 'Name' }];
+        expect(_labelFor(options, 'Unknown')).toBe('Last Watched');
     });
 });
 
-describe('_buildControlsHtml', () => {
-    it('renders the sort control with the current state pre-selected', () => {
-        const html = _buildControlsHtml('en', { sortBy: 'Name' });
+describe('_sortOptions', () => {
+    it('returns 2 sort options', () => {
+        const t = { sortLastPlayed: 'Last Watched', sortName: 'Name' };
+        expect(_sortOptions(t)).toHaveLength(2);
+    });
+});
 
-        expect(html).toContain('id="jux-history-sort"');
-        expect(html).toContain('value="Name" selected');
+describe('_buildShellHtml', () => {
+    it('renders the section title and the sort button with the current label', () => {
+        const html = _buildShellHtml('en', { sortBy: 'Name', sortOrder: 'Ascending' });
+
+        expect(html).toContain('History');
+        expect(html).toContain('id="jux-history-sort-btn"');
+        expect(html).toContain('>Name<');
     });
 
-    it('includes the localized empty-state message', () => {
-        const htmlEn = _buildControlsHtml('en', { sortBy: 'LastPlayed' });
-        const htmlFr = _buildControlsHtml('fr', { sortBy: 'LastPlayed' });
+    it('renders localized labels for French', () => {
+        const html = _buildShellHtml('fr', { sortBy: 'LastPlayed', sortOrder: 'Descending' });
 
-        expect(htmlEn).toContain('No watched movies yet.');
-        expect(htmlFr).toContain('Aucun film vu pour le moment.');
+        expect(html).toContain('Historique');
+        expect(html).toContain('Dernier vu');
     });
 });

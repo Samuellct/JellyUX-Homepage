@@ -1,10 +1,19 @@
 /* JellyUX shared UI helpers — styles for window.JuxUI (Web/jux-ui.js).
  * TODO_V3.md Phase 6 bis: empty state, loading spinner, progress bar, stat tile, native sort dialog,
  * used by jux-watchlist.js/jux-progress.js/jux-history.js/jux-statistics.js.
- * Only jux-prefixed classes are styled here (see jux-homepage.css's own convention). Colors reuse
- * Jellyfin's own native CSS custom properties (--accent, --dark, --darkest) exclusively — no
- * hardcoded hex values, consistent with jux-homepage.css and safely clear of every banned "No AI
- * Slope" palette (no blue-violet/violet-cyan gradient, no Tailwind blue, no turquoise-on-dark).
+ * Only jux-prefixed classes are styled here (see jux-homepage.css's own convention).
+ *
+ * Accent color: live inspection of the jellyux-test container (Phase 6 bis verification) found
+ * that --accent/--dark/--darkest (the variables jux-homepage.css's own header comment claims are
+ * "intentionally never redefined") do not actually exist anywhere in this Jellyfin Web build's
+ * stylesheets -- var(--accent) silently resolves to nothing, i.e. a fully transparent fill. The
+ * real native accent variable in this build is --jf-palette-primary-main (confirmed live: resolves
+ * to #00a4dc, Jellyfin's native brand blue). Every accent usage below therefore reads
+ * var(--jf-palette-primary-main, #00a4dc) -- the native variable with a hardcoded fallback matching
+ * its own live-confirmed value, in case a future/older bundle drops the variable entirely. #00a4dc
+ * is Jellyfin's own native brand color, not a custom palette choice, so this stays clear of every
+ * banned "No AI Slope" palette (no blue-violet/violet-cyan gradient, no Tailwind blue, no
+ * turquoise-on-dark).
  */
 
 /* -------------------------------------------------------------------------
@@ -97,7 +106,7 @@
     height: 2.5em;
     border-radius: 50%;
     border: 0.25em solid rgba(255, 255, 255, 0.15);
-    border-top-color: var(--accent);
+    border-top-color: var(--jf-palette-primary-main, #00a4dc);
     animation: jux-spin 0.8s linear infinite;
 }
 
@@ -128,7 +137,7 @@
 }
 
 .jux-progress-chunk.watched {
-    background: var(--accent);
+    background: var(--jf-palette-primary-main, #00a4dc);
 }
 
 .jux-progress-chunk:hover {
@@ -139,7 +148,7 @@
     display: inline-block;
     font-size: 0.75em;
     font-weight: 600;
-    color: var(--accent);
+    color: var(--jf-palette-primary-main, #00a4dc);
 }
 
 /* -------------------------------------------------------------------------
@@ -172,7 +181,7 @@
 
 .jux-stat-icon {
     font-size: 2em;
-    color: var(--accent);
+    color: var(--jf-palette-primary-main, #00a4dc);
 }
 
 .jux-stat-value {

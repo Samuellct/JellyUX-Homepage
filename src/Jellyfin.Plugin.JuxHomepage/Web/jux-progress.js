@@ -1,15 +1,20 @@
 'use strict';
 
 // JellyUX Series Progress tab rendering.
-// TODO_V3.md Phase 6.1. Same conventions as jux-watchlist.js: loaded as a plain <script src>, click
-// listener delegated on `document` (the tab bar/button is recreated on every view mount), rendered via
+// TODO_V3.md Phase 6.1, visually reworked in Phase 6 bis to use the shared window.JuxUI helpers
+// (Web/jux-ui.js) instead of a bare <select>/text-only progress and inline styles: a native-look
+// sort dialog, a loading spinner, an icon-based empty state, and a real visual progress bar per card
+// (the plain "3/10 episodes" text line is kept alongside it, not replaced).
+//
+// Same conventions as jux-watchlist.js: loaded as a plain <script src>, click listener delegated on
+// `document` (the tab bar/button is recreated on every view mount), rendered via
 // window.JellyfinAPI.cardBuilder.getCardsHtml + the same manual _loadCardImages workaround (a plain
 // <div> pane never gets Jellyfin's native lazy-image loading).
 //
 // Each row is a series -- not just a BaseItemDto, but a { Item, WatchedEpisodes, TotalEpisodes,
 // LastEpisodeName, ... } object (see Watchlist/SeriesProgressViewService.cs), so after cardBuilder
-// renders the poster/name, this file decorates each card with a small progress line and a "mark as
-// watched" button.
+// renders the poster/name, this file decorates each card with a progress bar, a progress line, and a
+// "mark as watched" button.
 (function () {
     if (typeof window.juxProgress !== 'undefined') {
         return;
@@ -17,17 +22,23 @@
 
     var _labels = {
         en: {
-            empty: 'No series in progress yet.',
+            title: 'Progress',
+            empty: 'No series in progress',
+            emptySubtitle: 'Watch an episode of a series and it will show up here.',
             sortLastPlayed: 'Last Watched',
             sortName: 'Name',
+            sortDialogTitle: 'Sort Progress',
             episodesWatched: '{watched}/{total} episodes',
             lastEpisode: 'Last: {code} - {name}',
             markWatched: 'Mark as watched'
         },
         fr: {
-            empty: 'Aucune série en cours.',
+            title: 'Progression',
+            empty: 'Aucune série en cours',
+            emptySubtitle: 'Regarde un épisode d’une série et elle apparaîtra ici.',
             sortLastPlayed: 'Dernier vu',
             sortName: 'Nom',
+            sortDialogTitle: 'Trier la progression',
             episodesWatched: '{watched}/{total} épisodes',
             lastEpisode: 'Dernier : {code} - {name}',
             markWatched: 'Marquer comme vu'
@@ -35,7 +46,7 @@
     };
 
     window.juxProgress = {
-        state: { sortBy: 'LastPlayed' },
+        state: { sortBy: 'LastPlayed', sortOrder: 'Descending' },
 
         init: function () {
             var self = this;
@@ -64,24 +75,25 @@
                 return;
             }
 
-            sections.innerHTML = _buildControlsHtml(lang, self.state);
-            _wireControls(sections, self.state, function () {
-                self.render();
-            });
+            sections.innerHTML = _buildShellHtml(lang, self.state);
+            var itemsContainer = sections.querySelector('.jux-progress-items');
+            _wireControls(sections, self, lang);
+
+            if (window.JuxUI) { window.JuxUI.showLoading(itemsContainer); }
 
             var url = window.ApiClient.getUrl('JuxHomepage/SeriesProgress/Items', {
                 userId: userId,
                 sortBy: self.state.sortBy,
-                sortOrder: 'Descending',
+                sortOrder: self.state.sortOrder,
                 startIndex: 0,
                 limit: 100
             });
 
             window.ApiClient.getJSON(url).then(function (result) {
-                _renderItems(sections, result, lang);
+                _renderItems(itemsContainer, result, lang);
             }).catch(function (err) {
                 console.error('[JellyUX] Series Progress fetch failed:', err);
-                _renderItems(sections, { Items: [], TotalRecordCount: 0 }, lang);
+                _renderItems(itemsContainer, { Items: [], TotalRecordCount: 0 }, lang);
             });
         }
     };
@@ -90,47 +102,71 @@
         return (document.documentElement.lang || 'en').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en';
     }
 
-    function _buildControlsHtml(lang, state) {
+    function _sortOptions(t) {
+        return [
+            { value: 'LastPlayed', label: t.sortLastPlayed },
+            { value: 'Name', label: t.sortName }
+        ];
+    }
+
+    function _labelFor(options, value) {
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].value === value) { return options[i].label; }
+        }
+        return options[0] && options[0].label;
+    }
+
+    function _buildShellHtml(lang, state) {
         var t = _labels[lang];
-        return '<div class="jux-progress-controls" style="display:flex;gap:1em;padding:0 2em 1em;">' +
-            '<select id="jux-progress-sort" is="emby-select" class="emby-select">' +
-            _option('LastPlayed', t.sortLastPlayed, state.sortBy) +
-            _option('Name', t.sortName, state.sortBy) +
-            '</select>' +
+        return '<h2 class="sectionTitle sectionTitle-cards jux-section-title-container">' + _escHtml(t.title) + '</h2>' +
+            '<div class="jux-view-controls">' +
+            '<button type="button" class="jux-sort-button" id="jux-progress-sort-btn">' +
+            '<span class="material-icons sort" aria-hidden="true"></span>' +
+            '<span class="jux-sort-button-label">' + _escHtml(_labelFor(_sortOptions(t), state.sortBy)) + '</span>' +
+            '<span class="material-icons arrow_drop_down" aria-hidden="true"></span>' +
+            '</button>' +
             '</div>' +
-            '<div class="jux-progress-items itemsContainer vertical-wrap padded-left padded-right"></div>' +
-            '<div class="jux-progress-empty" style="display:none;padding:0 2em;">' + _escHtml(t.empty) + '</div>';
+            '<div class="jux-progress-items itemsContainer vertical-wrap padded-left padded-right"></div>';
     }
 
-    function _option(value, label, current) {
-        return '<option value="' + _escHtml(value) + '"' + (value === current ? ' selected' : '') + '>' + _escHtml(label) + '</option>';
-    }
-
-    function _wireControls(sections, state, onChange) {
-        var sortEl = sections.querySelector('#jux-progress-sort');
-        if (sortEl) {
-            sortEl.addEventListener('change', function () {
-                state.sortBy = sortEl.value;
-                onChange();
+    function _wireControls(sections, self, lang) {
+        var t = _labels[lang];
+        var sortBtn = sections.querySelector('#jux-progress-sort-btn');
+        if (sortBtn && window.JuxUI) {
+            sortBtn.addEventListener('click', function () {
+                window.JuxUI.openSortDialog({
+                    title: t.sortDialogTitle,
+                    sortOptions: _sortOptions(t),
+                    currentSortBy: self.state.sortBy,
+                    currentSortOrder: self.state.sortOrder,
+                    onChange: function (sortBy, sortOrder) {
+                        self.state.sortBy = sortBy;
+                        self.state.sortOrder = sortOrder;
+                        self.render();
+                    }
+                });
             });
         }
     }
 
-    function _renderItems(sections, result, lang) {
-        var itemsContainer = sections.querySelector('.jux-progress-items');
-        var emptyEl = sections.querySelector('.jux-progress-empty');
-        if (!itemsContainer || !emptyEl) {
+    function _renderItems(itemsContainer, result, lang) {
+        if (!itemsContainer) {
             return;
         }
 
         var rows = (result && result.Items) || [];
         if (rows.length === 0) {
-            itemsContainer.innerHTML = '';
-            emptyEl.style.display = '';
+            if (window.JuxUI) {
+                window.JuxUI.showEmpty(itemsContainer, {
+                    icon: 'movie_filter',
+                    title: _labels[lang].empty,
+                    subtitle: _labels[lang].emptySubtitle
+                });
+            } else {
+                itemsContainer.innerHTML = '';
+            }
             return;
         }
-
-        emptyEl.style.display = 'none';
 
         var api = window.JellyfinAPI;
         if (!api || !api.cardBuilder) {
@@ -167,10 +203,10 @@
         });
     }
 
-    // Adds a small progress line ("3/10 episodes", "Last: S01E04 - Name") and a "mark as watched"
-    // button under each card. cardBuilder only knows about the BaseItemDto -- it has no notion of our
-    // extra progress fields -- so this walks the freshly-rendered cards and matches each back to its
-    // row by item id.
+    // Adds a visual progress bar, a progress line ("3/10 episodes", "Last: S01E04 - Name"), and a
+    // "mark as watched" button under each card. cardBuilder only knows about the BaseItemDto -- it has
+    // no notion of our extra progress fields -- so this walks the freshly-rendered cards and matches
+    // each back to its row by item id.
     function _decorateCards(container, rows, lang) {
         var t = _labels[lang];
         var byId = {};
@@ -185,8 +221,10 @@
 
             var info = document.createElement('div');
             info.className = 'jux-progress-info';
-            info.style.padding = '0.2em 0.5em';
-            info.style.fontSize = '0.85em';
+
+            if (window.JuxUI) {
+                info.innerHTML = window.JuxUI.buildProgressBar(row.WatchedEpisodes, row.TotalEpisodes);
+            }
 
             var countsLine = document.createElement('div');
             countsLine.textContent = _formatTemplate(t.episodesWatched, { watched: row.WatchedEpisodes, total: row.TotalEpisodes });
@@ -269,8 +307,9 @@
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
             _escHtml: _escHtml,
-            _option: _option,
-            _buildControlsHtml: _buildControlsHtml,
+            _sortOptions: _sortOptions,
+            _labelFor: _labelFor,
+            _buildShellHtml: _buildShellHtml,
             _formatEpisodeCode: _formatEpisodeCode,
             _formatTemplate: _formatTemplate
         };
