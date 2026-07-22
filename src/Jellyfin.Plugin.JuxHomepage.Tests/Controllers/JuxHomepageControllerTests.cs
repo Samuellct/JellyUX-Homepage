@@ -1,6 +1,8 @@
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Controllers;
+using Jellyfin.Plugin.JuxHomepage.Library;
+using Jellyfin.Plugin.JuxHomepage.Library.Models;
 using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
@@ -150,6 +152,79 @@ public sealed class JuxHomepageControllerTests
         Assert.Equal(Enum.GetNames<WidgetCategory>(), meta.WidgetCategories);
     }
 
+    [Fact]
+    public void GetCollectionsForItem_ReturnsRefsFromCache()
+    {
+        var itemId = Guid.NewGuid();
+        var refs = new List<CollectionRef>
+        {
+            new() { CollectionId = Guid.NewGuid(), CollectionName = "Trilogy" }
+        };
+
+        var cacheMock = new Mock<ICollectionsIndexCacheService>();
+        cacheMock.Setup(c => c.IsStale()).Returns(false);
+        cacheMock.Setup(c => c.GetCollectionsFor(itemId)).Returns(refs);
+
+        var controller = BuildController(collectionsIndexCacheServiceMock: cacheMock);
+
+        var result = controller.GetCollectionsForItem(itemId);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Same(refs, ok.Value);
+        cacheMock.Verify(c => c.TryAcquireRefreshLock(), Times.Never);
+    }
+
+    [Fact]
+    public void GetCollectionsForItem_EmptyWhenNoMembership()
+    {
+        var cacheMock = new Mock<ICollectionsIndexCacheService>();
+        cacheMock.Setup(c => c.IsStale()).Returns(false);
+        cacheMock.Setup(c => c.GetCollectionsFor(It.IsAny<Guid>())).Returns([]);
+
+        var controller = BuildController(collectionsIndexCacheServiceMock: cacheMock);
+
+        var result = controller.GetCollectionsForItem(Guid.NewGuid());
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<CollectionRef>>(ok.Value));
+    }
+
+    [Fact]
+    public void GetCollectionsForItem_StaleIndex_AttemptsBackgroundRefresh()
+    {
+        var cacheMock = new Mock<ICollectionsIndexCacheService>();
+        cacheMock.Setup(c => c.IsStale()).Returns(true);
+        cacheMock.Setup(c => c.TryAcquireRefreshLock()).Returns(true);
+        cacheMock.Setup(c => c.RunRefreshLockedAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        cacheMock.Setup(c => c.GetCollectionsFor(It.IsAny<Guid>())).Returns([]);
+
+        var controller = BuildController(collectionsIndexCacheServiceMock: cacheMock);
+
+        var result = controller.GetCollectionsForItem(Guid.NewGuid());
+
+        // The background refresh is fire-and-forget (Task.Run) -- what matters here is that the
+        // endpoint never blocks on it and still returns the current (possibly stale) data immediately.
+        Assert.IsType<OkObjectResult>(result.Result);
+        cacheMock.Verify(c => c.TryAcquireRefreshLock(), Times.Once);
+    }
+
+    [Fact]
+    public void GetCollectionsForItem_StaleButLockHeld_DoesNotStartSecondRefresh()
+    {
+        var cacheMock = new Mock<ICollectionsIndexCacheService>();
+        cacheMock.Setup(c => c.IsStale()).Returns(true);
+        cacheMock.Setup(c => c.TryAcquireRefreshLock()).Returns(false);
+        cacheMock.Setup(c => c.GetCollectionsFor(It.IsAny<Guid>())).Returns([]);
+
+        var controller = BuildController(collectionsIndexCacheServiceMock: cacheMock);
+
+        var result = controller.GetCollectionsForItem(Guid.NewGuid());
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        cacheMock.Verify(c => c.TryAcquireRefreshLock(), Times.Once);
+        cacheMock.Verify(c => c.RunRefreshLockedAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -163,6 +238,7 @@ public sealed class JuxHomepageControllerTests
         Mock<ISeriesProgressViewService>? seriesProgressViewServiceMock = null,
         Mock<IMovieHistoryViewService>? movieHistoryViewServiceMock = null,
         Mock<IStatisticsService>? statisticsServiceMock = null,
+        Mock<ICollectionsIndexCacheService>? collectionsIndexCacheServiceMock = null,
         ILogger<JuxHomepageController>? logger = null)
     {
         var registry = new WidgetRegistry();
@@ -191,6 +267,7 @@ public sealed class JuxHomepageControllerTests
             (seriesProgressViewServiceMock ?? new Mock<ISeriesProgressViewService>()).Object,
             (movieHistoryViewServiceMock ?? new Mock<IMovieHistoryViewService>()).Object,
             (statisticsServiceMock ?? new Mock<IStatisticsService>()).Object,
+            (collectionsIndexCacheServiceMock ?? new Mock<ICollectionsIndexCacheService>()).Object,
             Mock.Of<IAuthorizationContext>(),
             logger ?? NullLogger<JuxHomepageController>.Instance);
     }

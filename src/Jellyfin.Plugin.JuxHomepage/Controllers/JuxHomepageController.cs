@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Reflection;
 using Jellyfin.Plugin.JuxHomepage.Configuration;
+using Jellyfin.Plugin.JuxHomepage.Library;
+using Jellyfin.Plugin.JuxHomepage.Library.Models;
 using Jellyfin.Plugin.JuxHomepage.Localization;
 using Jellyfin.Plugin.JuxHomepage.Rewards;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
@@ -41,6 +43,7 @@ public class JuxHomepageController : ControllerBase
     private readonly ISeriesProgressViewService _seriesProgressViewService;
     private readonly IMovieHistoryViewService _movieHistoryViewService;
     private readonly IStatisticsService _statisticsService;
+    private readonly ICollectionsIndexCacheService _collectionsIndexCacheService;
     private readonly IAuthorizationContext _authContext;
     private readonly ILogger<JuxHomepageController> _logger;
 
@@ -59,6 +62,7 @@ public class JuxHomepageController : ControllerBase
     /// <param name="seriesProgressViewService">Series Progress view service.</param>
     /// <param name="movieHistoryViewService">Movie History view service.</param>
     /// <param name="statisticsService">Watch-history statistics service.</param>
+    /// <param name="collectionsIndexCacheService">Collections reverse index cache service.</param>
     /// <param name="authContext">Jellyfin request authorization context.</param>
     /// <param name="logger">Logger.</param>
     public JuxHomepageController(
@@ -74,6 +78,7 @@ public class JuxHomepageController : ControllerBase
         ISeriesProgressViewService seriesProgressViewService,
         IMovieHistoryViewService movieHistoryViewService,
         IStatisticsService statisticsService,
+        ICollectionsIndexCacheService collectionsIndexCacheService,
         IAuthorizationContext authContext,
         ILogger<JuxHomepageController> logger)
     {
@@ -89,6 +94,7 @@ public class JuxHomepageController : ControllerBase
         _seriesProgressViewService = seriesProgressViewService;
         _movieHistoryViewService = movieHistoryViewService;
         _statisticsService = statisticsService;
+        _collectionsIndexCacheService = collectionsIndexCacheService;
         _authContext = authContext;
         _logger = logger;
     }
@@ -309,6 +315,28 @@ public class JuxHomepageController : ControllerBase
     public IActionResult GetSeriesFlattenScript()
     {
         var stream = GetEmbeddedResource("jux-series-flatten.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
+    /// Serves the JellyUX "Included In" collections + collection sorting script (TODO_V3.md Phase 7.2).
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-collections.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetCollectionsScript()
+    {
+        var stream = GetEmbeddedResource("jux-collections.js");
         if (stream is null)
         {
             return NotFound();
@@ -621,6 +649,41 @@ public class JuxHomepageController : ControllerBase
         }
 
         return Ok(_statisticsService.GetStatistics(userId));
+    }
+
+    /// <summary>
+    /// Returns the collections (BoxSets) a single item belongs to (TODO_V3.md Phase 7.2, "Included In"
+    /// on the item detail page). Not user-scoped -- collection membership is the same for everyone, so
+    /// unlike the endpoints above this only requires <see cref="AuthorizeAttribute"/>, no per-user IDOR
+    /// check. The underlying <see cref="ICollectionsIndexCacheService"/> (built in Phase 4.3, refreshed
+    /// daily by WatchlistDailyRefreshTask) already existed before this endpoint -- this is only a thin
+    /// read. If the index is stale, a best-effort background refresh is kicked off (non-blocking, using
+    /// the service's own refresh lock) so a fresh install doesn't stay empty until the next scheduled
+    /// run; the current (possibly empty) cached data is always returned immediately regardless.
+    /// </summary>
+    /// <param name="itemId">The item to look up.</param>
+    /// <returns>Every collection this item belongs to, or an empty list if none.</returns>
+    [HttpGet("Collections/IncludedIn/{itemId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<IReadOnlyList<CollectionRef>> GetCollectionsForItem([FromRoute] Guid itemId)
+    {
+        if (_collectionsIndexCacheService.IsStale() && _collectionsIndexCacheService.TryAcquireRefreshLock())
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _collectionsIndexCacheService.RunRefreshLockedAsync(CancellationToken.None).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Background collections index refresh failed.");
+                }
+            });
+        }
+
+        return Ok(_collectionsIndexCacheService.GetCollectionsFor(itemId));
     }
 
     // -------------------------------------------------------------------------
