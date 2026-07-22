@@ -1,3 +1,9 @@
+## [2.4.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.4.0...v2.4.1) (2026-07-22)
+
+### Bug Fixes
+
+* repair broken native-style sort dialog and center empty-state messages ([6cdc1aa](https://github.com/Samuellct/JellyUX-Homepage/commit/6cdc1aaf53def5e3cf19f914fc0027cb55c97139))
+
 ## [2.4.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.3.2...v2.4.0) (2026-07-22)
 
 ### Features
