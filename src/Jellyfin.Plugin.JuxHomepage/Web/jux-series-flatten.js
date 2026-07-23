@@ -179,7 +179,10 @@
             // relative to every other section on this page.
             '<div class="verticalSection detailVerticalSection jux-flattened-season-section">' +
             '<h2 class="sectionTitle sectionTitle-cards padded-right">' + _escHtml(title) + '</h2>' +
-            '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">' +
+            // no-padding confirmed live as required: without it the scroller applies its own default
+            // left padding on top of the outer section's padding, misaligning the cards (but not the
+            // title, which sits outside the scroller) ~55px right of every other section on the page.
+            '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale no-padding" data-centerfocus="true">' +
             '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x"></div>' +
             '</div>' +
             '</div>';
