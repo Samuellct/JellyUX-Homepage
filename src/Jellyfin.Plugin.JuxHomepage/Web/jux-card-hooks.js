@@ -458,10 +458,19 @@
         return startIndex < totalRecordCount;
     }
 
-    function _activeLibraryTab() {
-        var moviesTab = document.querySelector('#moviesTab.is-active');
+    function _activeLibraryTab(activePage) {
+        // Scoped to the current .libraryPage, not the whole document: Jellyfin Web's page DOM cache
+        // (data-dom-cache="true" on .libraryPage, confirmed live on jellyux-test) can leave a stale,
+        // detached #moviesTab.is-active element behind elsewhere in the document after switching
+        // sub-tabs (Movies/Suggestions/Favorites/...). A document-wide querySelector deterministically
+        // returns the FIRST match in document order, which was that stale zero-size element rather
+        // than the real visible tab -- cards and the scroll sentinel were then appended to a node the
+        // user could never see, while native pagination (in the real, untouched tab) stayed visible.
+        // Confirmed live: exactly one #moviesTab exists inside .libraryPage:not(.hide) at any time.
+        if (!activePage) { return null; }
+        var moviesTab = activePage.querySelector('#moviesTab.is-active');
         if (moviesTab) { return { tab: moviesTab, mediaType: 'movies', includeItemTypes: 'Movie' }; }
-        var seriesTab = document.querySelector('#seriesTab.is-active');
+        var seriesTab = activePage.querySelector('#seriesTab.is-active');
         if (seriesTab) { return { tab: seriesTab, mediaType: 'series', includeItemTypes: 'Series' }; }
         return null;
     }
@@ -484,7 +493,8 @@
             return;
         }
 
-        var active = _activeLibraryTab();
+        var activePage = document.querySelector('.libraryPage:not(.hide)');
+        var active = _activeLibraryTab(activePage);
         if (!active || active.mediaType !== mediaType) {
             return;
         }
@@ -496,12 +506,54 @@
             return;
         }
 
-        var parentIdMatch = /[?&]topParentId=([a-f0-9-]+)/i.exec(location.hash);
-        var parentId = parentIdMatch ? parentIdMatch[1] : null;
-        if (!parentId || !window.ApiClient) {
+        if (!window.ApiClient) {
             return;
         }
 
+        var parentIdMatch = /[?&]topParentId=([a-f0-9-]+)/i.exec(location.hash);
+        if (parentIdMatch) {
+            _activateInfiniteScroll(mediaType, active, container, parentIdMatch[1]);
+            return;
+        }
+
+        // Confirmed live on jellyux-test: reaching this same library route via a Home section title
+        // ("Recently Added Movies >") or the left nav's "Films" link can land on #/movies with no
+        // topParentId in the hash at all (unlike a direct topParentId-bearing URL) -- Jellyfin Web's
+        // own native rendering doesn't need it since it resolves the library from the user's views
+        // internally. Fall back to the same resolution here rather than silently never activating.
+        _resolveLibraryViewIds().then(function (ids) {
+            var resolvedId = ids && ids[mediaType];
+            if (!resolvedId) {
+                return;
+            }
+
+            // Re-validate against the current page state -- this resolves asynchronously, and the
+            // user may have navigated away, switched tabs, or another mutation may have already armed
+            // infinite scroll for this exact tab in the meantime.
+            if (_infiniteScrollMediaType(location.hash) !== mediaType) {
+                return;
+            }
+
+            var freshPage = document.querySelector('.libraryPage:not(.hide)');
+            var freshActive = _activeLibraryTab(freshPage);
+            if (!freshActive || freshActive.mediaType !== mediaType) {
+                return;
+            }
+
+            var freshContainer = freshActive.tab.querySelector('.itemsContainer');
+            if (!freshContainer || freshContainer.children.length === 0) {
+                return;
+            }
+
+            if (_libraryScroll && _libraryScroll.mediaType === mediaType && document.body.contains(_libraryScroll.container)) {
+                return;
+            }
+
+            _activateInfiniteScroll(mediaType, freshActive, freshContainer, resolvedId);
+        });
+    }
+
+    function _activateInfiniteScroll(mediaType, active, container, parentId) {
         // Checked here, not only inside _loadMoreLibraryItems: cardBuilder is only populated after a
         // Home visit this session (see jux-series-flatten.js's header comment on the same fallback).
         // A library page reached first (direct link/bookmark/typed URL, matching the exact navigation
@@ -517,10 +569,14 @@
 
         _resetLibraryInfiniteScroll();
 
-        var paging = active.tab.querySelector('.paging');
-        if (paging) {
+        // Confirmed live on jellyux-test: a library tab can contain several .paging elements (one per
+        // alpha/genre sub-view Jellyfin Web pre-renders), not just one -- hiding only the first left a
+        // stale "1-100 of 143" bar with a native "next page" arrow visible underneath the infinitely
+        // scrolling grid, even though every item had already loaded.
+        var pagingElements = active.tab.querySelectorAll('.paging');
+        Array.prototype.forEach.call(pagingElements, function (paging) {
             paging.style.display = 'none';
-        }
+        });
 
         var sentinel = document.createElement('div');
         sentinel.className = 'jux-infinite-sentinel';
@@ -551,6 +607,38 @@
             loading: false,
             finished: false
         };
+    }
+
+    var _libraryViewIds = null;
+    var _libraryViewIdsPromise = null;
+
+    function _resolveLibraryViewIds() {
+        if (_libraryViewIds) {
+            return Promise.resolve(_libraryViewIds);
+        }
+        if (_libraryViewIdsPromise) {
+            return _libraryViewIdsPromise;
+        }
+        if (!window.ApiClient) {
+            return Promise.resolve(null);
+        }
+
+        _libraryViewIdsPromise = window.ApiClient.getUserViews().then(function (result) {
+            var ids = {};
+            var views = (result && result.Items) || [];
+            views.forEach(function (view) {
+                if (view.CollectionType === 'movies' && !ids.movies) { ids.movies = view.Id; }
+                if (view.CollectionType === 'tvshows' && !ids.series) { ids.series = view.Id; }
+            });
+            _libraryViewIds = ids;
+            return ids;
+        }).catch(function (err) {
+            console.error('[JellyUX] Failed to resolve library view ids:', err);
+            _libraryViewIdsPromise = null;
+            return null;
+        });
+
+        return _libraryViewIdsPromise;
     }
 
     function _resetLibraryInfiniteScroll() {
