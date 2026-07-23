@@ -175,7 +175,11 @@
                     var itemsContainer = section.querySelector('.itemsContainer');
                     itemsContainer.innerHTML = api.cardBuilder.getCardsHtml({
                         items: boxSets,
-                        shape: api.getPortraitShape(false),
+                        // true ("overflow" shape) matches the larger card size native horizontal
+                        // scroller sections (e.g. More Like This) use on this page -- confirmed live
+                        // that `false` here rendered noticeably smaller cards than every native
+                        // section around it (portraitCard vs overflowPortraitCard).
+                        shape: api.getPortraitShape(true),
                         showTitle: true,
                         overlayText: false,
                         centerText: true,
@@ -207,10 +211,13 @@
     function _buildCollectionsSectionSkeleton(title) {
         var wrapper = document.createElement('div');
         wrapper.innerHTML =
-            '<div class="verticalSection jux-collections-section">' +
-            '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">' +
-            '<h2 class="sectionTitle sectionTitle-cards">' + _escHtml(title) + '</h2>' +
-            '</div>' +
+            // Confirmed live on jellyux-test: detail-page sections (Next Up, More Like This) use a
+            // bare <h2 class="sectionTitle sectionTitle-cards padded-right"> with no wrapping
+            // container -- the sectionTitleContainer/padded-left combo used for home-page widgets
+            // (jux-homepage.js) doesn't apply here and was adding ~60px of unwanted left indentation
+            // relative to every other section on this page.
+            '<div class="verticalSection detailVerticalSection jux-collections-section">' +
+            '<h2 class="sectionTitle sectionTitle-cards padded-right">' + _escHtml(title) + '</h2>' +
             '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">' +
             '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x"></div>' +
             '</div>' +

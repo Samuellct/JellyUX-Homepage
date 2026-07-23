@@ -172,10 +172,13 @@
     function _buildFlattenedSectionSkeleton(title) {
         var wrapper = document.createElement('div');
         wrapper.innerHTML =
-            '<div class="verticalSection jux-flattened-season-section">' +
-            '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">' +
-            '<h2 class="sectionTitle sectionTitle-cards">' + _escHtml(title) + '</h2>' +
-            '</div>' +
+            // Confirmed live on jellyux-test: detail-page sections (Next Up, More Like This) use a
+            // bare <h2 class="sectionTitle sectionTitle-cards padded-right"> with no wrapping
+            // container -- the sectionTitleContainer/padded-left combo used for home-page widgets
+            // (jux-homepage.js) doesn't apply here and was adding ~60px of unwanted left indentation
+            // relative to every other section on this page.
+            '<div class="verticalSection detailVerticalSection jux-flattened-season-section">' +
+            '<h2 class="sectionTitle sectionTitle-cards padded-right">' + _escHtml(title) + '</h2>' +
             '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">' +
             '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x"></div>' +
             '</div>' +
