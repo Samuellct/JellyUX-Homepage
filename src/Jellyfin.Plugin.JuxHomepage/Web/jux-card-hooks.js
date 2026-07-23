@@ -514,11 +514,16 @@
         sentinel.style.height = '1px';
         container.parentNode.appendChild(sentinel);
 
+        // Confirmed live on jellyux-test: with the default 100-item first page, a small rootMargin
+        // (400px) meant the sentinel only entered view after scrolling almost all the way past those
+        // 100 cards -- functionally working, but reading as "stuck"/broken well before that point. A
+        // much larger margin loads the next batch proactively, long before the user reaches the
+        // literal bottom, which is what makes scrolling actually feel infinite.
         var observer = new IntersectionObserver(function (entries) {
             if (entries[0].isIntersecting) {
                 _loadMoreLibraryItems();
             }
-        }, { rootMargin: '400px' });
+        }, { rootMargin: '2000px' });
         observer.observe(sentinel);
 
         _libraryScroll = {
