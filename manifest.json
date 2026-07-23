@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.5.1.0",
+                "changelog": "### Bug Fixes\n\n* match native section sizing for flattened seasons and Included In ([a6ea5a8](https://github.com/Samuellct/JellyUX-Homepage/commit/a6ea5a835a488af6fa9bc0d71a93c10060d29ac7))\n* trigger library infinite scroll well before the literal page bottom ([50d7f89](https://github.com/Samuellct/JellyUX-Homepage/commit/50d7f89389dac99e2828978ec85e374762c2354b))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.5.1/jellyux-homepage_2.5.1.0.zip",
+                "checksum": "a9deb0adfd6e5b594fcd5ab1d24f438a",
+                "timestamp": "2026-07-23T15:04:27Z"
+            },
+            {
                 "version": "2.5.0.0",
                 "changelog": "### Features\n\n* add infinite scroll to library pages and fix eager lazy-load fetch ([c4e5f35](https://github.com/Samuellct/JellyUX-Homepage/commit/c4e5f35533de504f0694457c72bc9b2e28bb1912))\n* flatten single-season shows and show episodes on the series page ([908fc7d](https://github.com/Samuellct/JellyUX-Homepage/commit/908fc7dc8340171eb471a1453c5dc7ad42fa0155)), closes [#listChildrenCollapsible](https://github.com/Samuellct/JellyUX-Homepage/issues/listChildrenCollapsible) [#childrenCollapsible](https://github.com/Samuellct/JellyUX-Homepage/issues/childrenCollapsible)\n* show parent collections on the details page and add collection sorting ([b62ee90](https://github.com/Samuellct/JellyUX-Homepage/commit/b62ee908703e3a1c49f9909eb584ed940be9b09b))\n\n### Bug Fixes\n\n* prevent duplicate sections and a resort race in Phase 7.1/7.2 scripts ([48123b7](https://github.com/Samuellct/JellyUX-Homepage/commit/48123b7e0a79a53535cee6b198f8ca76e75a8071))\n* resolve BoxSet member resolution in the collections index ([0f3fe8f](https://github.com/Samuellct/JellyUX-Homepage/commit/0f3fe8ff60e5ee8728e42cc7f28457058baa6e5d))",
                 "targetAbi": "10.11.0.0",

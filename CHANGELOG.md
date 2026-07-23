@@ -1,3 +1,10 @@
+## [2.5.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.0...v2.5.1) (2026-07-23)
+
+### Bug Fixes
+
+* match native section sizing for flattened seasons and Included In ([a6ea5a8](https://github.com/Samuellct/JellyUX-Homepage/commit/a6ea5a835a488af6fa9bc0d71a93c10060d29ac7))
+* trigger library infinite scroll well before the literal page bottom ([50d7f89](https://github.com/Samuellct/JellyUX-Homepage/commit/50d7f89389dac99e2828978ec85e374762c2354b))
+
 ## [2.5.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.4.1...v2.5.0) (2026-07-22)
 
 ### Features
