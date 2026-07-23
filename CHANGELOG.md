@@ -1,3 +1,10 @@
+## [2.5.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.1...v2.5.2) (2026-07-23)
+
+### Bug Fixes
+
+* align injected scroller cards with native sections via no-padding ([c45680c](https://github.com/Samuellct/JellyUX-Homepage/commit/c45680c130ab38f38376c82749ed06ee8419bc08))
+* don't hide native pagination on library pages until cardBuilder is ready ([5cb56d7](https://github.com/Samuellct/JellyUX-Homepage/commit/5cb56d79971cad21b0345b1ecfc1139496472c36))
+
 ## [2.5.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.0...v2.5.1) (2026-07-23)
 
 ### Bug Fixes
