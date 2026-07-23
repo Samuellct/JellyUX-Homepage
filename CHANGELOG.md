@@ -1,3 +1,10 @@
+## [2.5.3](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.2...v2.5.3) (2026-07-23)
+
+### Bug Fixes
+
+* correct library infinite scroll after in-app navigation to the page ([c7247f7](https://github.com/Samuellct/JellyUX-Homepage/commit/c7247f7c0a82376baea01dd25c948264f198cf43))
+* stamp the real release version onto the compiled assembly ([0858533](https://github.com/Samuellct/JellyUX-Homepage/commit/08585331b723e7cb36622dd1612674ae5aed4f01))
+
 ## [2.5.2](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.1...v2.5.2) (2026-07-23)
 
 ### Bug Fixes
