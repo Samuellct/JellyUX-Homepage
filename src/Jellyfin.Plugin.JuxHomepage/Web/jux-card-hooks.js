@@ -502,6 +502,19 @@
             return;
         }
 
+        // Checked here, not only inside _loadMoreLibraryItems: cardBuilder is only populated after a
+        // Home visit this session (see jux-series-flatten.js's header comment on the same fallback).
+        // A library page reached first (direct link/bookmark/typed URL, matching the exact navigation
+        // pattern this project must always support gracefully) would otherwise still hide the native
+        // .paging element below, then permanently fail every load attempt once the sentinel is
+        // reached -- leaving the user stuck with no pagination and no infinite scroll. Deferring here
+        // instead leaves native pagination fully intact; the body MutationObserver retries this
+        // function on every mutation, so it activates as soon as cardBuilder becomes available.
+        var api = window.JellyfinAPI;
+        if (!api || !api.cardBuilder) {
+            return;
+        }
+
         _resetLibraryInfiniteScroll();
 
         var paging = active.tab.querySelector('.paging');
