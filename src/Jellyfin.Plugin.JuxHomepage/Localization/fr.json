@@ -56,6 +56,12 @@
   "admin.addsection.type.placeholder": "-- choisir un type --",
   "admin.addsection.add": "Ajouter",
   "admin.addsection.error": "Veuillez choisir un type de section avant d'ajouter.",
+  "admin.menuShortcuts.title": "Raccourcis de menu",
+  "admin.menuShortcuts.help": "Ajoute un raccourci direct vers ces onglets JellyUX dans le menu latéral, visible pour tous les utilisateurs, pour ne pas avoir à passer par l'accueil et cliquer sur l'onglet d'abord.",
+  "admin.menuShortcuts.watchlist": "Watchlist",
+  "admin.menuShortcuts.progress": "Progression",
+  "admin.menuShortcuts.history": "Historique",
+  "admin.menuShortcuts.statistics": "Statistiques",
   "admin.save": "Sauvegarder",
 
   "admin.widgets.empty": "Aucun widget configuré.",

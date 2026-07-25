@@ -153,6 +153,20 @@ public sealed class JuxHomepageControllerTests
     }
 
     [Fact]
+    public void GetMenuShortcuts_NoPluginInstance_ReturnsEmptyList()
+    {
+        // Mirrors GetMeta_ReturnsWidgetCategoryNamesInEnumOrder's own constraint: Plugin.Instance is
+        // a private-setter singleton only assigned by the real Plugin constructor, so it is null in
+        // this unit test host. This test only confirms the graceful `?? []` fallback.
+        var controller = BuildController();
+
+        var result = controller.GetMenuShortcuts();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<string>>(ok.Value));
+    }
+
+    [Fact]
     public void GetCollectionsForItem_ReturnsRefsFromCache()
     {
         var itemId = Guid.NewGuid();
