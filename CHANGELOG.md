@@ -1,3 +1,10 @@
+## [2.6.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.3...v2.6.0) (2026-07-25)
+
+### Features
+
+* add breadcrumb navigation ([104ff7f](https://github.com/Samuellct/JellyUX-Homepage/commit/104ff7f9c08e456952e9f75896a0f56863ef3e8e)), closes [#moviesTab](https://github.com/Samuellct/JellyUX-Homepage/issues/moviesTab)
+* add JellyUX tab shortcuts to the navigation drawer ([b21259b](https://github.com/Samuellct/JellyUX-Homepage/commit/b21259b4c91fdaa56e7a04fec354389b169429b6))
+
 ## [2.5.3](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.2...v2.5.3) (2026-07-23)
 
 ### Bug Fixes

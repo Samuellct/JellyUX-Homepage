@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.6.0.0",
+                "changelog": "### Features\n\n* add breadcrumb navigation ([104ff7f](https://github.com/Samuellct/JellyUX-Homepage/commit/104ff7f9c08e456952e9f75896a0f56863ef3e8e)), closes [#moviesTab](https://github.com/Samuellct/JellyUX-Homepage/issues/moviesTab)\n* add JellyUX tab shortcuts to the navigation drawer ([b21259b](https://github.com/Samuellct/JellyUX-Homepage/commit/b21259b4c91fdaa56e7a04fec354389b169429b6))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.6.0/jellyux-homepage_2.6.0.0.zip",
+                "checksum": "d518240e43672f243eb84a666bfeb5bb",
+                "timestamp": "2026-07-25T20:10:22Z"
+            },
+            {
                 "version": "2.5.3.0",
                 "changelog": "### Bug Fixes\n\n* correct library infinite scroll after in-app navigation to the page ([c7247f7](https://github.com/Samuellct/JellyUX-Homepage/commit/c7247f7c0a82376baea01dd25c948264f198cf43))\n* stamp the real release version onto the compiled assembly ([0858533](https://github.com/Samuellct/JellyUX-Homepage/commit/08585331b723e7cb36622dd1612674ae5aed4f01))",
                 "targetAbi": "10.11.0.0",
