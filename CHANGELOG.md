@@ -1,3 +1,9 @@
+## [2.6.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.6.0...v2.6.1) (2026-07-25)
+
+### Bug Fixes
+
+* remove unreliable JellyUX tab shortcuts feature ([7b4ca82](https://github.com/Samuellct/JellyUX-Homepage/commit/7b4ca820304416a72184d3d882b3b05cb29a639f))
+
 ## [2.6.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.5.3...v2.6.0) (2026-07-25)
 
 ### Features

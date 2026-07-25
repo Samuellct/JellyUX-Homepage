@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.6.1.0",
+                "changelog": "### Bug Fixes\n\n* remove unreliable JellyUX tab shortcuts feature ([7b4ca82](https://github.com/Samuellct/JellyUX-Homepage/commit/7b4ca820304416a72184d3d882b3b05cb29a639f))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.6.1/jellyux-homepage_2.6.1.0.zip",
+                "checksum": "e9af8acf0a34735770e5e273da60ab87",
+                "timestamp": "2026-07-25T22:16:06Z"
+            },
+            {
                 "version": "2.6.0.0",
                 "changelog": "### Features\n\n* add breadcrumb navigation ([104ff7f](https://github.com/Samuellct/JellyUX-Homepage/commit/104ff7f9c08e456952e9f75896a0f56863ef3e8e)), closes [#moviesTab](https://github.com/Samuellct/JellyUX-Homepage/issues/moviesTab)\n* add JellyUX tab shortcuts to the navigation drawer ([b21259b](https://github.com/Samuellct/JellyUX-Homepage/commit/b21259b4c91fdaa56e7a04fec354389b169429b6))",
                 "targetAbi": "10.11.0.0",
