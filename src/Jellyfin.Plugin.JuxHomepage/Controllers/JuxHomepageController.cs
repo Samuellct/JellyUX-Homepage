@@ -369,28 +369,6 @@ public class JuxHomepageController : ControllerBase
     }
 
     /// <summary>
-    /// Serves the JellyUX menu tab shortcuts script (TODO_V3.md Phase 8.2).
-    /// Anonymous - loaded by a script tag injected into index.html.
-    /// </summary>
-    /// <returns>JavaScript file contents.</returns>
-    [HttpGet("jux-menu-links.js")]
-    [AllowAnonymous]
-    [Produces("application/javascript")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetMenuLinksScript()
-    {
-        var stream = GetEmbeddedResource("jux-menu-links.js");
-        if (stream is null)
-        {
-            return NotFound();
-        }
-
-        SetCacheHeaders(Response);
-        return File(stream, "application/javascript");
-    }
-
-    /// <summary>
     /// Serves the JellyUX Homepage CSS stylesheet.
     /// Anonymous - loaded by a link tag injected into index.html.
     /// </summary>
@@ -468,21 +446,6 @@ public class JuxHomepageController : ControllerBase
     {
         var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         return Ok(new PluginMeta(config.Enabled, config.StartupWarning, Enum.GetNames<WidgetCategory>()));
-    }
-
-    /// <summary>
-    /// Returns which JellyUX home-tab shortcuts (TODO_V3.md Phase 8.2) should appear in the left
-    /// navigation drawer. Any authenticated user can call this -- unlike <see cref="GetWidgets"/>,
-    /// these shortcuts are shown to every user, not just admins, so this deliberately does not
-    /// require <see cref="Policies.RequiresElevation"/>.
-    /// </summary>
-    /// <returns>The enabled tab ids, a subset of <see cref="Plugin.KnownMenuTabShortcutIds"/>.</returns>
-    [HttpGet("MenuShortcuts")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<IReadOnlyList<string>> GetMenuShortcuts()
-    {
-        return Ok(Plugin.Instance?.Configuration.MenuTabShortcuts ?? []);
     }
 
     // -------------------------------------------------------------------------

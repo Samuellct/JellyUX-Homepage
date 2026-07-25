@@ -98,44 +98,6 @@
             </div>
 
             <div class="verticalSection">
-                <h3 class="sectionTitle" data-i18n="admin.menuShortcuts.title">Menu Shortcuts</h3>
-                <p class="fieldDescription" data-i18n="admin.menuShortcuts.help">Add a direct shortcut to these JellyUX tabs in the left navigation drawer, shown to every user, so they don't need to visit Home and click the tab first.</p>
-
-                <label class="emby-checkbox-label">
-                    <input type="checkbox" id="chkMenuShortcutWatchlist" class="emby-checkbox jux-menushortcut-checkbox" data-tab-id="watchlist" />
-                    <span class="checkboxLabel" data-i18n="admin.menuShortcuts.watchlist">Watchlist</span>
-                    <span class="checkboxOutline">
-                        <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                        <span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>
-                    </span>
-                </label>
-                <label class="emby-checkbox-label">
-                    <input type="checkbox" id="chkMenuShortcutProgress" class="emby-checkbox jux-menushortcut-checkbox" data-tab-id="progress" />
-                    <span class="checkboxLabel" data-i18n="admin.menuShortcuts.progress">Progress</span>
-                    <span class="checkboxOutline">
-                        <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                        <span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>
-                    </span>
-                </label>
-                <label class="emby-checkbox-label">
-                    <input type="checkbox" id="chkMenuShortcutHistory" class="emby-checkbox jux-menushortcut-checkbox" data-tab-id="history" />
-                    <span class="checkboxLabel" data-i18n="admin.menuShortcuts.history">History</span>
-                    <span class="checkboxOutline">
-                        <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                        <span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>
-                    </span>
-                </label>
-                <label class="emby-checkbox-label">
-                    <input type="checkbox" id="chkMenuShortcutStatistics" class="emby-checkbox jux-menushortcut-checkbox" data-tab-id="statistics" />
-                    <span class="checkboxLabel" data-i18n="admin.menuShortcuts.statistics">Statistics</span>
-                    <span class="checkboxOutline">
-                        <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
-                        <span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span>
-                    </span>
-                </label>
-            </div>
-
-            <div class="verticalSection">
                 <button type="submit" class="emby-button raised button-submit block">
                     <span data-i18n="admin.save">Save</span>
                 </button>
@@ -913,26 +875,6 @@
                 });
             },
 
-            // -------------------------------------------------------------------------
-            // Menu Shortcuts (TODO_V3.md Phase 8.2) -- a fixed set of 4 checkboxes (one per JellyUX
-            // home tab), not a dynamic list -- so there is no add/remove/reorder machinery to build,
-            // unlike the Widgets editor above.
-            // -------------------------------------------------------------------------
-
-            applyMenuShortcutsToForm: function (enabledIds) {
-                document.querySelectorAll('.jux-menushortcut-checkbox').forEach(function (el) {
-                    el.checked = enabledIds.indexOf(el.getAttribute('data-tab-id')) !== -1;
-                });
-            },
-
-            readMenuShortcutsFromForm: function () {
-                var ids = [];
-                document.querySelectorAll('.jux-menushortcut-checkbox').forEach(function (el) {
-                    if (el.checked) { ids.push(el.getAttribute('data-tab-id')); }
-                });
-                return ids;
-            },
-
             populateAddSelect: function () {
                 var self = this;
                 var sel = document.getElementById('juxAddWidgetType');
@@ -1170,8 +1112,6 @@
                     self.populateAddSelect();
                     self.renderWidgets();
 
-                    self.applyMenuShortcutsToForm(self.state.config.MenuTabShortcuts || []);
-
                     Dashboard.hideLoadingMsg();
                 }).catch(function (err) {
                     console.error('[JellyUX Config] Load failed:', err);
@@ -1254,8 +1194,6 @@
                             ExtraParams: w.ExtraParams || []
                         };
                     });
-
-                    config.MenuTabShortcuts = self.readMenuShortcutsFromForm();
 
                     return ApiClient.updatePluginConfiguration(self.PLUGIN_ID, config).then(function (result) {
                         // Keep in-memory state honest with what was just actually persisted, so

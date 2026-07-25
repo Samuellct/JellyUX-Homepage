@@ -27,15 +27,6 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public WidgetConfig[] Widgets { get; set; } = [];
 
-    /// <summary>
-    /// Gets or sets which JellyUX home-screen tabs (TODO_V3.md Phase 6: Watchlist/Progress/History/
-    /// Statistics) get a direct shortcut in the left navigation drawer (TODO_V3.md Phase 8.2), so a
-    /// user can jump straight to one without visiting Home and clicking its tab first. Valid values
-    /// are the tab suffixes already used by <c>jux-tab-injector.js</c>/<c>TransformationPatches.cs</c>:
-    /// "watchlist", "progress", "history", "statistics". Global only -- there is no per-user override.
-    /// </summary>
-    public string[] MenuTabShortcuts { get; set; } = [];
-
     /// <summary>Gets or sets the API keys for external data sources.</summary>
     public ApiKeysConfig ApiKeys { get; set; } = new();
 

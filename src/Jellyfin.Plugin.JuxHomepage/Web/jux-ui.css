@@ -1,9 +1,9 @@
 /* JellyUX shared UI helpers — styles for window.JuxUI (Web/jux-ui.js).
  * TODO_V3.md Phase 6 bis: empty state, loading spinner, progress bar, stat tile, native sort dialog,
  * used by jux-watchlist.js/jux-progress.js/jux-history.js/jux-statistics.js.
- * TODO_V3.md Phase 8: breadcrumb navigation (jux-breadcrumb.js) and drawer menu links
- * (jux-menu-links.js) also style their small set of jux-prefixed classes here, rather than adding a
- * third CSS file, since neither feature has enough rules to warrant its own stylesheet.
+ * TODO_V3.md Phase 8.1: breadcrumb navigation (jux-breadcrumb.js) also styles its small set of
+ * jux-prefixed classes here, rather than adding a third CSS file, since it doesn't have enough
+ * rules to warrant its own stylesheet.
  * Only jux-prefixed classes are styled here (see jux-homepage.css's own convention).
  *
  * Accent color: live inspection of the jellyux-test container (Phase 6 bis verification) found
@@ -312,14 +312,4 @@
 .jux-breadcrumb-sep {
     margin: 0 0.4em;
     opacity: 0.5;
-}
-
-/* -------------------------------------------------------------------------
- * Custom menu links (left navigation drawer) -- TODO_V3.md Phase 8.2
- * ------------------------------------------------------------------------- */
-
-.jux-menu-links {
-    /* No layout overrides: .sidebarHeader and .navMenuOption below are native Jellyfin Web
-     * classes that already provide correct drawer spacing/typography -- matches the same
-     * "reuse native classes" convention already established for Phase 7's sections. */
 }

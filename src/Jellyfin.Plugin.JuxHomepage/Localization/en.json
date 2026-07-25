@@ -56,12 +56,6 @@
   "admin.addsection.type.placeholder": "-- choose a type --",
   "admin.addsection.add": "Add",
   "admin.addsection.error": "Please choose a section type before adding.",
-  "admin.menuShortcuts.title": "Menu Shortcuts",
-  "admin.menuShortcuts.help": "Add a direct shortcut to these JellyUX tabs in the left navigation drawer, shown to every user, so they don't need to visit Home and click the tab first.",
-  "admin.menuShortcuts.watchlist": "Watchlist",
-  "admin.menuShortcuts.progress": "Progress",
-  "admin.menuShortcuts.history": "History",
-  "admin.menuShortcuts.statistics": "Statistics",
   "admin.save": "Save",
 
   "admin.widgets.empty": "No widgets configured.",

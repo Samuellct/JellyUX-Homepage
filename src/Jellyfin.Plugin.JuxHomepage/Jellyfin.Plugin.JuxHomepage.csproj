@@ -31,7 +31,6 @@
     <EmbeddedResource Include="Web\jux-series-flatten.js" />
     <EmbeddedResource Include="Web\jux-collections.js" />
     <EmbeddedResource Include="Web\jux-breadcrumb.js" />
-    <EmbeddedResource Include="Web\jux-menu-links.js" />
     <EmbeddedResource Include="Web\jux-homepage.css" />
     <EmbeddedResource Include="Web\jux-loadsections-inject.js" />
     <EmbeddedResource Include="Web\config.html" />

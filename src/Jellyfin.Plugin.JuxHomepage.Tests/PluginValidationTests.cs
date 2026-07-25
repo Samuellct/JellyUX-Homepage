@@ -106,12 +106,12 @@ public sealed class PluginValidationTests
     [Fact]
     public void MigrateConfiguration_NoOpForCurrentSchemaVersion_DoesNotThrow()
     {
-        var config = new PluginConfiguration { SchemaVersion = 4 };
+        var config = new PluginConfiguration { SchemaVersion = 5 };
 
         var exception = Record.Exception(() => Plugin.MigrateConfiguration(config));
 
         Assert.Null(exception);
-        Assert.Equal(4, config.SchemaVersion);
+        Assert.Equal(5, config.SchemaVersion);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class PluginValidationTests
         // Starting below both the V1->V2 (fan-out) and V2->V3 (append Watchlist widget) thresholds,
         // both migrations apply in order -- the fan-out first (3 rows), then the Watchlist widget
         // row appended on top (4 rows total).
-        Assert.Equal(4, config.SchemaVersion);
+        Assert.Equal(5, config.SchemaVersion);
         Assert.Equal(4, config.Widgets.Length);
 
         Assert.Equal("jux.personalized.favorite-genre", config.Widgets[0].WidgetType);
@@ -172,7 +172,7 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(4, config.SchemaVersion);
+        Assert.Equal(5, config.SchemaVersion);
 
         // The original row passes through the V1->V2 fan-out untouched (not Personalized), then the
         // V2->V3 migration appends the new native Watchlist widget row alongside it.
@@ -193,7 +193,7 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(4, config.SchemaVersion);
+        Assert.Equal(5, config.SchemaVersion);
         Assert.Equal(2, config.Widgets.Length);
         var watchlistWidget = config.Widgets.Single(w => w.WidgetType == "jux.native.watchlist");
         Assert.True(watchlistWidget.Enabled);
@@ -215,7 +215,7 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(4, config.SchemaVersion);
+        Assert.Equal(5, config.SchemaVersion);
         Assert.Equal(2, config.Widgets.Length);
         var watchlistWidget = config.Widgets.Single(w => w.WidgetType == "jux.native.watchlist");
 
@@ -225,28 +225,4 @@ public sealed class PluginValidationTests
         Assert.False(watchlistWidget.Enabled);
     }
 
-    [Fact]
-    public void MigrateConfiguration_V3ToV4_DefaultsMenuTabShortcutsToEmptyArray()
-    {
-        var config = new PluginConfiguration { SchemaVersion = 3, MenuTabShortcuts = null! };
-
-        Plugin.MigrateConfiguration(config);
-
-        Assert.Equal(4, config.SchemaVersion);
-        Assert.NotNull(config.MenuTabShortcuts);
-        Assert.Empty(config.MenuTabShortcuts);
-    }
-
-    [Fact]
-    public void ValidateConfiguration_KeepsOnlyKnownDeduplicatedMenuTabShortcutIds()
-    {
-        var config = new PluginConfiguration
-        {
-            MenuTabShortcuts = ["watchlist", "not-a-real-tab", "statistics", "watchlist"]
-        };
-
-        Plugin.ValidateConfiguration(config);
-
-        Assert.Equal(["watchlist", "statistics"], config.MenuTabShortcuts);
-    }
 }

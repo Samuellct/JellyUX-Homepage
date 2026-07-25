@@ -17,14 +17,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     /// The current configuration schema version. See the "Configuration Schema Versioning" section
     /// in CLAUDE.md for the migration policy.
     /// </summary>
-    private const int CurrentSchemaVersion = 4;
-
-    /// <summary>
-    /// The known JellyUX home-tab ids that <see cref="Configuration.PluginConfiguration.MenuTabShortcuts"/>
-    /// may reference, matching the tab suffixes used by <c>jux-tab-injector.js</c> (button ids
-    /// <c>jux-tabbtn-{id}</c>) and <c>TransformationPatches.cs</c> (pane ids <c>jux-tab-{id}</c>).
-    /// </summary>
-    internal static readonly string[] KnownMenuTabShortcutIds = ["watchlist", "progress", "history", "statistics"];
+    private const int CurrentSchemaVersion = 5;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -110,16 +103,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
             config.Widgets = AppendWatchlistWidgetIfMissing(config.Widgets);
         }
 
-        if (config.SchemaVersion < 4)
-        {
-            // V3-to-V4 migration step (TODO_V3.md Phase 8.2): MenuTabShortcuts is a brand-new field,
-            // so there is no data to transform -- an existing on-disk XML file without this element
-            // already deserializes to the property initializer's default ([]). The explicit tier is
-            // added anyway per the "Configuration Schema Versioning" policy in CLAUDE.md, which
-            // requires every schema change to bump the version and add a corresponding tier, even a
-            // trivial one, for auditability.
-            config.MenuTabShortcuts ??= [];
-        }
+        // V3-to-V4 previously added MenuTabShortcuts (TODO_V3.md Phase 8.2: JellyUX tab shortcuts in
+        // the navigation drawer). That feature was removed again in the same release cycle -- the
+        // native tab-switching it depended on turned out to be unreliable in real usage (confirmed by
+        // the user) -- so there is no V3-to-V4 tier here anymore. No V4-to-V5 tier is needed either:
+        // removing a field is not a data transform an installation needs applied, it simply stops
+        // being read/written. The version is still bumped per the "Configuration Schema Versioning"
+        // policy in CLAUDE.md, since the on-disk schema shape did change.
 
         // Add future migrations here as additional `if (config.SchemaVersion < N) { ... }` blocks,
         // each gated on its own target version and never combined with `else if` -- an installation
@@ -261,16 +251,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
             {
                 widget.MinInstances = widget.MaxInstances;
             }
-        }
-
-        // Keep only known, deduplicated tab ids -- a hand-edited XML file could otherwise contain a
-        // typo'd or since-removed id that jux-menu-links.js would silently be unable to resolve.
-        if (config.MenuTabShortcuts is not null)
-        {
-            config.MenuTabShortcuts = config.MenuTabShortcuts
-                .Where(id => KnownMenuTabShortcutIds.Contains(id))
-                .Distinct()
-                .ToArray();
         }
 
         // Trim API keys; empty string becomes null.
