@@ -1,6 +1,9 @@
 /* JellyUX shared UI helpers — styles for window.JuxUI (Web/jux-ui.js).
  * TODO_V3.md Phase 6 bis: empty state, loading spinner, progress bar, stat tile, native sort dialog,
  * used by jux-watchlist.js/jux-progress.js/jux-history.js/jux-statistics.js.
+ * TODO_V3.md Phase 8.1: breadcrumb navigation (jux-breadcrumb.js) also styles its small set of
+ * jux-prefixed classes here, rather than adding a third CSS file, since it doesn't have enough
+ * rules to warrant its own stylesheet.
  * Only jux-prefixed classes are styled here (see jux-homepage.css's own convention).
  *
  * Accent color: live inspection of the jellyux-test container (Phase 6 bis verification) found
@@ -278,4 +281,35 @@
 
 .jux-progress-mark-watched {
     margin-top: 0.3em;
+}
+
+/* -------------------------------------------------------------------------
+ * Breadcrumb navigation (item detail pages) -- TODO_V3.md Phase 8.1
+ * ------------------------------------------------------------------------- */
+
+.jux-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0.5em 0 0 0.5em;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.jux-breadcrumb-link {
+    color: var(--jf-palette-primary-main, #00a4dc);
+    text-decoration: none;
+}
+
+.jux-breadcrumb-link:hover {
+    text-decoration: underline;
+}
+
+.jux-breadcrumb-current {
+    opacity: 0.75;
+}
+
+.jux-breadcrumb-sep {
+    margin: 0 0.4em;
+    opacity: 0.5;
 }

@@ -92,6 +92,7 @@ public static class TransformationPatches
         var statisticsScriptTag = $"<script src=\"/JuxHomepage/jux-statistics.js{cacheParam}\" defer></script>";
         var seriesFlattenScriptTag = $"<script src=\"/JuxHomepage/jux-series-flatten.js{cacheParam}\" defer></script>";
         var collectionsScriptTag = $"<script src=\"/JuxHomepage/jux-collections.js{cacheParam}\" defer></script>";
+        var breadcrumbScriptTag = $"<script src=\"/JuxHomepage/jux-breadcrumb.js{cacheParam}\" defer></script>";
 
         // jux-ui.js must appear (in source order) before the tab-rendering scripts and jux-collections.js
         // that consume window.JuxUI -- deferred scripts execute in document order, so this ordering is
@@ -100,7 +101,7 @@ public static class TransformationPatches
             .Replace("</head>", $"{linkTag}\n{uiLinkTag}\n</head>", StringComparison.OrdinalIgnoreCase)
             .Replace(
                 "</body>",
-                $"{scriptTag}\n{uiScriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n{cardHooksScriptTag}\n{progressScriptTag}\n{historyScriptTag}\n{statisticsScriptTag}\n{seriesFlattenScriptTag}\n{collectionsScriptTag}\n</body>",
+                $"{scriptTag}\n{uiScriptTag}\n{tabInjectorScriptTag}\n{watchlistScriptTag}\n{cardHooksScriptTag}\n{progressScriptTag}\n{historyScriptTag}\n{statisticsScriptTag}\n{seriesFlattenScriptTag}\n{collectionsScriptTag}\n{breadcrumbScriptTag}\n</body>",
                 StringComparison.OrdinalIgnoreCase);
     }
 

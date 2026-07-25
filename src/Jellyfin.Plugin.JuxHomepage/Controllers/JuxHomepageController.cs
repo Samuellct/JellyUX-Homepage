@@ -347,6 +347,28 @@ public class JuxHomepageController : ControllerBase
     }
 
     /// <summary>
+    /// Serves the JellyUX breadcrumb navigation script (TODO_V3.md Phase 8.1).
+    /// Anonymous - loaded by a script tag injected into index.html.
+    /// </summary>
+    /// <returns>JavaScript file contents.</returns>
+    [HttpGet("jux-breadcrumb.js")]
+    [AllowAnonymous]
+    [Produces("application/javascript")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetBreadcrumbScript()
+    {
+        var stream = GetEmbeddedResource("jux-breadcrumb.js");
+        if (stream is null)
+        {
+            return NotFound();
+        }
+
+        SetCacheHeaders(Response);
+        return File(stream, "application/javascript");
+    }
+
+    /// <summary>
     /// Serves the JellyUX Homepage CSS stylesheet.
     /// Anonymous - loaded by a link tag injected into index.html.
     /// </summary>
