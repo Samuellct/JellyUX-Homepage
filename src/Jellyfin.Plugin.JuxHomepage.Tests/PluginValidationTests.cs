@@ -106,12 +106,13 @@ public sealed class PluginValidationTests
     [Fact]
     public void MigrateConfiguration_NoOpForCurrentSchemaVersion_DoesNotThrow()
     {
-        var config = new PluginConfiguration { SchemaVersion = 5 };
+        var config = new PluginConfiguration { SchemaVersion = 6 };
 
         var exception = Record.Exception(() => Plugin.MigrateConfiguration(config));
 
         Assert.Null(exception);
-        Assert.Equal(5, config.SchemaVersion);
+        Assert.Equal(6, config.SchemaVersion);
+        Assert.Empty(config.Widgets);
     }
 
     [Fact]
@@ -135,11 +136,11 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        // Starting below both the V1->V2 (fan-out) and V2->V3 (append Watchlist widget) thresholds,
-        // both migrations apply in order -- the fan-out first (3 rows), then the Watchlist widget
-        // row appended on top (4 rows total).
-        Assert.Equal(5, config.SchemaVersion);
-        Assert.Equal(4, config.Widgets.Length);
+        // Starting below the V1->V2 (fan-out), V2->V3 (append Watchlist widget), and V5->V6 (append
+        // seasonal presets) thresholds, all three migrations apply in order -- the fan-out first
+        // (3 rows), then the Watchlist widget row (4), then the four seasonal preset rows (8 total).
+        Assert.Equal(6, config.SchemaVersion);
+        Assert.Equal(8, config.Widgets.Length);
 
         Assert.Equal("jux.personalized.favorite-genre", config.Widgets[0].WidgetType);
         Assert.Equal("My Genres", config.Widgets[0].CustomDisplayName);
@@ -159,6 +160,8 @@ public sealed class PluginValidationTests
         Assert.Equal(1, config.Widgets[2].MaxInstances);
 
         Assert.Equal("jux.native.watchlist", config.Widgets[3].WidgetType);
+
+        Assert.Equal(4, config.Widgets.Count(w => w.WidgetType == "jux.connected.seasonal"));
     }
 
     [Fact]
@@ -172,14 +175,16 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(5, config.SchemaVersion);
+        Assert.Equal(6, config.SchemaVersion);
 
         // The original row passes through the V1->V2 fan-out untouched (not Personalized), then the
-        // V2->V3 migration appends the new native Watchlist widget row alongside it.
-        Assert.Equal(2, config.Widgets.Length);
+        // V2->V3 migration appends the new native Watchlist widget row, then V5->V6 appends the four
+        // seasonal preset rows.
+        Assert.Equal(6, config.Widgets.Length);
         var widget = config.Widgets.Single(w => w.WidgetType == "jux.admin.genre");
         Assert.Equal(5, widget.MaxInstances);
         Assert.Contains(config.Widgets, w => w.WidgetType == "jux.native.watchlist");
+        Assert.Equal(4, config.Widgets.Count(w => w.WidgetType == "jux.connected.seasonal"));
     }
 
     [Fact]
@@ -193,11 +198,12 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(5, config.SchemaVersion);
-        Assert.Equal(2, config.Widgets.Length);
+        Assert.Equal(6, config.SchemaVersion);
+        Assert.Equal(6, config.Widgets.Length);
         var watchlistWidget = config.Widgets.Single(w => w.WidgetType == "jux.native.watchlist");
         Assert.True(watchlistWidget.Enabled);
         Assert.Equal(50, watchlistWidget.Order);
+        Assert.Equal(4, config.Widgets.Count(w => w.WidgetType == "jux.connected.seasonal"));
     }
 
     [Fact]
@@ -215,14 +221,49 @@ public sealed class PluginValidationTests
 
         Plugin.MigrateConfiguration(config);
 
-        Assert.Equal(5, config.SchemaVersion);
-        Assert.Equal(2, config.Widgets.Length);
+        Assert.Equal(6, config.SchemaVersion);
+        Assert.Equal(6, config.Widgets.Length);
         var watchlistWidget = config.Widgets.Single(w => w.WidgetType == "jux.native.watchlist");
 
         // Untouched -- the migration must not overwrite an existing row (e.g. one the admin has
         // already customized), only append one when the type is entirely absent.
         Assert.Equal(99, watchlistWidget.Order);
         Assert.False(watchlistWidget.Enabled);
+        Assert.Equal(4, config.Widgets.Count(w => w.WidgetType == "jux.connected.seasonal"));
+    }
+
+    [Fact]
+    public void MigrateConfiguration_SeasonalPresetsAlreadyPresent_DoesNotDuplicateThem()
+    {
+        var config = new PluginConfiguration
+        {
+            SchemaVersion = 6,
+            Widgets = [.. Widgets.Connected.SeasonalWidgetDefaults.Build()]
+        };
+
+        Plugin.MigrateConfiguration(config);
+
+        Assert.Equal(6, config.SchemaVersion);
+        Assert.Equal(4, config.Widgets.Length);
+    }
+
+    [Fact]
+    public void MigrateConfiguration_SchemaVersionFive_AppendsSeasonalPresetRows()
+    {
+        var config = new PluginConfiguration
+        {
+            SchemaVersion = 5,
+            Widgets = [new WidgetConfig { WidgetType = "jux.native.continue-watching", Order = 0 }]
+        };
+
+        Plugin.MigrateConfiguration(config);
+
+        Assert.Equal(6, config.SchemaVersion);
+        Assert.Equal(5, config.Widgets.Length);
+        Assert.Equal(4, config.Widgets.Count(w => w.WidgetType == "jux.connected.seasonal"));
+        Assert.All(
+            config.Widgets.Where(w => w.WidgetType == "jux.connected.seasonal"),
+            w => Assert.False(w.Enabled));
     }
 
 }

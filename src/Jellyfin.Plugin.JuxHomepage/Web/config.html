@@ -223,6 +223,12 @@
                 return widgetType === this.REWARDS_TYPE;
             },
 
+            SEASONAL_TYPE: 'jux.connected.seasonal',
+
+            isSeasonal: function (widgetType) {
+                return widgetType === this.SEASONAL_TYPE;
+            },
+
             BECAUSE_YOU_WATCHED_TYPE: 'jux.personalized.because-you-watched',
 
             isBecauseYouWatched: function (widgetType) {
@@ -541,6 +547,53 @@
                             html += '<label class="inputLabel inputLabelUnfocused" for="rewardsYear_' + i + '">' + self.escHtml(self.t('admin.rewards.year')) + '</label>';
                             html += '<input id="rewardsYear_' + i + '" type="number" class="emby-input jux-rewards-year" value="' + self.escHtml(rewardsYearValue) + '" />';
                             html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.rewards.help')) + '</div>';
+                            html += '</div>';
+                        }
+
+                        if (self.isSeasonal(w.WidgetType)) {
+                            var seasonalThemeValue = self.getExtraParam(w, 'theme');
+                            var seasonalStartValue = self.getExtraParam(w, 'startDate');
+                            var seasonalEndValue = self.getExtraParam(w, 'endDate');
+                            var seasonalGenreValue = self.getExtraParam(w, 'genre');
+                            var seasonalTagValue = self.getExtraParam(w, 'tag');
+
+                            html += '<div class="inputContainer">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="seasonalTheme_' + i + '">' + self.escHtml(self.t('admin.seasonal.theme.label')) + '</label>';
+                            html += '<select id="seasonalTheme_' + i + '" class="emby-select-withcolor emby-select jux-seasonal-theme">';
+                            [
+                                ['', self.t('admin.seasonal.theme.none')],
+                                ['halloween', self.t('admin.seasonal.theme.halloween')],
+                                ['christmas', self.t('admin.seasonal.theme.christmas')],
+                                ['valentines', self.t('admin.seasonal.theme.valentines')],
+                                ['newyear', self.t('admin.seasonal.theme.newyear')]
+                            ].forEach(function (opt) {
+                                html += '<option value="' + opt[0] + '"' + (seasonalThemeValue === opt[0] ? ' selected' : '') + '>' + self.escHtml(opt[1]) + '</option>';
+                            });
+                            html += '</select>';
+                            html += '</div>';
+
+                            html += '<div class="jux-admin-row">';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="seasonalStart_' + i + '">' + self.escHtml(self.t('admin.seasonal.startdate.label')) + '</label>';
+                            html += '<input id="seasonalStart_' + i + '" type="text" class="emby-input jux-seasonal-startdate" placeholder="MM-JJ" pattern="\\d{2}-\\d{2}" value="' + self.escHtml(seasonalStartValue) + '" />';
+                            html += '</div>';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="seasonalEnd_' + i + '">' + self.escHtml(self.t('admin.seasonal.enddate.label')) + '</label>';
+                            html += '<input id="seasonalEnd_' + i + '" type="text" class="emby-input jux-seasonal-enddate" placeholder="MM-JJ" pattern="\\d{2}-\\d{2}" value="' + self.escHtml(seasonalEndValue) + '" />';
+                            html += '</div>';
+                            html += '</div>';
+                            html += '<div class="fieldDescription jux-seasonal-date-error" style="display:none;" id="seasonalDateError_' + i + '">' + self.escHtml(self.t('admin.seasonal.date.error')) + '</div>';
+                            html += '<div class="fieldDescription">' + self.escHtml(self.t('admin.seasonal.date.help')) + '</div>';
+
+                            html += '<div class="jux-admin-row">';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="seasonalGenre_' + i + '">' + self.escHtml(self.t('admin.seasonal.genre.label')) + '</label>';
+                            html += '<input id="seasonalGenre_' + i + '" type="text" class="emby-input jux-seasonal-genre" value="' + self.escHtml(seasonalGenreValue) + '" />';
+                            html += '</div>';
+                            html += '<div class="inputContainer jux-admin-half">';
+                            html += '<label class="inputLabel inputLabelUnfocused" for="seasonalTag_' + i + '">' + self.escHtml(self.t('admin.seasonal.tag.label')) + '</label>';
+                            html += '<input id="seasonalTag_' + i + '" type="text" class="emby-input jux-seasonal-tag" value="' + self.escHtml(seasonalTagValue) + '" />';
+                            html += '</div>';
                             html += '</div>';
                         }
 
@@ -872,6 +925,25 @@
 
                         w.ExtraParams = rewardsParams;
                     }
+
+                    if (self.isSeasonal(w.WidgetType)) {
+                        var seasonalThemeEl = card.querySelector('.jux-seasonal-theme');
+                        var seasonalStartEl = card.querySelector('.jux-seasonal-startdate');
+                        var seasonalEndEl = card.querySelector('.jux-seasonal-enddate');
+                        var seasonalGenreEl = card.querySelector('.jux-seasonal-genre');
+                        var seasonalTagEl = card.querySelector('.jux-seasonal-tag');
+
+                        var seasonalInstanceId = self.getExtraParam(w, 'value');
+                        var seasonalParams = [{ Key: 'value', Value: seasonalInstanceId }];
+
+                        if (seasonalStartEl) { seasonalParams.push({ Key: 'startDate', Value: seasonalStartEl.value.trim() }); }
+                        if (seasonalEndEl) { seasonalParams.push({ Key: 'endDate', Value: seasonalEndEl.value.trim() }); }
+                        if (seasonalThemeEl && seasonalThemeEl.value) { seasonalParams.push({ Key: 'theme', Value: seasonalThemeEl.value }); }
+                        if (seasonalGenreEl && seasonalGenreEl.value.trim()) { seasonalParams.push({ Key: 'genre', Value: seasonalGenreEl.value.trim() }); }
+                        if (seasonalTagEl && seasonalTagEl.value.trim()) { seasonalParams.push({ Key: 'tag', Value: seasonalTagEl.value.trim() }); }
+
+                        w.ExtraParams = seasonalParams;
+                    }
                 });
             },
 
@@ -1149,6 +1221,23 @@
                     }
                 });
 
+                // Seasonal sections show an inline hint (not a save-blocking error) when their
+                // start/end date isn't a valid MM-JJ pair: unlike Admin's "Value" field, an invalid
+                // or empty date is not a broken configuration -- SeasonalWidget itself already
+                // treats it as "never active" and the section is generically excluded from the home
+                // screen (same MinItems=0-items mechanism as any other widget with no results), so
+                // saving is still allowed -- the admin can safely add a section and fill in its dates
+                // afterward, as described in the Seasonal manual test.
+                var seasonalDatePattern = /^\d{2}-\d{2}$/;
+                self.state.sortedWidgets.forEach(function (w, i) {
+                    if (!self.isSeasonal(w.WidgetType)) { return; }
+                    var startVal = self.getExtraParam(w, 'startDate');
+                    var endVal = self.getExtraParam(w, 'endDate');
+                    var errEl = list ? list.querySelector('#seasonalDateError_' + i) : null;
+                    var valid = seasonalDatePattern.test(startVal) && seasonalDatePattern.test(endVal);
+                    if (errEl) { errEl.style.display = valid ? 'none' : ''; }
+                });
+
                 if (hasValueError) { return; }
 
                 Dashboard.showLoadingMsg();
@@ -1236,6 +1325,7 @@
                             var isConn = self.isConnected(widgetType);
                             var isDisc = self.isDiscover(widgetType);
                             var isRew = self.isRewards(widgetType);
+                            var isSeas = self.isSeasonal(widgetType);
                             self.readDomIntoState();
                             var extraParams = [];
                             if (isPers) {
@@ -1261,6 +1351,17 @@
                                         return v.toString(16);
                                     });
                                 extraParams = [{ Key: 'value', Value: newRewardsInstanceId }];
+                            } else if (isSeas) {
+                                var newSeasonalInstanceId = (window.crypto && window.crypto.randomUUID)
+                                    ? window.crypto.randomUUID()
+                                    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                                        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                                        return v.toString(16);
+                                    });
+                                // Dates start empty on purpose: the section simply stays hidden
+                                // (no items ever match an unparseable date) until the admin fills
+                                // them in and saves, rather than blocking the "Add" action itself.
+                                extraParams = [{ Key: 'value', Value: newSeasonalInstanceId }];
                             }
                             self.state.sortedWidgets.push({
                                 WidgetType: widgetType,

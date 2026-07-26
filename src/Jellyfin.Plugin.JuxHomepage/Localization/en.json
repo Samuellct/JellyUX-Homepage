@@ -14,6 +14,7 @@
   "jux.connected.now-playing-movies": "Now Playing",
   "jux.connected.discover-movies": "Discover Movies",
   "jux.connected.rewards": "Rewards",
+  "jux.connected.seasonal": "Seasonal",
 
   "jux.admin.genre": "Genre",
   "jux.admin.actor": "Actor",
@@ -116,5 +117,17 @@
   "admin.tmdbstatus.pages": "Pages",
   "admin.tmdbstatus.minvotes": "Min votes",
   "admin.tmdbrefresh.inprogress": "Refresh started, this may take a few seconds...",
-  "admin.tmdbrefresh.failed": "Failed to trigger refresh. See browser console for details."
+  "admin.tmdbrefresh.failed": "Failed to trigger refresh. See browser console for details.",
+  "admin.seasonal.theme.label": "Theme",
+  "admin.seasonal.theme.none": "None / custom",
+  "admin.seasonal.theme.halloween": "Halloween",
+  "admin.seasonal.theme.christmas": "Christmas",
+  "admin.seasonal.theme.valentines": "Valentine's Day",
+  "admin.seasonal.theme.newyear": "New Year",
+  "admin.seasonal.startdate.label": "Start date (MM-DD)",
+  "admin.seasonal.enddate.label": "End date (MM-DD)",
+  "admin.seasonal.date.help": "Recurring every year. Format: MM-DD (e.g. 10-31 for October 31). An end date earlier than the start date wraps across the new year (e.g. 12-26 to 01-06).",
+  "admin.seasonal.date.error": "Both dates are required, in MM-DD format (e.g. 10-31).",
+  "admin.seasonal.genre.label": "Genre (optional)",
+  "admin.seasonal.tag.label": "Tag (optional)"
 }

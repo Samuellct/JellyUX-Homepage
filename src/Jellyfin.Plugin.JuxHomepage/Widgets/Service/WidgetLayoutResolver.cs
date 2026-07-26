@@ -238,6 +238,16 @@ public sealed class WidgetLayoutResolver
             return null;
         }
 
+        // Generic theme population: any widget instance may carry an ExtraParams["theme"] value
+        // (e.g. SeasonalWidget's halloween/christmas/valentines/newyear presets); the resolver does
+        // not need to know which widget type set it. Widgets that never set this key simply produce
+        // a null Theme, which the front end ignores.
+        string? theme = instanceConfig.ExtraParams is not null
+            && instanceConfig.ExtraParams.TryGetValue("theme", out var themeValue)
+            && !string.IsNullOrEmpty(themeValue)
+                ? themeValue
+                : null;
+
         return new WidgetDescriptor
         {
             WidgetType = instanceDescriptor.WidgetType,
@@ -247,7 +257,8 @@ public sealed class WidgetLayoutResolver
             Route = instanceDescriptor.Route,
             AdditionalData = additionalData,
             Order = config.Order,
-            MinItems = config.MinItems
+            MinItems = config.MinItems,
+            Theme = theme
         };
     }
 

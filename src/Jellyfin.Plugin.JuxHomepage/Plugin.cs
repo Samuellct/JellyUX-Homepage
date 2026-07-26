@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.JuxHomepage.Configuration;
 using Jellyfin.Plugin.JuxHomepage.Widgets;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Personalized;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
@@ -17,7 +18,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     /// The current configuration schema version. See the "Configuration Schema Versioning" section
     /// in CLAUDE.md for the migration policy.
     /// </summary>
-    private const int CurrentSchemaVersion = 5;
+    private const int CurrentSchemaVersion = 6;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -110,6 +111,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         // removing a field is not a data transform an installation needs applied, it simply stops
         // being read/written. The version is still bumped per the "Configuration Schema Versioning"
         // policy in CLAUDE.md, since the on-disk schema shape did change.
+
+        if (config.SchemaVersion < 6)
+        {
+            config.Widgets = AppendSeasonalPresetsIfMissing(config.Widgets);
+        }
 
         // Add future migrations here as additional `if (config.SchemaVersion < N) { ... }` blocks,
         // each gated on its own target version and never combined with `else if` -- an installation
@@ -218,6 +224,33 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         };
 
         return result.ToArray();
+    }
+
+    /// <summary>
+    /// V5-to-V6 migration step (TODO_V3.md Phase 9.1): appends any of the four seasonal preset rows
+    /// (see <see cref="SeasonalWidgetDefaults"/>) that are missing from an existing installation's
+    /// <see cref="Configuration.PluginConfiguration.Widgets"/> array -- <see cref="Inject.StartupService"/>
+    /// only seeds the full default list when the array is empty (brand-new installs), so an existing
+    /// installation would otherwise never see the new presets. Idempotent: checked per-preset via its
+    /// fixed <c>ExtraParams["value"]</c> GUID, so a preset an admin already removed intentionally is
+    /// not re-added, but only if the row was removed entirely -- this migration only ever fires once
+    /// per installation (schema version only moves forward), so that distinction does not arise in
+    /// practice.
+    /// </summary>
+    /// <param name="widgets">The widget configuration rows to migrate.</param>
+    /// <returns>The migrated array of rows, with any missing preset rows appended.</returns>
+    private static WidgetConfig[] AppendSeasonalPresetsIfMissing(WidgetConfig[] widgets)
+    {
+        var existingIds = widgets
+            .Where(w => w.WidgetType == "jux.connected.seasonal")
+            .Select(w => w.ExtraParams.FirstOrDefault(p => p.Key == "value")?.Value)
+            .Where(v => v is not null)
+            .ToHashSet();
+
+        var missingPresets = SeasonalWidgetDefaults.Build()
+            .Where(preset => !existingIds.Contains(preset.ExtraParams.First(p => p.Key == "value").Value));
+
+        return [.. widgets, .. missingPresets];
     }
 
     /// <summary>

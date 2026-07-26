@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.JuxHomepage.IO;
 using Jellyfin.Plugin.JuxHomepage.TMDb;
+using Jellyfin.Plugin.JuxHomepage.Widgets.Connected;
 using Jellyfin.Plugin.JuxHomepage.Widgets.Native;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -156,7 +157,7 @@ public sealed class StartupService : IHostedService
             return;
         }
 
-        Plugin.Instance.Configuration.Widgets = NativeWidgetDefaults.Build();
+        Plugin.Instance.Configuration.Widgets = [.. NativeWidgetDefaults.Build(), .. SeasonalWidgetDefaults.Build()];
         Plugin.Instance.SaveConfiguration();
         _logger.LogInformation(
             "Seeded default configuration with {Count} native widgets.",

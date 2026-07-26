@@ -167,6 +167,13 @@
             descriptor.WidgetType.replace(/\./g, '-');
         sectionEl.style.order = String(descriptor.Order);
 
+        // TODO_V3.md Phase 9.1: generic hook for any widget instance carrying a Theme (currently
+        // only the Seasonal widget's presets set one) -- jux-homepage.css keys visual effects (e.g.
+        // the Christmas snow overlay) off this attribute, scoped to this one section only.
+        if (descriptor.Theme) {
+            sectionEl.setAttribute('data-jux-theme', descriptor.Theme);
+        }
+
         // Title block
         var titleContainer = document.createElement('div');
         titleContainer.className = 'sectionTitleContainer sectionTitleContainer-cards padded-left';

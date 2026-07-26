@@ -14,6 +14,7 @@
   "jux.connected.now-playing-movies": "Actuellement au cinéma",
   "jux.connected.discover-movies": "Découvrir des films",
   "jux.connected.rewards": "Récompenses",
+  "jux.connected.seasonal": "Saisonnier",
 
   "jux.admin.genre": "Genre",
   "jux.admin.actor": "Acteur",
@@ -116,5 +117,17 @@
   "admin.tmdbstatus.pages": "Pages",
   "admin.tmdbstatus.minvotes": "Votes minimum",
   "admin.tmdbrefresh.inprogress": "Rafraîchissement démarré, cela peut prendre quelques secondes...",
-  "admin.tmdbrefresh.failed": "Échec du déclenchement du rafraîchissement. Voir la console du navigateur pour plus de détails."
+  "admin.tmdbrefresh.failed": "Échec du déclenchement du rafraîchissement. Voir la console du navigateur pour plus de détails.",
+  "admin.seasonal.theme.label": "Thème",
+  "admin.seasonal.theme.none": "Aucun / personnalisé",
+  "admin.seasonal.theme.halloween": "Halloween",
+  "admin.seasonal.theme.christmas": "Noël",
+  "admin.seasonal.theme.valentines": "Saint-Valentin",
+  "admin.seasonal.theme.newyear": "Nouvel An",
+  "admin.seasonal.startdate.label": "Date de début (MM-JJ)",
+  "admin.seasonal.enddate.label": "Date de fin (MM-JJ)",
+  "admin.seasonal.date.help": "Récurrent chaque année. Format : MM-JJ (ex. 10-31 pour le 31 octobre). Une date de fin antérieure à la date de début chevauche le passage à la nouvelle année (ex. 12-26 à 01-06).",
+  "admin.seasonal.date.error": "Les deux dates sont requises, au format MM-JJ (ex. 10-31).",
+  "admin.seasonal.genre.label": "Genre (optionnel)",
+  "admin.seasonal.tag.label": "Étiquette (optionnelle)"
 }

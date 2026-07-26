@@ -187,6 +187,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterWidget<NowPlayingMoviesWidget>(registry, serviceProvider, logger);
             RegisterWidget<DiscoverMoviesWidget>(registry, serviceProvider, logger);
             RegisterWidget<RewardsWidget>(registry, serviceProvider, logger);
+            RegisterWidget<SeasonalWidget>(registry, serviceProvider, logger);
 
             var applicationPaths = serviceProvider.GetRequiredService<IApplicationPaths>();
 

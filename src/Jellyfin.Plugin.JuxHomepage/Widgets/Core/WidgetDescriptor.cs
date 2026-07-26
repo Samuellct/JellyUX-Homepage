@@ -35,4 +35,12 @@ public sealed class WidgetDescriptor
 
     /// <summary>Gets or sets the minimum number of items required to display this widget.</summary>
     public int MinItems { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional visual theme identifier for this instance (e.g. <c>halloween</c>,
+    /// <c>christmas</c>, <c>valentines</c>, <c>newyear</c>). Populated generically by
+    /// <see cref="WidgetLayoutResolver"/> from a widget instance's <c>ExtraParams["theme"]</c> when
+    /// present; not tied to any specific widget type. Null when the widget defines no theme.
+    /// </summary>
+    public string? Theme { get; set; }
 }
