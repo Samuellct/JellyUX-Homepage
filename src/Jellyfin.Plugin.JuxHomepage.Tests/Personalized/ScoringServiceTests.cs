@@ -200,8 +200,11 @@ public sealed class ScoringServiceTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void GetRecentlyWatched_ReturnsWatchedItemsInQueryOrder()
+    public void GetRecentlyWatched_ReturnsBothWatchedItems_RegardlessOfOrder()
     {
+        // TODO_V3.md Phase 9.2: candidate order is now randomized (see
+        // GetRecentlyWatched_IsStableWithinCachePeriod / _OnlyPicksFromTopPoolSize below for the
+        // behavior this replaces asserting on a fixed position), so this only checks membership.
         var user = new User("test", "Default", "Default");
         var recent = new Movie { Name = "Recent", Genres = [] };
         var older = new Movie { Name = "Older", Genres = [] };
@@ -211,8 +214,48 @@ public sealed class ScoringServiceTests
         var result = service.GetRecentlyWatched(user.Id, 5);
 
         Assert.Equal(2, result.Count);
-        Assert.Equal("Recent", result[0].Label);
-        Assert.Equal(recent.Id.ToString(), result[0].Value);
+        Assert.Contains(result, r => r.Label == "Recent" && r.Value == recent.Id.ToString());
+        Assert.Contains(result, r => r.Label == "Older" && r.Value == older.Id.ToString());
+    }
+
+    [Fact]
+    public void GetRecentlyWatched_IsStableWithinCachePeriod()
+    {
+        // Two calls against the same ScoringService instance hit the same cached ScoreSnapshot (its
+        // ComputedAt has not changed), so the seeded shuffle must produce the exact same order both
+        // times -- content should only vary once the 15-minute cache naturally recomputes.
+        var user = new User("test", "Default", "Default");
+        var items = Enumerable.Range(0, 8)
+            .Select(i => new Movie { Id = Guid.NewGuid(), Name = $"Film {i}", Genres = [] })
+            .Cast<BaseItem>()
+            .ToList();
+
+        var service = BuildService(user, watched: items, favorites: [], people: _ => []);
+
+        var first = service.GetRecentlyWatched(user.Id, 8);
+        var second = service.GetRecentlyWatched(user.Id, 8);
+
+        Assert.Equal(first.Select(r => r.Value), second.Select(r => r.Value));
+    }
+
+    [Fact]
+    public void GetRecentlyWatched_OnlyPicksFromTopPoolSize()
+    {
+        // With more entries than the fixed candidate pool size (10), only the most recently watched
+        // 10 may ever be returned -- the 11th-oldest+ entries must never appear regardless of limit.
+        var user = new User("test", "Default", "Default");
+        var items = Enumerable.Range(0, 15)
+            .Select(i => new Movie { Id = Guid.NewGuid(), Name = $"Film {i}", Genres = [] })
+            .Cast<BaseItem>()
+            .ToList();
+
+        var service = BuildService(user, watched: items, favorites: [], people: _ => []);
+
+        var result = service.GetRecentlyWatched(user.Id, 10);
+
+        var poolNames = items.Take(10).Select(i => i.Name).ToHashSet();
+        Assert.Equal(10, result.Count);
+        Assert.All(result, r => Assert.Contains(r.Label, poolNames));
     }
 
     [Fact]

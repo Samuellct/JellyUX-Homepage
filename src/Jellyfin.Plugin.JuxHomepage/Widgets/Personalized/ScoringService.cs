@@ -23,11 +23,21 @@ public sealed class ScoringService
 {
     private const int MaxWatchedScan = 500;
 
+    /// <summary>
+    /// Size of the "recently watched" candidate pool shuffled by <see cref="GetRecentlyWatched"/>
+    /// before scope-filtering (TODO_V3.md Phase 9.2). Fixed and independent of any caller's
+    /// requested <c>limit</c>, so that multiple Because You Watched rows (each calling this method
+    /// with a different, increasing <c>limit</c> -- see <see cref="PersonalizedWidgetBase.Resolve"/>)
+    /// read consistent prefixes of the very same shuffled sequence rather than each shuffling
+    /// independently, which would risk the same candidate being picked by two different rows.
+    /// </summary>
+    private const int RecentlyWatchedPoolSize = 10;
+
     private readonly IUserManager _userManager;
     private readonly ILibraryManager _libraryManager;
     private readonly IUserDataManager _userDataManager;
     private readonly Func<PluginConfiguration?> _getConfiguration;
-    private readonly ConcurrentDictionary<Guid, CacheEntry> _cache = new();
+    private readonly ConcurrentDictionary<Guid, ScoreSnapshot> _cache = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoringService"/> class.
@@ -89,7 +99,20 @@ public sealed class ScoringService
         int limit,
         BecauseYouWatchedScope scope = BecauseYouWatchedScope.Both)
     {
-        var entries = GetSnapshot(userId).RecentlyWatched.AsEnumerable();
+        var snapshot = GetSnapshot(userId);
+
+        // Shuffle a fixed-size pool of the most recent entries -- not the full RecentlyWatched list,
+        // and not scope-filtered yet -- BEFORE applying scope/limit. Seeded from (userId, the
+        // snapshot's own compute time), so the order stays stable for as long as ScoringService's own
+        // 15-minute cache entry does, and only changes once that cache naturally recomputes (TODO_V3.md
+        // Phase 9.2: "Because You Watched" rotation). Shuffling before the scope filter, rather than
+        // filtering then shuffling per scope, keeps different rows' picks consistent with each other:
+        // see the seed/pool-size remarks on RecentlyWatchedPoolSize.
+        var pool = snapshot.RecentlyWatched.Take(RecentlyWatchedPoolSize).ToList();
+        var seed = HashCode.Combine(userId, snapshot.ComputedAt.Ticks);
+        Shuffle(pool, seed);
+
+        var entries = pool.AsEnumerable();
         entries = scope switch
         {
             BecauseYouWatchedScope.Movies => entries.Where(e => e.Kind == BaseItemKind.Movie),
@@ -108,13 +131,13 @@ public sealed class ScoringService
         var ttlMinutes = _getConfiguration()?.Cache?.SessionTtlMinutes ?? 15;
         var ttl = TimeSpan.FromMinutes(ttlMinutes);
 
-        if (_cache.TryGetValue(userId, out var entry) && DateTime.UtcNow - entry.ComputedAt < ttl)
+        if (_cache.TryGetValue(userId, out var cached) && DateTime.UtcNow - cached.ComputedAt < ttl)
         {
-            return entry.Snapshot;
+            return cached;
         }
 
         var snapshot = ComputeSnapshot(userId);
-        _cache[userId] = new CacheEntry(DateTime.UtcNow, snapshot);
+        _cache[userId] = snapshot;
         return snapshot;
     }
 
@@ -123,7 +146,7 @@ public sealed class ScoringService
         var user = _userManager.GetUserById(userId);
         if (user is null)
         {
-            return ScoreSnapshot.Empty;
+            return ScoreSnapshot.CreateEmpty();
         }
 
         var watchedMovies = _libraryManager.GetItemList(new InternalItemsQuery(user)
@@ -154,7 +177,7 @@ public sealed class ScoringService
 
         if (watchedMovies.Count == 0 && watchedSeries.Count == 0)
         {
-            return ScoreSnapshot.Empty;
+            return ScoreSnapshot.CreateEmpty();
         }
 
         // Each sub-list is already ordered by DatePlayed server-side, but the two lists can't be
@@ -218,7 +241,8 @@ public sealed class ScoringService
             watched.Select(i => new RecentlyWatchedEntry(
                 i.Id.ToString(),
                 i.Name,
-                i is Series ? BaseItemKind.Series : BaseItemKind.Movie)).ToList());
+                i is Series ? BaseItemKind.Series : BaseItemKind.Movie)).ToList(),
+            DateTime.UtcNow);
     }
 
     private static IReadOnlyList<ScoredValue> Rank(Dictionary<string, double> scores) =>
@@ -229,7 +253,22 @@ public sealed class ScoringService
             .ToList()
             .AsReadOnly();
 
-    private sealed record CacheEntry(DateTime ComputedAt, ScoreSnapshot Snapshot);
+    /// <summary>
+    /// Shuffles <paramref name="items"/> in place using the Fisher-Yates algorithm, seeded so the same
+    /// seed always produces the same permutation of the same input (TODO_V3.md Phase 9.2).
+    /// </summary>
+    /// <typeparam name="T">The item type.</typeparam>
+    /// <param name="items">The list to shuffle in place.</param>
+    /// <param name="seed">The random seed.</param>
+    private static void Shuffle<T>(IList<T> items, int seed)
+    {
+        var random = new Random(seed);
+        for (var i = items.Count - 1; i > 0; i--)
+        {
+            var j = random.Next(i + 1);
+            (items[i], items[j]) = (items[j], items[i]);
+        }
+    }
 
     /// <summary>
     /// A recently-watched item retained for "Because You Watched" reference selection, tagged with
@@ -242,8 +281,16 @@ public sealed class ScoringService
         IReadOnlyList<ScoredValue> Genres,
         IReadOnlyList<ScoredValue> Actors,
         IReadOnlyList<ScoredValue> Directors,
-        IReadOnlyList<RecentlyWatchedEntry> RecentlyWatched)
+        IReadOnlyList<RecentlyWatchedEntry> RecentlyWatched,
+        DateTime ComputedAt)
     {
-        public static ScoreSnapshot Empty { get; } = new([], [], [], []);
+        /// <summary>
+        /// Creates an empty snapshot stamped with the current time, so that -- unlike a single
+        /// shared static instance -- it still expires normally under <see cref="GetSnapshot"/>'s TTL
+        /// check instead of appearing permanently stale (and thus always recomputed) the moment the
+        /// process has been running longer than one TTL period.
+        /// </summary>
+        /// <returns>A freshly stamped empty snapshot.</returns>
+        public static ScoreSnapshot CreateEmpty() => new([], [], [], [], DateTime.UtcNow);
     }
 }
