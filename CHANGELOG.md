@@ -1,3 +1,9 @@
+## [2.9.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.8.0...v2.9.0) (2026-07-26)
+
+### Features
+
+* complete V3 feature set ([a368dcc](https://github.com/Samuellct/JellyUX-Homepage/commit/a368dccc1e2249111a8f7ab367afeade65629188))
+
 ## [2.8.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.7.0...v2.8.0) (2026-07-26)
 
 ### Features

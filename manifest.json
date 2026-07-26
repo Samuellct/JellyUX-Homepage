@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/Samuellct/JellyUX-Homepage/main/docs/icon.png",
         "versions": [
             {
+                "version": "2.9.0.0",
+                "changelog": "### Features\n\n* complete V3 feature set ([a368dcc](https://github.com/Samuellct/JellyUX-Homepage/commit/a368dccc1e2249111a8f7ab367afeade65629188))",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/Samuellct/JellyUX-Homepage/releases/download/v2.9.0/jellyux-homepage_2.9.0.0.zip",
+                "checksum": "91bb0e3044b1da78b8a4bc689a1c0410",
+                "timestamp": "2026-07-26T13:08:03Z"
+            },
+            {
                 "version": "2.8.0.0",
                 "changelog": "### Features\n\n* add Recently Added Episodes widget ([1bf3f94](https://github.com/Samuellct/JellyUX-Homepage/commit/1bf3f9479cd5ccb3705f4ed5217d18f5c6325fbd))",
                 "targetAbi": "10.11.0.0",
