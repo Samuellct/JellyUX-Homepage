@@ -1,3 +1,10 @@
+## [2.7.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.6.1...v2.7.0) (2026-07-26)
+
+### Features
+
+* add randomized selection to Because You Watched sections ([775144b](https://github.com/Samuellct/JellyUX-Homepage/commit/775144b9aeb90b2bc1a78134faac35e9ff4b96c4))
+* add seasonal home screen widget with presets ([02e89db](https://github.com/Samuellct/JellyUX-Homepage/commit/02e89db4916b17b384595bea69cba6308425ab5d))
+
 ## [2.6.1](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.6.0...v2.6.1) (2026-07-25)
 
 ### Bug Fixes
