@@ -1,3 +1,9 @@
+## [2.8.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.7.0...v2.8.0) (2026-07-26)
+
+### Features
+
+* add Recently Added Episodes widget ([1bf3f94](https://github.com/Samuellct/JellyUX-Homepage/commit/1bf3f9479cd5ccb3705f4ed5217d18f5c6325fbd))
+
 ## [2.7.0](https://github.com/Samuellct/JellyUX-Homepage/compare/v2.6.1...v2.7.0) (2026-07-26)
 
 ### Features
