@@ -80,7 +80,7 @@ JellyUX Homepage is built to coexist cleanly with other popular Jellyfin customi
 
 ## Widgets
 
-26 widgets across 4 categories, each independently enabled, reordered, and configured from the admin panel.
+27 widgets across 4 categories, each independently enabled, reordered, and configured from the admin panel.
 
 | Widget | Category | Description |
 |---|---|---|
@@ -88,6 +88,7 @@ JellyUX Homepage is built to coexist cleanly with other popular Jellyfin customi
 | Next Up | Native | Next unwatched episode for shows you're following |
 | Recently Added Movies | Native | Latest movies added to your library |
 | Recently Added Shows | Native | Latest shows added to your library |
+| Recently Added Episodes | Native | Latest episodes added to your library |
 | My Media | Native | Quick links to your library sections |
 | Watchlist | Native | Items you've added to your Watchlist |
 | Genre | Admin | Items from a genre chosen by the admin |

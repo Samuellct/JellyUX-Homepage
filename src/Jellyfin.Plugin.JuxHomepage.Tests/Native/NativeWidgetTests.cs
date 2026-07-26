@@ -85,6 +85,23 @@ public sealed class NativeWidgetTests
     }
 
     [Fact]
+    public void RecentlyAddedEpisodes_GetDescriptor_HasExpectedProperties()
+    {
+        var widget = new RecentlyAddedEpisodesWidget(
+            new Mock<IUserManager>().Object,
+            new Mock<ILibraryManager>().Object,
+            new Mock<IDtoService>().Object);
+
+        var d = widget.GetDescriptor();
+
+        Assert.Equal("jux.native.recently-added-episodes", d.WidgetType);
+        Assert.Equal(WidgetCategory.Native, d.Category);
+        Assert.Equal(WidgetViewMode.Landscape, d.ViewMode);
+        Assert.Equal(4, d.MinItems);
+        Assert.Null(d.Route);
+    }
+
+    [Fact]
     public void MyMedia_GetDescriptor_HasExpectedProperties()
     {
         var widget = new MyMediaWidget(
@@ -174,10 +191,11 @@ public sealed class NativeWidgetTests
         Assert.Empty(result.Items);
     }
 
-    // RecentlyAddedMoviesWidget and RecentlyAddedShowsWidget both inherit GetItemsAsync unmodified
-    // from RecentlyAddedWidgetBase (neither overrides it), so this also covers
-    // RecentlyAddedShowsWidget's null-user check. Do not add a duplicate test for it -- it would
-    // exercise the exact same code path (see Phase 2 test triage, TODO_V2.md).
+    // RecentlyAddedMoviesWidget, RecentlyAddedShowsWidget, and RecentlyAddedEpisodesWidget all inherit
+    // GetItemsAsync unmodified from RecentlyAddedWidgetBase (none of them override it), so this also
+    // covers RecentlyAddedShowsWidget's and RecentlyAddedEpisodesWidget's null-user check. Do not add a
+    // duplicate test for either -- it would exercise the exact same code path (see Phase 2 test triage,
+    // TODO_V2.md).
     [Fact]
     public async Task RecentlyAddedMovies_UserNotFound_ReturnsEmpty()
     {
@@ -241,10 +259,10 @@ public sealed class NativeWidgetTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void NativeWidgetDefaults_Build_ReturnsSixEntries()
+    public void NativeWidgetDefaults_Build_ReturnsSevenEntries()
     {
         var configs = NativeWidgetDefaults.Build();
-        Assert.Equal(6, configs.Length);
+        Assert.Equal(7, configs.Length);
     }
 
     [Fact]

@@ -154,6 +154,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             RegisterWidget<NextUpWidget>(registry, serviceProvider, logger);
             RegisterWidget<RecentlyAddedMoviesWidget>(registry, serviceProvider, logger);
             RegisterWidget<RecentlyAddedShowsWidget>(registry, serviceProvider, logger);
+            RegisterWidget<RecentlyAddedEpisodesWidget>(registry, serviceProvider, logger);
             RegisterWidget<MyMediaWidget>(registry, serviceProvider, logger);
             RegisterWidget<WatchlistWidget>(registry, serviceProvider, logger);
 

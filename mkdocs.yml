@@ -35,6 +35,7 @@ nav:
           - Next Up: widgets/native/next-up.md
           - Recently Added Movies: widgets/native/recently-added-movies.md
           - Recently Added Shows: widgets/native/recently-added-shows.md
+          - Recently Added Episodes: widgets/native/recently-added-episodes.md
           - My Media: widgets/native/my-media.md
       - Admin:
           - Genre: widgets/admin/genre.md

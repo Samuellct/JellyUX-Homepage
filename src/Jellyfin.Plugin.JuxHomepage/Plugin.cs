@@ -18,7 +18,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
     /// The current configuration schema version. See the "Configuration Schema Versioning" section
     /// in CLAUDE.md for the migration policy.
     /// </summary>
-    private const int CurrentSchemaVersion = 6;
+    private const int CurrentSchemaVersion = 7;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -115,6 +115,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
         if (config.SchemaVersion < 6)
         {
             config.Widgets = AppendSeasonalPresetsIfMissing(config.Widgets);
+        }
+
+        if (config.SchemaVersion < 7)
+        {
+            config.Widgets = AppendRecentlyAddedEpisodesWidgetIfMissing(config.Widgets);
         }
 
         // Add future migrations here as additional `if (config.SchemaVersion < N) { ... }` blocks,
@@ -251,6 +256,45 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasPluginConfiguration, 
             .Where(preset => !existingIds.Contains(preset.ExtraParams.First(p => p.Key == "value").Value));
 
         return [.. widgets, .. missingPresets];
+    }
+
+    /// <summary>
+    /// V6-to-V7 migration step (TODO_V3.md Phase 10.2): appends the new native "Recently Added
+    /// Episodes" widget's default <see cref="WidgetConfig"/> row (see
+    /// <see cref="Widgets.Native.NativeWidgetDefaults"/>) to an existing, already-populated
+    /// <see cref="Configuration.PluginConfiguration.Widgets"/> array -- <see cref="Inject.StartupService"/>
+    /// only seeds the full default list when the array is empty (brand-new installs), so an existing
+    /// installation would otherwise never see the new widget. Idempotent: a no-op if a row for this
+    /// widget type already exists (same pattern as <see cref="AppendWatchlistWidgetIfMissing"/>).
+    /// </summary>
+    /// <param name="widgets">The widget configuration rows to migrate.</param>
+    /// <returns>The migrated array of rows, with the Recently Added Episodes row appended if missing.</returns>
+    private static WidgetConfig[] AppendRecentlyAddedEpisodesWidgetIfMissing(WidgetConfig[] widgets)
+    {
+        const string RecentlyAddedEpisodesWidgetType = "jux.native.recently-added-episodes";
+
+        if (widgets.Any(w => w.WidgetType == RecentlyAddedEpisodesWidgetType))
+        {
+            return widgets;
+        }
+
+        var result = new List<WidgetConfig>(widgets)
+        {
+            new()
+            {
+                WidgetType = RecentlyAddedEpisodesWidgetType,
+                Enabled = true,
+                Order = 35,
+                MinItems = 4,
+                MaxItems = 20,
+                ViewMode = WidgetViewMode.Landscape,
+                MinInstances = 1,
+                MaxInstances = 1,
+                AllowUserOverride = true
+            }
+        };
+
+        return result.ToArray();
     }
 
     /// <summary>
